@@ -12,7 +12,16 @@ import path from 'path';
 import https from 'https';
 import http from 'http';
 import { generateRealAIGammaCards } from './src/utils/aiSlideEngine.js';
-import { 
+import {
+  callGemini,
+  generateAITestWithGemini,
+  generateAILessonPlanWithGemini,
+  generateAIOfficialOrderWithGemini,
+  generateAIProtocolWithGemini,
+  generateAIStudentReferenceWithGemini,
+  generateAIGammaCardsWithGemini
+} from './src/utils/geminiAiService.js';
+import {
   generateAITestSuite, 
   generateAILessonPlan, 
   generateAIOfficialOrder, 
@@ -505,7 +514,12 @@ async function generateWordBuffer(students) {
 }
 
 async function generateLessonPlanWordBuffer(topic = "Ona tili va adabiyot") {
-  const planText = generateAILessonPlan(topic);
+  let planText = "";
+  try {
+    planText = await generateAILessonPlanWithGemini(topic);
+  } catch(e) {
+    planText = generateAILessonPlan(topic);
+  }
   const planLines = planText.split('\n');
 
   const docChildren = [];
@@ -532,7 +546,12 @@ async function generateLessonPlanWordBuffer(topic = "Ona tili va adabiyot") {
 }
 
 async function generateOfficialOrderWordBuffer(orderTitle = "O'quvchilarni rag'batlantirish to'g'risida") {
-  const orderText = generateAIOfficialOrder(orderTitle);
+  let orderText = "";
+  try {
+    orderText = await generateAIOfficialOrderWithGemini(orderTitle);
+  } catch(e) {
+    orderText = generateAIOfficialOrder(orderTitle);
+  }
   const orderLines = orderText.split('\n');
 
   const docChildren = [];
@@ -608,7 +627,13 @@ async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti
 }
 
 async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va biosfera") {
-  const cards = generateRealAIGammaCards(topic);
+  let cards = null;
+  try {
+    cards = await generateAIGammaCardsWithGemini(topic);
+  } catch(e) {}
+  if (!cards || !Array.isArray(cards) || cards.length === 0) {
+    cards = generateRealAIGammaCards(topic);
+  }
   const pptx = new pptxgen();
   pptx.layout = 'LAYOUT_16x9';
 
@@ -755,7 +780,12 @@ async function generateTestWordBuffer(rawText) {
   const lines = rawText.split(/\r?\n/).filter(l => l.trim().length > 3);
   const sampleTopic = lines[0] || "O'zbekiston tarixi va fan asoslari";
 
-  const testText = generateAITestSuite(sampleTopic, 15);
+  let testText = "";
+  try {
+    testText = await generateAITestWithGemini(sampleTopic, 15);
+  } catch(e) {
+    testText = generateAITestSuite(sampleTopic, 15);
+  }
   const testLines = testText.split('\n');
 
   const docChildren = [
@@ -792,7 +822,12 @@ async function generateTestWordBuffer(rawText) {
 }
 
 async function generateStudentReferenceWordBuffer(studentName = "Aliyev Sardor Baxtiyor o'g'li", className = "10-A") {
-  const refText = generateAIStudentReference(studentName, className);
+  let refText = "";
+  try {
+    refText = await generateAIStudentReferenceWithGemini(studentName);
+  } catch(e) {
+    refText = generateAIStudentReference(studentName, className);
+  }
   const refLines = refText.split('\n');
 
   const docChildren = [];
@@ -821,7 +856,12 @@ async function generateStudentReferenceWordBuffer(studentName = "Aliyev Sardor B
 
 
 async function generateProtocolWordBuffer(topic = "Ta'lim sifatini oshirish va monitoring", schoolNum = "45") {
-  const protoText = generateAIPedagogicalProtocol(topic, schoolNum);
+  let protoText = "";
+  try {
+    protoText = await generateAIProtocolWithGemini(topic);
+  } catch(e) {
+    protoText = generateAIPedagogicalProtocol(topic, schoolNum);
+  }
   const protoLines = protoText.split('\n');
 
   const docChildren = [];
