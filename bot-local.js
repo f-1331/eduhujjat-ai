@@ -16,7 +16,8 @@ import {
   generateAITestSuite, 
   generateAILessonPlan, 
   generateAIOfficialOrder, 
-  generateAIStudentReference 
+  generateAIStudentReference,
+  generateAIPedagogicalProtocol
 } from './src/utils/universalAiBrain.js';
 
 // 1. .env faylini yuklash
@@ -42,6 +43,31 @@ const bot = new Bot(BOT_TOKEN);
 bot.catch((err) => {
   console.error("Bot xatolik yuz berdi (bot.catch):", err.message || err);
 });
+
+// Telegram API Transformer - Markdown entity xatoliklari va tarmoq uzilishlarini avtomatik tiklash
+bot.api.config.use(async (prev, method, payload, signal) => {
+  try {
+    return await prev(method, payload, signal);
+  } catch (err) {
+    if (payload && payload.parse_mode && (err.message?.includes('parse') || err.message?.includes('entity') || err.message?.includes("can't find end"))) {
+      console.warn(`[Auto-Recover] Telegram entity parse error on ${method}, retrying without parse_mode:`, err.message);
+      const newPayload = { ...payload };
+      delete newPayload.parse_mode;
+      return await prev(method, newPayload, signal);
+    }
+    if (err.message?.includes('Network request') || err.message?.includes('fetch failed') || err.message?.includes('ETIMEDOUT')) {
+      console.warn(`[Auto-Recover] Telegram network glitch on ${method}, retrying in 600ms...`);
+      await new Promise(r => setTimeout(r, 600));
+      try {
+        return await prev(method, payload, signal);
+      } catch (retryErr) {
+        console.error(`[Retry Failed] ${method}:`, retryErr.message);
+      }
+    }
+    throw err;
+  }
+});
+
 
 // 2. DOIMIY MA'LUMOTLAR BAZASI (PERSISTENT JSON DB)
 const DB_FILE = path.join(process.cwd(), 'data', 'database.json');
@@ -793,6 +819,35 @@ async function generateStudentReferenceWordBuffer(studentName = "Aliyev Sardor B
   return await Packer.toBuffer(doc);
 }
 
+
+async function generateProtocolWordBuffer(topic = "Ta'lim sifatini oshirish va monitoring", schoolNum = "45") {
+  const protoText = generateAIPedagogicalProtocol(topic, schoolNum);
+  const protoLines = protoText.split('\n');
+
+  const docChildren = [];
+  protoLines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      docChildren.push(new Paragraph({ text: "" }));
+    } else if (trimmed.includes("BAYONNOMASI") || trimmed.includes("VAZIRLIGI")) {
+      docChildren.push(new Paragraph({ text: trimmed, alignment: AlignmentType.CENTER, heading: HeadingLevel.HEADING_2 }));
+    } else if (trimmed.startsWith("KUN TARTIBI:") || trimmed.startsWith("ESHITILDI:") || trimmed.startsWith("MUZOKARAGA CHIQDILAR:") || trimmed.startsWith("QAROR QILINDI:")) {
+      docChildren.push(new Paragraph({ children: [new TextRun({ text: trimmed, bold: true })] }));
+    } else {
+      docChildren.push(new Paragraph({ text: trimmed }));
+    }
+  });
+
+  const doc = new Document({
+    sections: [{
+      properties: { page: { margin: { top: 720, bottom: 720, left: 1080, right: 720 } } },
+      children: docChildren
+    }]
+  });
+
+  return await Packer.toBuffer(doc);
+}
+
 // 6. KLAVIATURADA TURADIGAN SUPER TUGMALAR (REPLY KEYBOARDS)
 function getReplyKeyboardForRole(role, isRegisteredActive = false) {
   if (role === 'OWNER') {
@@ -1230,6 +1285,22 @@ bot.on('callback_query:data', async (ctx) => {
         const buffer = await generateOfficialOrderWordBuffer(topic);
         await ctx.replyWithDocument(new InputFile(buffer, `Maktab_Buyrugi_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
           caption: `📋 **Rasmiy maktab direktori buyrug'i tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Vazirlik me'yorlari va huquqiy asoslari bilan.`
+        });
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      } catch(err) {
+        await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
+      }
+      return;
+    }
+
+    
+    if (action === 'proto') {
+      await ctx.answerCallbackQuery({ text: "Bayonnoma yaratilmoqda..." });
+      const waitMsg = await ctx.reply(`📜 **"${topic}" bo'yicha Pedagogik kengash bayonnomasi tayyorlanmoqda...**`);
+      try {
+        const buffer = await generateProtocolWordBuffer(topic, "45");
+        await ctx.replyWithDocument(new InputFile(buffer, `Bayonnoma_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
+          caption: `📜 **Pedagogik kengash bayonnomasi tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Kun tartibi, muzokaralar va rasmiy qaror qismi bilan.`
         });
         try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       } catch(err) {
@@ -1815,7 +1886,7 @@ bot.on('message:text', async (ctx) => {
           .text("🎲 15 Talik Test (.docx)", "ai_gen_test")
           .text("📋 Maktab Buyrug'i (.docx)", "ai_gen_order")
           .row()
-          .text("🔍 O'quvchi Tavsifnomasi (.docx)", "ai_gen_tavsif")
+          .text("🔍 O'quvchi Tavsifnomasi (.docx)", "ai_gen_tavsif").row().text("📜 Kengash Bayonnomasi (.docx)", "ai_gen_proto")
           .row()
           .webApp("🚀 WebApp-da To'liq Ko'rish", WEBAPP_URL);
 
@@ -1892,6 +1963,83 @@ bot.on('message:text', async (ctx) => {
         parse_mode: 'Markdown' 
       }
     );
+  }
+
+  
+  // TEZKOR SUPER BUYRUQLAR (EduAI Direct Commands)
+  if (text.startsWith('/test')) {
+    const testTopic = text.replace(/^\/test\s*/i, '').trim() || "Fan asoslari va umumiy ta'lim";
+    const waitMsg = await ctx.reply(`🎲 **"${testTopic}" bo'yicha 15 talik test va javoblar kaliti tayyorlanmoqda...**`);
+    try {
+      const buffer = await generateTestWordBuffer(testTopic);
+      await ctx.replyWithDocument(new InputFile(buffer, `Test_${testTopic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
+        caption: `🎲 **15 Talik nazorat testi tayyor!** (.docx)\n\n📌 Mavzu: **${testTopic}**\n✨ A, B, C, D variantlar va o'qituvchi uchun javoblar kaliti bilan.`
+      });
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    } catch(err) {
+      await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
+    }
+    return;
+  }
+
+  if (text.startsWith('/dars') || text.startsWith('/konspekt')) {
+    const lessonTopic = text.replace(/^\/(?:dars|konspekt)\s*/i, '').trim() || "Fan asoslari";
+    const waitMsg = await ctx.reply(`📝 **"${lessonTopic}" bo'yicha 45 daqiqalik dars konspekti tayyorlanmoqda...**`);
+    try {
+      const buffer = await generateLessonPlanWordBuffer(lessonTopic);
+      await ctx.replyWithDocument(new InputFile(buffer, `Dars_Konspekti_${lessonTopic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
+        caption: `📝 **45 Daqiqalik namunaviy dars ishlanmasi tayyor!** (.docx)\n\n📌 Mavzu: **${lessonTopic}**\n✨ DTS mezonlari, 6 bosqichli xronometraj va metodlar bilan.`
+      });
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    } catch(err) {
+      await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
+    }
+    return;
+  }
+
+  if (text.startsWith('/buyruq')) {
+    const orderTopic = text.replace(/^\/buyruq\s*/i, '').trim() || "Ta'lim sifatini oshirish to'g'risida";
+    const waitMsg = await ctx.reply(`📋 **"${orderTopic}" bo'yicha rasmiy maktab buyrug'i tayyorlanmoqda...**`);
+    try {
+      const buffer = await generateOfficialOrderWordBuffer(orderTopic);
+      await ctx.replyWithDocument(new InputFile(buffer, `Maktab_Buyrugi_${orderTopic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
+        caption: `📋 **Rasmiy maktab direktori buyrug'i tayyor!** (.docx)\n\n📌 Mavzu: **${orderTopic}**\n✨ Qonuniy asoslar, buyuraman qismi va mas'ullar bilan.`
+      });
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    } catch(err) {
+      await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
+    }
+    return;
+  }
+
+  if (text.startsWith('/tavsifnoma') || text.startsWith('/xarakteristika')) {
+    const studentName = text.replace(/^\/(?:tavsifnoma|xarakteristika)\s*/i, '').trim() || "Aliyev Sardor Baxtiyor o'g'li";
+    const waitMsg = await ctx.reply(`🔍 **"${studentName}" uchun rasmiy tavsifnoma tayyorlanmoqda...**`);
+    try {
+      const buffer = await generateStudentReferenceWordBuffer(studentName, "10-A");
+      await ctx.replyWithDocument(new InputFile(buffer, `Tavsifnoma_${studentName.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
+        caption: `🔍 **Pedagogik tavsifnoma (xarakteristika) tayyor!** (.docx)\n\n📌 O'quvchi: **${studentName}**\n✨ Rasmiy maktab me'yori bo'yicha tasdiqlash uchun.`
+      });
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    } catch(err) {
+      await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
+    }
+    return;
+  }
+
+  if (text.startsWith('/bayonnoma')) {
+    const protoTopic = text.replace(/^\/bayonnoma\s*/i, '').trim() || "Choraklik ta'lim sifatini tahlil qilish";
+    const waitMsg = await ctx.reply(`📜 **"${protoTopic}" bo'yicha Pedagogik kengash bayonnomasi tayyorlanmoqda...**`);
+    try {
+      const buffer = await generateProtocolWordBuffer(protoTopic, "45");
+      await ctx.replyWithDocument(new InputFile(buffer, `Bayonnoma_${protoTopic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
+        caption: `📜 **Pedagogik kengash bayonnomasi tayyor!** (.docx)\n\n📌 Mavzu: **${protoTopic}**\n✨ Rasmiy protokol standarti bo'yicha tayyorlandi.`
+      });
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    } catch(err) {
+      await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
+    }
+    return;
   }
 
   if (text.startsWith('/gamma')) {

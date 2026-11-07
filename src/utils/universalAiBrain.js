@@ -576,3 +576,28 @@ export function generateAIStudentReference(studentName = "Aliyev Sardor Baxtiyor
     `Sinf rahbari:                                                  ___________________\n` +
     `Sana: ${new Date().toLocaleDateString('uz-UZ')}`;
 }
+
+// 5. HAQIQIY PEDAGOGIK KENGASH BAYONNOMASI (PROTOKOL)
+export function generateAIPedagogicalProtocol(topic = "O'quvchilarning choraklik o'zlashtirish tahlili va ta'lim sifatini oshirish", schoolNum = "45") {
+  const t = String(topic || '').trim();
+  return `O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI\n` +
+    `${schoolNum}-SONLI UMUMIY O'RTA TA'LIM MAKTABI\n` +
+    `PEDAGOGIK KENGASHINING № ___ - SONLI BAYONNOMASI\n\n` +
+    `Sana: ${new Date().toLocaleDateString('uz-UZ')}                                                            Toshkent shahri\n` +
+    `Kengash Raisi: Maktab direktori (F.I.Sh)\n` +
+    `Kengash Kotibi: O'qituvchi (F.I.Sh)\n` +
+    `Qatnashdilar: 48 nafar pedagog xodimlar va ma'muriyat a'zolari\n\n` +
+    `KUN TARTIBI:\n` +
+    `1. "${t}" masalasining holati va amaliy tahlili.\n` +
+    `2. Ta'lim sifatini oshirish va davomat monitoringini kuchaytirish chora-tadbirlari.\n\n` +
+    `ESHITILDI:\n` +
+    `Kun tartibidagi birinchi masala yuzasidan o'quv ishlari bo'yicha direktor o'rinbosari ma'ruza qildi. Ma'ruzachi o'z so'zida "${t}" bo'yicha olib borilgan pedagogik monitoring natijalari, fan xonalarining jihozlanishi va dars samaradorligi haqida to'xtalib o'tdi.\n\n` +
+    `MUZOKARAGA CHIQDILAR:\n` +
+    `Fan metod birlashmasi rahbarlari va yetakchi o'qituvchilar so'zga chiqib, o'quvchilarning bilim saviyasini yuksaltirishda zamonaviy axborot texnologiyalari, test tizimlari va interaktiv usullardan keng foydalanish zarurligini ta'kidladilar.\n\n` +
+    `QAROR QILINDI:\n` +
+    `1. "${t}" bo'yicha ma'ruza ma'lumot uchun qabul qilinsin.\n` +
+    `2. Fan o'qituvchilariga darslarni ilg'or pedagogik texnologiyalar va ko'rgazmali vositalar asosida o'tish topshirilsin.\n` +
+    `3. Qaror ijrosini nazorat qilish o'quv ishlari bo'yicha direktor o'rinbosari zimmasiga yuklatilsin.\n\n` +
+    `Kengash Raisi:                                                 ___________________\n` +
+    `Kengash Kotibi:                                                ___________________`;
+}
