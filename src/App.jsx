@@ -135,9 +135,12 @@ function MainAppContent() {
                 onChange={(e) => setLang(e.target.value)}
                 className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 border-none focus:outline-none pr-1 cursor-pointer"
               >
-                <option value="uz">O'zb (Lotin)</option>
-                <option value="uz_cyrl">Ўзб (Кирилл)</option>
+                <option value="uz">O'zbek (Lotin)</option>
+                <option value="uz_cyrl">Ўзбек (Кирилл)</option>
+                <option value="kaa">Qaraqalpaqsha</option>
+                <option value="kz">Қазақша</option>
                 <option value="ru">Русский</option>
+                <option value="tr">Türkçe</option>
                 <option value="en">English</option>
               </select>
             </div>
