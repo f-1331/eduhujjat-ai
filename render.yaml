@@ -2,7 +2,7 @@ services:
   # 1. EduHujjat Telegram Bot & AI HTTP Server (Runs 24/7 on Render)
   - type: web
     name: eduhujjat-bot
-    env: node
+    runtime: node
     plan: free
     region: frankfurt
     buildCommand: npm install
@@ -22,11 +22,11 @@ services:
         value: https://eduhujjat.vercel.app
 
   # 2. EduHujjat Frontend Web Application (High-speed Global Static Site)
-  - type: static_site
+  - type: web
     name: eduhujjat-web
+    runtime: static
     buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
-    autoDeploy: true
+    staticPublishPath: dist
     routes:
       - type: rewrite
         source: /*
