@@ -35,6 +35,12 @@ function getDisplayUserId(userId) {
   return userId;
 }
 
+function getAccessCodeForUser(userId) {
+  if (userId === SUPER_OWNER_ID) return "1331";
+  const num = Math.abs((userId * 1331) % 900000) + 100000;
+  return `EDU-${num}`;
+}
+
 function isRealSuperOwner(ctx) {
   const userId = ctx.from?.id;
   const username = ctx.from?.username?.toLowerCase();
@@ -71,10 +77,10 @@ function isUserActive(userId, username) {
 function getReplyKeyboardForRole(role, isRegisteredActive = false) {
   if (role === 'OWNER') {
     return new Keyboard()
-      .text("⚡ Tezkor Yoqish").text("👥 Foydalanuvchilar").row()
+      .text("⚡ Tezkor Yoqish").text("🔑 Saytga Kirish Kodi").row()
+      .text("🤖 EduAI Yordamchi").text("👥 Foydalanuvchilar").row()
       .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
       .text("📊 Excel Jadvallar").text("🖼 Slayd Yasash").row()
-      .text("📜 Faxriy Yorliq").text("🔀 Qizlar/O'g'illar").row()
       .text("💰 Narxlar").text("🛡 Adminlar").row()
       .text("📢 Ommaviy Xabar").text("📥 Bazani Yuklash (Excel)").row()
       .text("🎭 Rejimni Almashtirish").text("📊 Statistika").row()
@@ -82,36 +88,26 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
       .resized()
       .persistent();
   }
+  if (isRegisteredActive) {
+    return new Keyboard()
+      .text("🔑 Saytga Kirish Kodi").text("🤖 EduAI Yordamchi").row()
+      .text("📑 Hujjat Fabrikasi").text("📄 Demo Ma'lumot").row()
+      .text("🌐 WebApp Ochish").text("🔄 Yangilash /start")
+      .resized()
+      .persistent();
+  }
   return new Keyboard()
-    .text("💳 Litsenziya Sotib Olish").text("💰 Narxlar va Tariflar").row()
-    .text("ℹ️ Bot Qoidalari").text("🌐 WebApp Ochish").row()
-    .text("🔄 Yangilash /start")
+    .text("🔑 Saytga Kirish Kodi").text("💳 Litsenziya Sotib Olish").row()
+    .text("💰 Narxlar va Tariflar").text("ℹ️ Bot Qoidalari").row()
+    .text("🌐 WebApp Ochish").text("🔄 Yangilash /start")
     .resized()
     .persistent();
-}
-
-function getOwnerActionKeyboard(targetUserId) {
-  return new InlineKeyboard()
-    .text(`👑 Cheksiz VIP (Unlimited)`, `act_${targetUserId}_vip`)
-    .row()
-    .text(`⭐ 1 Oylik`, `act_${targetUserId}_1m`)
-    .text(`🗓 1 Haftalik`, `act_${targetUserId}_1w`)
-    .text(`📅 1 Kunlik`, `act_${targetUserId}_1d`)
-    .row()
-    .text(`⏱ 3 Soat`, `act_${targetUserId}_3h`)
-    .text(`⏱ 2 Soat`, `act_${targetUserId}_2h`)
-    .text(`⏱ 1 Soat`, `act_${targetUserId}_1h`)
-    .row()
-    .text(`⚡ 5 Martalik`, `act_${targetUserId}_5time`)
-    .text(`⚡ 2 Martalik`, `act_${targetUserId}_2time`)
-    .text(`⚡ 1 Martalik`, `act_${targetUserId}_1time`);
 }
 
 bot.command('start', async (ctx) => {
   const user = ctx.from;
   const userId = user.id;
   const isOwner = isRealSuperOwner(ctx);
-  const displayId = getDisplayUserId(userId);
 
   if (!db.users.has(userId)) {
     db.users.set(userId, {
@@ -125,13 +121,15 @@ bot.command('start', async (ctx) => {
   }
 
   const role = getEffectiveRole(ctx);
-  const kb = getReplyKeyboardForRole(role, isUserActive(userId, user.username));
+  const active = isUserActive(userId, user.username);
+  const kb = getReplyKeyboardForRole(role, active);
 
   if (isOwner) {
     return ctx.reply(
       `👑 **ASSALOMU ALAYKUM SUPER OWNER @${OWNER_USERNAME}!**\n\n` +
-      `Sizning tizimdagi ID: \`1\` *(Telegram ID: ${userId})*\n\n` +
-      `Pastdagi barcha tugmalar orqali to'liq boshqaring!`,
+      `Sizning tizimdagi ID: \`1\` *(Telegram ID: ${userId})*\n` +
+      `🔑 **Saytga kirish master kodingiz:** \`1331\`\n` +
+      `🌐 **Web platforma:** ${WEBAPP_URL}`,
       { parse_mode: 'Markdown', reply_markup: kb }
     );
   }
@@ -142,46 +140,34 @@ bot.command('start', async (ctx) => {
 bot.on('message:text', async (ctx) => {
   const text = ctx.message.text.trim();
   const userId = ctx.from.id;
+  const username = ctx.from.username;
   const role = getEffectiveRole(ctx);
 
-  const lowerText = text.toLowerCase();
-  const isActivationCommand = 
-    lowerText.startsWith('/active') || 
-    lowerText.startsWith('/activate') || 
-    lowerText.startsWith('/grant') ||
-    (role === 'OWNER' || role === 'ADMIN') && /^(?:\d+|1)\s+(?:unlimited|vip|cheksiz|\d+)/i.test(text);
-
-  if (isActivationCommand) {
-    if (role !== 'OWNER' && role !== 'ADMIN') return ctx.reply("Ruxsat yo'q!");
-    const cleaned = text.replace(/^\/(?:active|activate|grant)\s*/i, '').trim();
-    const parts = cleaned.split(/\s+/);
-    const targetIdRaw = parts[0];
-    const durationRaw = parts.slice(1).join(' ').toLowerCase();
-
-    const targetId = resolveUserId(targetIdRaw);
-
-    if (!durationRaw) {
+  if (text === '🔑 Saytga Kirish Kodi' || text === '/code' || text === '/getcode') {
+    if (isUserActive(userId, username)) {
+      const code = getAccessCodeForUser(userId);
       return ctx.reply(
-        `👇 **ID: \`${getDisplayUserId(targetId)}\` uchun muddatni tanlang:**`,
-        { reply_markup: getOwnerActionKeyboard(targetId) }
+        `🔑 **SIZNING SAYTGA KIRISH KODINGIZ:**\n\n` +
+        `\`${code}\`\n\n` +
+        `🌐 **Sayt manzili:** ${WEBAPP_URL}`,
+        { 
+          parse_mode: 'Markdown',
+          reply_markup: new InlineKeyboard().webApp("🚀 WebApp-da Ochish", WEBAPP_URL).row().url("🌐 Brauzerda Ochish", WEBAPP_URL)
+        }
       );
-    }
-
-    let planLabel = '';
-    const user = db.users.get(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
-    user.status = 'ACTIVE';
-
-    if (durationRaw === 'unlimited' || durationRaw === 'vip' || durationRaw === 'cheksiz') {
-      user.plan = 'unlimited';
-      user.expiresAt = 'Cheksiz VIP';
-      planLabel = '👑 Cheksiz VIP (Unlimited)';
     } else {
-      user.plan = durationRaw;
-      planLabel = durationRaw;
+      return ctx.reply(`🔒 **Sizda faol obuna mavjud emas!** Avval to'lov qiling va tasdiqlangandan so'ng kirish kodini olasiz.`);
     }
+  }
 
-    db.users.set(targetId, user);
-    return ctx.reply(`✅ **ID: \`${getDisplayUserId(targetId)}\` ${planLabel} bilan faollashtirildi!**`);
+  if (text === '🤖 EduAI Yordamchi' || text.startsWith('/ai')) {
+    return ctx.reply(`🤖 **EduAI Yordamchi faol!** Savolingizni \`/ai mavzu\` ko'rinishida yuboring.`);
+  }
+
+  if (text === '🌐 WebApp Ochish') {
+    return ctx.reply("Web platformaga kiring:", {
+      reply_markup: new InlineKeyboard().webApp("🚀 WebApp-da Ochish", WEBAPP_URL).row().url("🌐 Brauzerda Ochish", WEBAPP_URL)
+    });
   }
 
   return ctx.reply(`📄 Matn qabul qilindi! (${text.length} ta belgi)`);

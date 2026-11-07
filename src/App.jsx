@@ -12,6 +12,7 @@ import OrdersAndContractsModule from './components/OrdersAndContractsModule';
 import ExamAnalyticsModule from './components/ExamAnalyticsModule';
 import AdminSuperPanel from './components/AdminSuperPanel';
 import PaywallGate from './components/PaywallGate';
+import EduAIModule from './components/EduAIModule';
 import { 
   Sparkles, 
   FileSpreadsheet, 
@@ -24,16 +25,16 @@ import {
   Globe, 
   FileBadge2,
   BarChart3,
-  ShieldAlert,
-  Palette,
+  Bot,
   Crown,
-  Lock,
+  KeyRound,
+  LogOut,
   UserCog
 } from 'lucide-react';
 
 function MainAppContent() {
   const [lang, setLang] = useState('uz');
-  const [activeModule, setActiveModule] = useState('cleaner');
+  const [activeModule, setActiveModule] = useState('ai'); // Default to AI module!
 
   const { currentTheme, themeId, setThemeId, darkMode, setDarkMode, themes } = useTheme();
   const { 
@@ -42,6 +43,8 @@ function MainAppContent() {
     setActiveRole, 
     isActualOwner, 
     hasAccess, 
+    accessCodeInfo,
+    logoutCode,
     OWNER_USERNAME 
   } = useAuth();
 
@@ -49,6 +52,7 @@ function MainAppContent() {
   const isAccessible = hasAccess();
 
   const navItems = [
+    { id: 'ai', label: "🤖 EduAI Yordamchi", icon: Bot, color: 'text-indigo-400 font-bold' },
     { id: 'cleaner', label: t.modules.cleaner, icon: Sparkles, color: 'text-indigo-500' },
     { id: 'excel', label: t.modules.excel, icon: FileSpreadsheet, color: 'text-emerald-500' },
     { id: 'powerpoint', label: t.modules.powerpoint, icon: Presentation, color: 'text-sky-500' },
@@ -59,7 +63,6 @@ function MainAppContent() {
     { id: 'certificate', label: t.modules.certificate, icon: Award, color: 'text-amber-500' },
   ];
 
-  // Agar Owner yoki Admin bo'lsa, Super Boshqaruv Panelini ham menyuga qo'shamiz
   if (activeRole === 'OWNER' || activeRole === 'ADMIN') {
     navItems.unshift({
       id: 'admin_panel',
@@ -87,6 +90,11 @@ function MainAppContent() {
                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-400 text-slate-950 uppercase">
                   {activeRole}
                 </span>
+                {accessCodeInfo && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hidden sm:inline-block">
+                    Kod: {accessCodeInfo.code}
+                  </span>
+                )}
               </div>
               <p className="text-[10px] text-slate-400 hidden sm:block">
                 SmartOffice & EduAI Pro • Owner: @{OWNER_USERNAME}
@@ -94,27 +102,40 @@ function MainAppContent() {
             </div>
           </div>
 
-          {/* Role Simulator (Owner xohlasa o'zini USER, INSPECTOR, ADMIN rejimida sinab ko'radi) */}
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-            <UserCog className="w-3.5 h-3.5 text-slate-400 ml-1.5 mr-0.5" />
-            <select
-              value={activeRole}
-              onChange={(e) => setActiveRole(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 border-none focus:outline-none cursor-pointer pr-1"
-              title="Rejimni almashtirish"
-            >
-              <option value="OWNER">👑 Owner (To'liq)</option>
-              <option value="ADMIN">🛡 Admin</option>
-              <option value="INSPECTOR">🔍 Tekshiruvchi</option>
-              <option value="USER">👤 Oddiy Ishlatuvchi (Yopiq)</option>
-            </select>
-          </div>
-
-          {/* Sozlamalar: Dizayn (Theme), Til va Dark Mode */}
+          {/* O'ng tomon sozlamalar */}
           <div className="flex items-center gap-2">
-            {/* Theme Switcher (Dizayn almashtirish) */}
-            <div className="relative flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-              <Palette className="w-3.5 h-3.5 text-slate-400 ml-1.5 mr-1" />
+            {/* Kod bilan kirgan bo'lsa Chiqish tugmasi */}
+            {accessCodeInfo && (
+              <button
+                onClick={logoutCode}
+                className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 text-xs font-semibold flex items-center gap-1 transition"
+                title="Kodni bekor qilish / Chiqish"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Chiqish</span>
+              </button>
+            )}
+
+            {/* Role Simulator */}
+            {isActualOwner && (
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                <UserCog className="w-3.5 h-3.5 text-slate-400 ml-1.5 mr-0.5" />
+                <select
+                  value={activeRole}
+                  onChange={(e) => setActiveRole(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 border-none focus:outline-none cursor-pointer"
+                  title="Rejimni o'zgartirib sinash"
+                >
+                  <option value="OWNER">👑 Owner</option>
+                  <option value="ADMIN">🛡️ Admin</option>
+                  <option value="INSPECTOR">🔍 Tekshiruvchi</option>
+                  <option value="USER">👤 Oddiy (Yopiq)</option>
+                </select>
+              </div>
+            )}
+
+            {/* Mavzu */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
               <select
                 value={themeId}
                 onChange={(e) => setThemeId(e.target.value)}
@@ -156,7 +177,7 @@ function MainAppContent() {
           </div>
         </div>
 
-        {/* Modullar navigatsiya paneli (Faqat ruxsat bo'lganda to'liq ishlaydi) */}
+        {/* Modullar navigatsiya paneli */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-100 dark:border-slate-800/80">
           <div className="flex space-x-1 overflow-x-auto py-2 no-scrollbar">
             {navItems.map((item) => {
@@ -183,12 +204,12 @@ function MainAppContent() {
 
       {/* Asosiy qism */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Agar foydalanuvchida ruxsat bo'lmasa, Paywall qulflanadi */}
         {!isAccessible ? (
           <PaywallGate />
         ) : (
           <>
             {activeModule === 'admin_panel' && <AdminSuperPanel />}
+            {activeModule === 'ai' && <EduAIModule />}
             {activeModule === 'cleaner' && <CleanerModule t={t} lang={lang} />}
             {activeModule === 'excel' && <ExcelModule t={t} />}
             {activeModule === 'powerpoint' && <PowerPointModule t={t} />}

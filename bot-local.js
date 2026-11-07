@@ -60,7 +60,7 @@ function loadDatabase() {
     users: {
       "6707839718": {
         id: 1,
-        realId: 6707839718,
+        realId: SUPER_OWNER_ID,
         name: "Fayzbek (Super Owner)",
         username: "fayzbek1331",
         status: "ACTIVE",
@@ -82,10 +82,9 @@ function loadDatabase() {
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
     const mergedUsers = { ...defaultDb.users, ...(parsed.users || {}) };
-    // Har doim Fayzbekni ID: 1 va faol qilish
     mergedUsers["6707839718"] = {
       id: 1,
-      realId: 6707839718,
+      realId: SUPER_OWNER_ID,
       name: "Fayzbek (Super Owner)",
       username: "fayzbek1331",
       status: "ACTIVE",
@@ -147,6 +146,12 @@ function resolveUserId(idInput) {
 function getDisplayUserId(userId) {
   if (userId === SUPER_OWNER_ID) return 1;
   return userId;
+}
+
+function getAccessCodeForUser(userId) {
+  if (userId === SUPER_OWNER_ID) return "1331";
+  const num = Math.abs((userId * 1331) % 900000) + 100000;
+  return `EDU-${num}`;
 }
 
 function isRealSuperOwner(ctx) {
@@ -339,14 +344,12 @@ function generateExcelBuffer(students) {
   return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 }
 
-// Qizlar va O'g'il bolalarga alohida jadvallar bilan Excel
 function generateGenderExcelBuffer(students) {
   const wb = XLSX.utils.book_new();
   const boys = students.filter(s => s.gender.includes('Erkak'));
   const girls = students.filter(s => s.gender.includes('Ayol'));
 
   const header = ["№", "F.I.Sh", "Tug'ilgan sana", "Yoshi", "Telefon", "Sinfi"];
-
   const boysRows = boys.map((s, i) => [i + 1, s.fullName, s.birthDate, s.age, s.phone, s.className]);
   const girlsRows = girls.map((s, i) => [i + 1, s.fullName, s.birthDate, s.age, s.phone, s.className]);
 
@@ -367,7 +370,6 @@ function generateGenderExcelBuffer(students) {
   return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 }
 
-// Barcha foydalanuvchilar bazasini Excelga eksport qilish
 function generateUsersExcelBuffer() {
   const wb = XLSX.utils.book_new();
   const userList = Array.from(db.users.values());
@@ -397,7 +399,6 @@ function generateUsersExcelBuffer() {
   return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 }
 
-// Word (.docx) Generatori
 async function generateWordBuffer(students) {
   const tableRows = [
     new TableRow({
@@ -458,7 +459,6 @@ async function generateWordBuffer(students) {
   return await Packer.toBuffer(doc);
 }
 
-// 45 daqiqalik Dars Ishlanmasi (.docx)
 async function generateLessonPlanWordBuffer(topic = "Ona tili va adabiyot") {
   const doc = new Document({
     sections: [{
@@ -488,7 +488,6 @@ async function generateLessonPlanWordBuffer(topic = "Ona tili va adabiyot") {
   return await Packer.toBuffer(doc);
 }
 
-// Maktab Buyrug'i Shabloni (.docx)
 async function generateOfficialOrderWordBuffer(orderTitle = "O'quvchilarni rag'batlantirish to'g'risida") {
   const doc = new Document({
     sections: [{
@@ -513,7 +512,6 @@ async function generateOfficialOrderWordBuffer(orderTitle = "O'quvchilarni rag'b
   return await Packer.toBuffer(doc);
 }
 
-// PowerPoint (.pptx) Generatori
 async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti") {
   const pptx = new pptxgen();
   pptx.layout = 'LAYOUT_16x9';
@@ -563,7 +561,6 @@ async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti
   return await pptx.write({ outputType: 'nodebuffer' });
 }
 
-// 15 talik Test Generatori (.docx)
 async function generateTestWordBuffer(rawText) {
   const lines = rawText.split(/\r?\n/).filter(l => l.trim().length > 5);
   const sampleTopic = lines[0] || "O'zbekiston tarixi va ona tili";
@@ -624,7 +621,8 @@ async function generateTestWordBuffer(rawText) {
 function getReplyKeyboardForRole(role, isRegisteredActive = false) {
   if (role === 'OWNER') {
     return new Keyboard()
-      .text("⚡ Tezkor Yoqish").text("👥 Foydalanuvchilar").row()
+      .text("⚡ Tezkor Yoqish").text("🔑 Saytga Kirish Kodi").row()
+      .text("🤖 EduAI Yordamchi").text("👥 Foydalanuvchilar").row()
       .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
       .text("📊 Excel Jadvallar").text("🖼 Slayd Yasash").row()
       .text("📜 Faxriy Yorliq").text("🔀 Qizlar/O'g'illar").row()
@@ -638,7 +636,8 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
 
   if (role === 'ADMIN') {
     return new Keyboard()
-      .text("⚡ Tezkor Yoqish").text("👥 Foydalanuvchilar").row()
+      .text("⚡ Tezkor Yoqish").text("🔑 Saytga Kirish Kodi").row()
+      .text("🤖 EduAI Yordamchi").text("👥 Foydalanuvchilar").row()
       .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
       .text("📊 Excel Jadvallar").text("🖼 Slayd Yasash").row()
       .text("💰 Narxlar").text("📊 Statistika").row()
@@ -650,18 +649,18 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
 
   if (role === 'INSPECTOR') {
     return new Keyboard()
-      .text("🔍 Nazorat / Tekshirish").text("📊 Statistika").row()
-      .text("👥 Foydalanuvchilar").text("📥 Bazani Yuklash (Excel)").row()
-      .text("🎭 Rejimni Qaytarish (Owner)").text("🌐 WebApp Ochish").row()
-      .text("🔄 Yangilash /start")
+      .text("🔍 Nazorat / Tekshirish").text("🔑 Saytga Kirish Kodi").row()
+      .text("📊 Statistika").text("👥 Foydalanuvchilar").row()
+      .text("📥 Bazani Yuklash (Excel)").text("🎭 Rejimni Qaytarish (Owner)").row()
+      .text("🌐 WebApp Ochish").text("🔄 Yangilash /start")
       .resized()
       .persistent();
   }
 
-  // Oddiy Foydalanuvchi:
   if (isRegisteredActive) {
     return new Keyboard()
-      .text("📄 Demo Ma'lumot").text("📑 Hujjat Fabrikasi").row()
+      .text("🔑 Saytga Kirish Kodi").text("🤖 EduAI Yordamchi").row()
+      .text("📑 Hujjat Fabrikasi").text("📄 Demo Ma'lumot").row()
       .text("📊 Excel Jadvallar").text("🖼 Slayd Yasash").row()
       .text("ℹ️ Mening Hisobim").text("💳 Muddatni Uzaytirish").row()
       .text("🎭 Rejimni Qaytarish (Owner)").text("🌐 WebApp Ochish").row()
@@ -670,9 +669,10 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
       .persistent();
   } else {
     return new Keyboard()
-      .text("💳 Litsenziya Sotib Olish").text("💰 Narxlar va Tariflar").row()
-      .text("ℹ️ Bot Qoidalari").text("🌐 WebApp Ochish").row()
-      .text("🎭 Rejimni Qaytarish (Owner)").text("🔄 Yangilash /start")
+      .text("🔑 Saytga Kirish Kodi").text("💳 Litsenziya Sotib Olish").row()
+      .text("💰 Narxlar va Tariflar").text("ℹ️ Bot Qoidalari").row()
+      .text("🎭 Rejimni Qaytarish (Owner)").text("🌐 WebApp Ochish").row()
+      .text("🔄 Yangilash /start")
       .resized()
       .persistent();
   }
@@ -695,11 +695,11 @@ function getTariffInlineKeyboard(userId) {
     .text(`⭐ 1 Oylik Pro (${db.prices.monthly.toLocaleString()} so'm)`, `buy_monthly_${userId}`)
     .text(`👑 Cheksiz VIP (${db.prices.unlimited.toLocaleString()} so'm)`, `buy_unlimited_${userId}`)
     .row()
-    .webApp("🌐 WebApp orqali ochish", WEBAPP_URL);
+    .webApp("🚀 Telegram Mini App", WEBAPP_URL)
+    .url("🌐 Brauzerda Ochish", WEBAPP_URL);
 }
 
 function getOwnerActionKeyboard(targetUserId) {
-  const displayId = getDisplayUserId(targetUserId);
   return new InlineKeyboard()
     .text(`👑 Cheksiz VIP (Unlimited)`, `act_${targetUserId}_vip`)
     .row()
@@ -743,7 +743,8 @@ function getActionInlineKeyboard() {
     .text("🔀 Qizlar / O'g'illar jadvali", "act_export_gender")
     .text("🔄 Lotin <-> Kirill o'girish", "act_translit")
     .row()
-    .webApp("🌐 WebApp-da to'liq ochish", WEBAPP_URL);
+    .webApp("🚀 Mini App-da Ochish", WEBAPP_URL)
+    .url("🌐 Brauzerda Ochish", WEBAPP_URL);
 }
 
 function getDocumentFactoryKeyboard() {
@@ -789,6 +790,7 @@ bot.command('start', async (ctx) => {
 
   if (!db.users.has(userId)) {
     const isOwnerUser = isRealSuperOwner(ctx);
+    // Yangi oddiy foydalanuvchi boshida HAR DOIM PENDING (yopiq) bo'ladi
     db.users.set(userId, {
       id: isOwnerUser ? 1 : userId,
       realId: userId,
@@ -813,17 +815,10 @@ bot.command('start', async (ctx) => {
       `👑 **ASSALOMU ALAYKUM SUPER OWNER @${OWNER_USERNAME}!**\n\n` +
       `Siz **EduHujjat AI & SmartOffice Pro** tizimining mutlaq boshqaruvchisiz.\n` +
       `🆔 **Sizning tizimdagi ID raqamingiz:** \`1\` *(Telegram ID: ${userId})*\n\n` +
-      `⌨️ **Klaviatura tugmalari to'liq yuklandi!** Pastda barcha super funksiyalar mavjud:\n` +
-      `• \`⚡ Tezkor Yoqish\` | \`👥 Foydalanuvchilar\`\n` +
-      `• \`📑 Hujjat Fabrikasi\` | \`🎲 Test Generatori\`\n` +
-      `• \`📊 Excel Jadvallar\` | \`🖼 Slayd Yasash\`\n` +
-      `• \`📜 Faxriy Yorliq\` | \`🔀 Qizlar/O'g'illar\`\n` +
-      `• \`💰 Narxlar\` | \`🛡 Adminlar\` | \`📢 Ommaviy Xabar\`\n` +
-      `• \`📥 Bazani Yuklash (Excel)\` | \`🎭 Rejimni Almashtirish\`\n\n` +
-      `⚡ **Faollashtirish buyruqlari:**\n` +
-      `• \`/active ${displayId} unlimited\` yoki \`/active ${userId} unlimited\`\n` +
-      `• \`/active ID 2h\` yoki \`/active ID 2time\`\n` +
-      `• Yoki shunchaki \`⚡ Tezkor Yoqish\` tugmasini bosing!`,
+      `🔑 **Saytga kirish master kodingiz:** \`1331\`\n` +
+      `🌐 **Web platforma:** ${WEBAPP_URL}\n\n` +
+      `⌨️ **Klaviatura tugmalari faol:** Pastdagi barcha tugmalar orqali tizimni boshqaring.\n` +
+      `💬 **Chap tarafdagi [🌐 WebApp] tugmasi** orqali Mini App-ni 1 marta bosishda ochishingiz mumkin!`,
       { parse_mode: 'Markdown', reply_markup: replyKeyboard }
     );
   }
@@ -848,9 +843,9 @@ bot.command('start', async (ctx) => {
   if (!active) {
     return ctx.reply(
       `🔒 **ASSALOMU ALAYKUM, ${fullName}!**\n\n` +
-      `**"EduHujjat AI"** — Maktablar, o'qituvchilar va ofislar uchun professional hujjatlar platformasi.\n\n` +
+      `**"EduHujjat AI"** — Maktablar, o'qituvchilar va ofislar uchun yopiq professional hujjatlar platformasi.\n\n` +
       `Sizning Telegram ID: \`${userId}\`\n\n` +
-      `👇 **Kerakli tarifni tanlang:** Ma'lumotlaringiz avtomatik boshqaruvchiga (@${OWNER_USERNAME}) yuboriladi va to'lovdan so'ng hisobingiz darhol yoqib beriladi:`,
+      `👇 **Saytga kirish uchun Kod kerak bo'ladi.** Kodni olish uchun quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
       { parse_mode: 'Markdown', reply_markup: replyKeyboard }
     ).then(() => {
       ctx.reply(`👇 **Tarifni tanlang:**`, { reply_markup: getTariffInlineKeyboard(userId) });
@@ -859,10 +854,12 @@ bot.command('start', async (ctx) => {
 
   const curUser = db.users.get(userId);
   const remainingInfo = curUser?.remainingUses ? `(Qolgan imkoniyat: ${curUser.remainingUses} ta)` : '';
+  const accessCode = getAccessCodeForUser(userId);
 
   return ctx.reply(
     `✅ **XUSH KELIBSIZ, ${fullName}!**\n\n` +
-    `Sizning hisobingiz faol! ${remainingInfo}\n\n` +
+    `Sizning hisobingiz faol! ${remainingInfo}\n` +
+    `🔑 **Saytga Kirish Kodingiz:** \`${accessCode}\`\n\n` +
     `📎 **Word (.docx), Excel (.xlsx) faylini tashlang yoki matn yuboring** — tizim 3 soniyada tayyorlab beradi!`,
     { parse_mode: 'Markdown', reply_markup: replyKeyboard }
   );
@@ -939,7 +936,6 @@ bot.on('callback_query:data', async (ctx) => {
   const data = ctx.callbackQuery.data;
   const userId = ctx.from.id;
 
-  // A) Rejim almashtirish menyusi
   if (data === 'switch_roles') {
     if (!isRealSuperOwner(ctx)) return ctx.answerCallbackQuery({ text: "Faqat Super Owner uchun!" });
     return ctx.reply("🎭 **Qaysi rejimga o'tmoqchisiz?**", { reply_markup: getRoleSwitchKeyboard() });
@@ -961,7 +957,6 @@ bot.on('callback_query:data', async (ctx) => {
     );
   }
 
-  // B) Xarid tugmalari: buy_{plan}_{userId}
   if (data.startsWith('buy_')) {
     const [_, plan, userIdStr] = data.split('_');
     const targetUserId = parseInt(userIdStr, 10);
@@ -1017,7 +1012,6 @@ bot.on('callback_query:data', async (ctx) => {
     return;
   }
 
-  // C) Owner litsenziya berish: act_{userId}_{planCode}
   const knownActionExport = ['act_export_xlsx', 'act_export_docx', 'act_export_pptx', 'act_export_test', 'act_export_gender', 'act_sort_az', 'act_sort_year', 'act_translit'];
   if (data.startsWith('act_') && !knownActionExport.includes(data)) {
     const role = getEffectiveRole(ctx);
@@ -1070,11 +1064,14 @@ bot.on('callback_query:data', async (ctx) => {
     db.users.set(targetId, user);
     saveDatabase();
 
+    const code = getAccessCodeForUser(targetId);
+
     await ctx.answerCallbackQuery({ text: `Hisob ${label} bilan yoqildi!` });
     await ctx.editMessageText(
       `✅ **HISOB MUVOFAQIYATLI YOQILDI!**\n\n` +
       `👤 ID: \`${getDisplayUserId(targetId)}\` *(Telegram ID: ${targetId})*\n` +
       `💳 Tarif: **${label}**\n` +
+      `🔑 Kirish Kodi: \`${code}\`\n` +
       `Tasdiqlovchi: @${ctx.from?.username || 'admin'}`,
       { parse_mode: 'Markdown' }
     );
@@ -1084,15 +1081,19 @@ bot.on('callback_query:data', async (ctx) => {
       await bot.api.sendMessage(
         targetId,
         `🎉 **HISOBINGIZ FOALLASHTIRILDI!**\n\n` +
-        `Boshqaruvchi hisobingizni tasdiqladi. Sizga **${label}** imkoniyati berildi!\n` +
-        `Endi bot va WebApp'dan erkin foydalanishingiz mumkin!`,
-        { reply_markup: userReplyKb }
+        `Boshqaruvchi hisobingizni tasdiqladi. Sizga **${label}** imkoniyati berildi!\n\n` +
+        `🔑 **Saytga Kirish Kodingiz:** \`${code}\`\n` +
+        `🌐 **Sayt manzili:** ${WEBAPP_URL}\n\n` +
+        `Saytga kirib, ushbu kodni kiritsangiz to'liq ochiladi!`,
+        { 
+          parse_mode: 'Markdown',
+          reply_markup: userReplyKb 
+        }
       );
     } catch (e) {}
     return;
   }
 
-  // D) Bloklash
   if (data.startsWith('block_')) {
     const role = getEffectiveRole(ctx);
     if (role !== 'OWNER' && role !== 'ADMIN') return;
@@ -1107,9 +1108,9 @@ bot.on('callback_query:data', async (ctx) => {
     return;
   }
 
-  // E) HUJJAT FABRIKASI SHABLONLARI
+  // HUJJAT FABRIKASI SHABLONLARI
   if (data === 'doc_order') {
-    await ctx.answerCallbackQuery({ text: "Buyruq hujjati yaratilmoqda..." });
+    await ctx.answerCallbackQuery({ text: "Buyruq hujjati..." });
     const buf = await generateOfficialOrderWordBuffer("O'quvchilarni rag'batlantirish to'g'risida");
     return ctx.replyWithDocument(new InputFile(buf, "Maktab_Direktori_Buyrugi.docx"), {
       caption: "📋 **Rasmiy maktab buyrug'i shabloni tayyor!** (.docx)"
@@ -1117,7 +1118,7 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   if (data === 'doc_lesson') {
-    await ctx.answerCallbackQuery({ text: "Dars ishlanmasi yaratilmoqda..." });
+    await ctx.answerCallbackQuery({ text: "Dars ishlanmasi..." });
     const buf = await generateLessonPlanWordBuffer("Ona tili va adabiyot darsi");
     return ctx.replyWithDocument(new InputFile(buf, "45_Daqiqalik_Dars_Ishlanmasi.docx"), {
       caption: "📝 **45 daqiqalik namunaviy dars ishlanmasi (konspekt) tayyor!** (.docx)"
@@ -1125,7 +1126,7 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   if (data === 'doc_referat') {
-    await ctx.answerCallbackQuery({ text: "Referat shabloni yaratilmoqda..." });
+    await ctx.answerCallbackQuery({ text: "Referat shabloni..." });
     const buf = await generateLessonPlanWordBuffer("Referat va Mustaqil ish (GOST)");
     return ctx.replyWithDocument(new InputFile(buf, "Referat_Titul_va_Reja.docx"), {
       caption: "🎓 **Titul varag'i va GOST standartidagi referat shabloni tayyor!** (.docx)"
@@ -1133,7 +1134,7 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   if (data === 'doc_ariza') {
-    await ctx.answerCallbackQuery({ text: "Ariza shabloni yaratilmoqda..." });
+    await ctx.answerCallbackQuery({ text: "Ariza shabloni..." });
     const buf = await generateOfficialOrderWordBuffer("Direktor nomiga rasmiy ariza");
     return ctx.replyWithDocument(new InputFile(buf, "Rasmiy_Ariza_Shabloni.docx"), {
       caption: "📄 **Direktor nomiga rasmiy ariza va tushuntirish xati tayyor!** (.docx)"
@@ -1141,15 +1142,15 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   if (data === 'doc_certificate') {
-    await ctx.answerCallbackQuery({ text: "Faxriy yorliq tayyorlanmoqda..." });
-    const buf = await generateOfficialOrderWordBuffer("Faxriy Yorliq va Maqtov Yorlig'i");
-    return ctx.replyWithDocument(new InputFile(buf, "Faxriy_Yorliq_QR.docx"), {
+    await ctx.answerCallbackQuery({ text: "Faxriy yorliq..." });
+    const buf = await generateOfficialOrderWordBuffer("Faxriy Yorliq va Sertifikat");
+    return ctx.replyWithDocument(new InputFile(buf, "Faxriy_Yorliq_EduHujjat.docx"), {
       caption: "🏆 **QR-kodli namunaviy Faxriy Yorliq hujjati tayyor!** (.docx)"
     });
   }
 
   if (data === 'doc_tavsif') {
-    await ctx.answerCallbackQuery({ text: "Tavsifnoma yaratilmoqda..." });
+    await ctx.answerCallbackQuery({ text: "Tavsifnoma..." });
     const buf = await generateOfficialOrderWordBuffer("O'quvchiga rasmiy xarakteristika");
     return ctx.replyWithDocument(new InputFile(buf, "Oquvchi_Xarakteristika.docx"), {
       caption: "🔍 **O'quvchiga ijobiy xarakteristika / tavsifnoma hujjati tayyor!** (.docx)"
@@ -1157,7 +1158,7 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   if (data === 'doc_davomat') {
-    await ctx.answerCallbackQuery({ text: "Davomat tabeli yaratilmoqda..." });
+    await ctx.answerCallbackQuery({ text: "Davomat tabeli..." });
     const demoStudents = parseStudentsFromText("1. Karimova Dildora\n2. Abdullayev Jasur\n3. Omonov Sardor\n4. Toshmatova Rayhon");
     const buf = generateExcelBuffer(demoStudents);
     return ctx.replyWithDocument(new InputFile(buf, "Oylik_Davomat_Tabeli.xlsx"), {
@@ -1166,7 +1167,7 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   if (data === 'doc_grades') {
-    await ctx.answerCallbackQuery({ text: "Baholar jurnali yaratilmoqda..." });
+    await ctx.answerCallbackQuery({ text: "Baholar jurnali..." });
     const demoStudents = parseStudentsFromText("1. Karimova Dildora\n2. Abdullayev Jasur\n3. Omonov Sardor");
     const buf = generateExcelBuffer(demoStudents);
     return ctx.replyWithDocument(new InputFile(buf, "Baholar_Jurnali_GPA.xlsx"), {
@@ -1175,7 +1176,7 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   if (data === 'doc_schedule') {
-    await ctx.answerCallbackQuery({ text: "Dars jadvali yaratilmoqda..." });
+    await ctx.answerCallbackQuery({ text: "Dars jadvali..." });
     const demoStudents = parseStudentsFromText("1. Karimova Dildora\n2. Abdullayev Jasur");
     const buf = generateExcelBuffer(demoStudents);
     return ctx.replyWithDocument(new InputFile(buf, "Dars_Jadvali_va_Navbatchilik.xlsx"), {
@@ -1183,7 +1184,7 @@ bot.on('callback_query:data', async (ctx) => {
     });
   }
 
-  // F) MATNDAN REAL FAYL GENERATSIYASI
+  // MATNDAN REAL FAYL GENERATSIYASI
   const currentText = db.userSessions.get(userId);
   if (!currentText) {
     return ctx.answerCallbackQuery({ text: "Avval matn yoki fayl yuboring!", show_alert: true });
@@ -1286,7 +1287,7 @@ bot.on('message:text', async (ctx) => {
   if (isSpamming(userId)) return;
 
   // =========================================================================
-  // A) BARCHA /active BUYRUQLARI (CHEKSIZ, UNLIMITED, SOAT, KUN, MARTALIK VA TUGMALI)
+  // A) BARCHA /active BUYRUQLARI
   // =========================================================================
   const lowerText = text.toLowerCase();
   const isActivationCommand = 
@@ -1300,7 +1301,6 @@ bot.on('message:text', async (ctx) => {
       return ctx.reply("❌ Sizda foydalanuvchini faollashtirish huquqi yo'q!");
     }
 
-    // Parametrlarni ajratib olish: /active <targetId> <duration...>
     const cleaned = text.replace(/^\/(?:active|activate|grant)\s*/i, '').trim();
     const parts = cleaned.split(/\s+/);
     const targetIdRaw = parts[0];
@@ -1309,11 +1309,12 @@ bot.on('message:text', async (ctx) => {
     if (!targetIdRaw) {
       return ctx.reply(
         `⚡ **FAOLASHTIRISH BUYRUG'I NAMOZISI:**\n\n` +
-        `• \`/active 1 unlimited\` yoki \`/active ${SUPER_OWNER_ID} unlimited\` (Cheksiz)\n` +
-        `• \`/active ID 2h\` yoki \`/active ID 2soat\` (2 soatlik)\n` +
-        `• \`/active ID 1time\` yoki \`/active ID 2time\` (Martalik)\n` +
-        `• \`/active ID 1d\` yoki \`/active ID 1kun\` (Kunlik)\n` +
-        `• \`/active ID 1m\` yoki \`/active ID 1oy\` (Oylik)\n\n` +
+        `• \`/active 1 unlimited\` — Super Owner cheksiz\n` +
+        `• \`/active ID unlimited\` — Cheksiz VIP\n` +
+        `• \`/active ID 2h\` — 2 soatlik kirish\n` +
+        `• \`/active ID 2time\` — 2 ta hujjat\n` +
+        `• \`/active ID 1d\` — 1 kunlik\n` +
+        `• \`/active ID 1m\` — 1 oylik\n\n` +
         `Yoki shunchaki \`/active ID\` deb yozing — **tayyor tugmalar** chiqadi!`,
         { parse_mode: 'Markdown' }
       );
@@ -1321,7 +1322,6 @@ bot.on('message:text', async (ctx) => {
 
     const targetId = resolveUserId(targetIdRaw);
 
-    // Agar muddat yozilmagan bo'lsa -> Tugmali menyu ko'rsatish
     if (!durationRaw) {
       return ctx.reply(
         `👇 **ID: \`${getDisplayUserId(targetId)}\` foydalanuvchisi uchun qanday muddat bermoqchisiz?**`,
@@ -1369,7 +1369,6 @@ bot.on('message:text', async (ctx) => {
       user.expiresAt = `${m * 30} kun`;
       planLabel = `⭐ ${m} Oylik Pro`;
     } else {
-      // Noma'lum muddat bo'lsa -> Xato bermasdan TUGMALARNI CHIQARISH!
       return ctx.reply(
         `⚠️ **Noma'lum muddat kiritildi: "${durationRaw}"**\n` +
         `Iltimos, ID: \`${getDisplayUserId(targetId)}\` uchun pastdagi tayyor tugmalardan birini bosing:`,
@@ -1380,10 +1379,13 @@ bot.on('message:text', async (ctx) => {
     db.users.set(targetId, user);
     saveDatabase();
 
+    const code = getAccessCodeForUser(targetId);
+
     await ctx.reply(
       `✅ **HISOB MUVOFAQIYATLI YOQILDI!**\n\n` +
       `👤 ID: \`${getDisplayUserId(targetId)}\` *(Telegram ID: ${targetId})*\n` +
       `💳 Tarif: **${planLabel}**\n` +
+      `🔑 Saytga Kirish Kodi: \`${code}\`\n` +
       `Tasdiqlovchi: @${ctx.from?.username || 'admin'}`,
       { parse_mode: 'Markdown' }
     );
@@ -1393,22 +1395,131 @@ bot.on('message:text', async (ctx) => {
       await bot.api.sendMessage(
         targetId,
         `🎉 **HISOBINGIZ FOALLASHTIRILDI!**\n\n` +
-        `Boshqaruvchi hisobingizni tasdiqladi. Sizga **${planLabel}** imkoniyati berildi!\n` +
-        `Endi bot va WebApp siz uchun to'liq ochiq!`,
-        { reply_markup: userReplyKb }
+        `Boshqaruvchi hisobingizni tasdiqladi. Sizga **${planLabel}** imkoniyati berildi!\n\n` +
+        `🔑 **Saytga Kirish Kodingiz:** \`${code}\`\n` +
+        `🌐 **Sayt manzili:** ${WEBAPP_URL}\n\n` +
+        `Saytga kirib, ushbu kodni kiritsangiz barcha imkoniyatlar ochiladi!`,
+        { 
+          parse_mode: 'Markdown',
+          reply_markup: userReplyKb 
+        }
       );
     } catch (e) {}
     return;
   }
 
   // =========================================================================
-  // B) KLAVIATURADAGI SUPER TUGMALAR
+  // B) SAYTGA KIRISH KODI (ACCESS CODE)
+  // =========================================================================
+  if (text === '🔑 Saytga Kirish Kodi' || text === '/code' || text === '/kod' || text === '/getcode') {
+    if (isUserActive(userId, username)) {
+      const code = getAccessCodeForUser(userId);
+      const userObj = db.users.get(userId);
+      const expiryText = userObj?.expiresAt || (userObj?.remainingUses ? `${userObj.remainingUses} ta hujjat` : 'Cheksiz');
+      
+      const openKb = new InlineKeyboard()
+        .webApp("🚀 Telegram Mini App-da Ochish", WEBAPP_URL)
+        .row()
+        .url("🌐 To'liq Brauzerda Ochish", WEBAPP_URL);
+
+      return ctx.reply(
+        `🔑 **SIZNING SAYTGA KIRISH KODINGIZ:**\n\n` +
+        `👉 \`${code}\` 👈 *(Nusxalash uchun ustiga bosing)*\n\n` +
+        `⏳ **Amal qilish muddati:** ${expiryText}\n` +
+        `🌐 **Sayt manzili:** ${WEBAPP_URL}\n\n` +
+        `💡 **Qanday ishlatiladi?**\n` +
+        `Saytga kirasiz va "Saytga Kirish Kodingiz bormi?" oynasiga ushbu kodni kiritasiz. Tizim bir zumda to'liq ochiladi!`,
+        { parse_mode: 'Markdown', reply_markup: openKb }
+      );
+    } else {
+      return ctx.reply(
+        `🔒 **SIZDA FAOL OBUNA MAVJUD EMAS!**\n\n` +
+        `Saytga kirish kodini olish uchun avval litsenziya sotib oling va boshqaruvchi (@${OWNER_USERNAME}) hisobingizni tasdiqlashi kerak.\n\n` +
+        `👇 **Kerakli tarifni tanlang:**`,
+        { parse_mode: 'Markdown', reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
+  }
+
+  // =========================================================================
+  // C) EDUAI YORDAMCHI (BOTDA AI BILAN ISHLASH)
+  // =========================================================================
+  if (text === '🤖 EduAI Yordamchi' || text.startsWith('/ai')) {
+    const aiPrompt = text.replace('/ai', '').replace('🤖 EduAI Yordamchi', '').trim();
+    if (!aiPrompt) {
+      return ctx.reply(
+        `🤖 **EduAI Universal Pedagogik Yordamchi:**\n\n` +
+        `Mavzu yoki buyrug'ingizni yozing:\n\n` +
+        `• \`/ai 9-sinf fizika Nyuton qonunlari 10 talik test\`\n` +
+        `• \`/ai Ona tili darsi uchun 45 daqiqalik konspekt rejasi\`\n` +
+        `• \`/ai A'lochi o'quvchiga tavsifnoma yozib ber\`\n` +
+        `• \`/ai Fotosintez jarayoni bo'yicha slayd matnlari\``,
+        { parse_mode: 'Markdown' }
+      );
+    }
+
+    const waitAi = await ctx.reply("⏳ **EduAI o'ylamoqda va eng maqbul ta'limiy javobni tayyorlamoqda...**");
+    
+    setTimeout(async () => {
+      try {
+        let aiResult = "";
+        const lower = aiPrompt.toLowerCase();
+
+        if (lower.includes('test') || lower.includes('savol')) {
+          aiResult = `🎲 **NAZORAT TESTLARI (EduAI):**\n\nMavzu: "${aiPrompt.slice(0, 40)}"\n\n` +
+            `1. Mazkur mavzuning asosiy g'oyasi nima?\n` +
+            `   A) Davlat ta'lim standarti bo'yicha aniq qonuniyat\n` +
+            `   B) Ixtiyoriy tasodifiy tushuncha\n` +
+            `   C) Faqat nazariy taxmin\n` +
+            `   D) To'g'ri javob yo'q\n\n` +
+            `2. Mavzuni o'rganishda qaysi metod eng samarali?\n` +
+            `   A) Interaktiv amaliy mashqlar va tahlil\n` +
+            `   B) Shunchaki yodlash\n` +
+            `   C) Dars qoldirish\n` +
+            `   D) Barchasi noto'g'ri\n\n` +
+            `3. Olingan bilimlarning amaliy ahamiyati qayerda ko'rinadi?\n` +
+            `   A) Kundalik hayot va kasbiy faoliyatda\n` +
+            `   B) Hech qayerda\n` +
+            `   C) Faqat daftarda\n` +
+            `   D) Barchasi to'g'ri\n\n` +
+            `------------------------------------\n` +
+            `**Javoblar kaliti:** 1-A, 2-A, 3-A`;
+        } else if (lower.includes('konspekt') || lower.includes('dars')) {
+          aiResult = `📝 **45 DAQIQALIK DARS ISHLANMASI (EduAI):**\n\n` +
+            `Mavzu: "${aiPrompt.slice(0, 40)}"\n\n` +
+            `I. MAQSADLAR:\n` +
+            `1. Ta'limiy: Mavzu mohiyatini tushuntirish va ko'nikma hosil qilish.\n` +
+            `2. Tarbiyaviy: Milliy qadriyatlar va jamoada ishlash madaniyatini shakllantirish.\n` +
+            `3. Rivojlantiruvchi: Mustaqil mantiqiy fikrlashni o'stirish.\n\n` +
+            `II. BOSQICHLAR:\n` +
+            `• 1. Tashkiliy qism (3 min): Salomlashish va davomat.\n` +
+            `• 2. O'tilgan mavzuni so'rash (7 min): Blits-savollar.\n` +
+            `• 3. Yangi mavzu bayoni (20 min): Ko'rgazmali tushuntirish.\n` +
+            `• 4. Mustahkamlash (10 min): Amaliy mashqlar.\n` +
+            `• 5. Baholash va uyga vazifa (5 min): Faollarni rag'batlantirish.`;
+        } else {
+          aiResult = `🤖 **EduAI Tahlili va Xulosasi:**\n\n` +
+            `So'rov: "${aiPrompt}"\n\n` +
+            `1. Kiritilgan vazifa davlat ta'lim mezonlariga to'liq mos keladi.\n` +
+            `2. Mazkur hujjatni rasmiylashtirishda Times New Roman 14pt shrift va 1.5 interval qo'llash tavsiya etiladi.\n` +
+            `3. Ushbu matnni to'liq hujjat sifatida WebApp-da ochishingiz yoki Word (.docx) qilib yuklab olishingiz mumkin!`;
+        }
+
+        await ctx.api.deleteMessage(ctx.chat.id, waitAi.message_id);
+        await ctx.reply(aiResult, { parse_mode: 'Markdown' });
+      } catch (e) {}
+    }, 700);
+    return;
+  }
+
+  // =========================================================================
+  // D) KLAVIATURA BOSHQARUV TUGMALARI
   // =========================================================================
   if (text === '⚡ Tezkor Yoqish') {
     if (role !== 'OWNER' && role !== 'ADMIN') return ctx.reply("❌ Ruxsat yo'q!");
     return ctx.reply(
       `⚡ **TEZKOR YOQISH BUYRUQLARI:**\n\n` +
-      `• \`/active 1 unlimited\` — Super Owner hisobini cheksiz qilish\n` +
+      `• \`/active 1 unlimited\` — Super Owner cheksiz\n` +
       `• \`/active ID unlimited\` — Cheksiz VIP litsenziya berish\n` +
       `• \`/active ID 2h\` — 2 soatlik kirish\n` +
       `• \`/active ID 2time\` — 2 ta hujjat yaratish\n` +
@@ -1535,7 +1646,7 @@ bot.on('message:text', async (ctx) => {
   if (text === '📢 Ommaviy Xabar' && role === 'OWNER') {
     return ctx.reply(
       `📢 **Ommaviy xabar yuborish uchun quyidagicha yozing:**\n\n` +
-      `\`/broadcast Hurmatli foydalanuvchilar, tizimga 10 dan ortiq yangi shablonlar qo'shildi!\``,
+      `\`/broadcast Hurmatli foydalanuvchilar, tizimga yangi EduAI funksiyalari qo'shildi!\``,
       { parse_mode: 'Markdown' }
     );
   }
@@ -1604,7 +1715,18 @@ bot.on('message:text', async (ctx) => {
   }
 
   if (text === '🌐 WebApp Ochish' || text === '🌐 Mini App-ni Ochish') {
-    return ctx.reply("WebApp-ga kiring:", { reply_markup: new InlineKeyboard().webApp("🚀 EduHujjat WebApp", WEBAPP_URL) });
+    const code = getAccessCodeForUser(userId);
+    const webappInline = new InlineKeyboard()
+      .webApp("🚀 Telegram Mini App-da Ochish", WEBAPP_URL)
+      .row()
+      .url("🌐 To'liq Brauzerda Ochish", WEBAPP_URL);
+
+    return ctx.reply(
+      `🌐 **"EduHujjat AI" Web Platformasi:**\n\n` +
+      (isUserActive(userId, username) ? `🔑 **Sizning Saytga Kirish Kodingiz:** \`${code}\`\n\n` : `🔒 *Eslatma: Saytga kirish uchun faol litsenziya kodi talab qilinadi.*\n\n`) +
+      `Quyidagi tugmalardan birini tanlang:`,
+      { parse_mode: 'Markdown', reply_markup: webappInline }
+    );
   }
 
   if (text === '💳 Litsenziya Sotib Olish' || text === '💳 Muddatni Uzaytirish') {
@@ -1628,11 +1750,13 @@ bot.on('message:text', async (ctx) => {
   if (text === 'ℹ️ Mening Hisobim') {
     const u = db.users.get(userId);
     const displayId = getDisplayUserId(userId);
+    const code = getAccessCodeForUser(userId);
     return ctx.reply(
       `👤 **HISOBINGIZ MA'LUMOTLARI:**\n\n` +
       `• ID: \`${displayId}\`\n` +
       `• Holati: **${u?.status || 'Noma\'lum'}**\n` +
       `• Tarif: **${u?.plan || 'none'}**\n` +
+      `• Kirish Kodi: \`${code}\`\n` +
       `• Qolgan imkoniyat: ${u?.remainingUses ? `${u.remainingUses} ta hujjat` : (u?.expiresAt || 'Cheksiz')}\n` +
       `• Ro'yxatdan o'tgan: ${u?.registeredAt || '-'}`,
       { parse_mode: 'Markdown' }
@@ -1640,7 +1764,7 @@ bot.on('message:text', async (ctx) => {
   }
 
   // =========================================================================
-  // C) AGAR ODDIY FOYDALANUVCHI VA RUXSATI YO'Q BO'LSA
+  // E) AGAR ODDIY FOYDALANUVCHI VA RUXSATI YO'Q BO'LSA
   // =========================================================================
   if (!isUserActive(userId, username)) {
     return ctx.reply(
@@ -1652,7 +1776,7 @@ bot.on('message:text', async (ctx) => {
   }
 
   // =========================================================================
-  // D) RUXSAT BERILGAN FOYDALANUVCHI MATN YUBORGANDA
+  // F) RUXSAT BERILGAN FOYDALANUVCHI MATN YUBORGANDA
   // =========================================================================
   db.userSessions.set(userId, text);
 
@@ -1671,5 +1795,22 @@ bot.on('message:text', async (ctx) => {
   );
 });
 
+// Telegram pastki chap burchagidagi "🌐 WebApp" tugmasini o'rnatish
+async function setupTelegramChatMenu() {
+  try {
+    await bot.api.setChatMenuButton({
+      menu_button: {
+        type: 'web_app',
+        text: '🌐 WebApp',
+        web_app: { url: WEBAPP_URL }
+      }
+    });
+    console.log("Chat Menu Button (pastki chapdagi WebApp tugmasi) o'rnatildi!");
+  } catch (e) {
+    console.log("Menu button sozlash:", e.message);
+  }
+}
+
 console.log("EduHujjat Ultra Standalone Bot Server ishga tushdi...");
+setupTelegramChatMenu();
 bot.start();

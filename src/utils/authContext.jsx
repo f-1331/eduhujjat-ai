@@ -1,14 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const OWNER_USERNAME = 'fayzbek1331';
+const SUPER_OWNER_ID = 6707839718;
 
 export const DEFAULT_PRICES = {
-  oneTime: 2000,     // 2,000 so'm / 1 ta hujjat
-  hourly: 3000,      // 3,000 so'm / 1 soat
-  daily: 5000,       // 5,000 so'm / 1 kun
-  weekly: 25000,     // 25,000 so'm / 1 hafta
-  monthly: 70000,    // 70,000 so'm / 1 oy
-  unlimited: 290000  // 290,000 so'm / cheksiz
+  oneTime: 2000,
+  twoTime: 4000,
+  fiveTime: 8000,
+  hourly: 3000,
+  twoHours: 5000,
+  threeHours: 7000,
+  daily: 5000,
+  weekly: 25000,
+  monthly: 70000,
+  unlimited: 290000
 };
 
 const AuthContext = createContext();
@@ -19,18 +24,20 @@ export function AuthProvider({ children }) {
       if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initDataUnsafe?.user) {
         return window.Telegram.WebApp.initDataUnsafe.user;
       }
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
     return {
-      id: 1331777,
+      id: 1,
+      realId: SUPER_OWNER_ID,
       username: 'fayzbek1331',
       first_name: 'Fayzbek',
       last_name: 'Owner'
     };
   });
 
-  const isActualOwner = currentUser?.username?.toLowerCase() === OWNER_USERNAME.toLowerCase();
+  const isActualOwner = 
+    currentUser?.id === 1 || 
+    currentUser?.id === SUPER_OWNER_ID || 
+    currentUser?.username?.toLowerCase() === OWNER_USERNAME.toLowerCase();
 
   const [activeRole, setActiveRole] = useState(() => {
     return isActualOwner ? 'OWNER' : 'USER';
@@ -44,26 +51,56 @@ export function AuthProvider({ children }) {
   const [admins, setAdmins] = useState(() => {
     const saved = localStorage.getItem('eduhujjat_admins');
     return saved ? JSON.parse(saved) : [
-      { id: 1, username: 'maktab_admin', name: 'Alisher Qodirov', role: 'ADMIN', addedAt: '2026-02-01', permissions: ['approve_users'] },
-      { id: 2, username: 'toshkent_inspektor', name: 'Zarina Rustamova', role: 'INSPECTOR', addedAt: '2026-02-05', permissions: ['view_only'] }
+      { id: 1, username: 'fayzbek1331', name: 'Fayzbek (Super Owner)', role: 'OWNER', addedAt: '2026-01-01', permissions: ['all'] },
+      { id: 2, username: 'maktab_admin', name: 'Alisher Qodirov', role: 'ADMIN', addedAt: '2026-02-01', permissions: ['approve_users'] }
     ];
   });
 
   const [usersList, setUsersList] = useState(() => {
     const saved = localStorage.getItem('eduhujjat_users');
     return saved ? JSON.parse(saved) : [
-      { id: 98124, name: 'Malika Karimova', username: 'malika_k', status: 'ACTIVE', plan: 'monthly', expiresAt: '2026-03-10', remainingUses: null, registeredAt: '2026-02-10' },
-      { id: 45123, name: 'Jasur Boboyev', username: 'jasur_teacher', status: 'PENDING', plan: 'none', expiresAt: null, remainingUses: 0, registeredAt: '2026-02-14' },
-      { id: 89012, name: 'Sardor Xolmatov', username: 'sardor_edu', status: 'ACTIVE', plan: 'hourly', expiresAt: '2026-02-14 23:59', remainingUses: null, registeredAt: '2026-02-14' },
-      { id: 77211, name: 'Azizbek Nodirov', username: 'aziz_edu', status: 'ACTIVE', plan: 'oneTime', expiresAt: null, remainingUses: 1, registeredAt: '2026-02-14' },
-      { id: 1331777, name: 'Fayzbek (Owner)', username: 'fayzbek1331', status: 'ACTIVE', plan: 'unlimited', expiresAt: '2099-12-31', remainingUses: 999999, registeredAt: '2026-01-01' }
+      { id: 1, realId: SUPER_OWNER_ID, name: 'Fayzbek (Super Owner)', username: 'fayzbek1331', status: 'ACTIVE', plan: 'unlimited', expiresAt: 'Cheksiz VIP', remainingUses: 999999, registeredAt: '2026-01-01' }
     ];
+  });
+
+  // Access Code bilan kirish holati
+  const [accessCodeInfo, setAccessCodeInfo] = useState(() => {
+    const saved = localStorage.getItem('eduhujjat_active_code');
+    if (!saved) return null;
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed.expiresAtTimestamp && Date.now() > parsed.expiresAtTimestamp) {
+        localStorage.removeItem('eduhujjat_active_code');
+        return null;
+      }
+      return parsed;
+    } catch(e) {
+      return null;
+    }
   });
 
   const [userAccessStatus, setUserAccessStatus] = useState(() => {
     if (isActualOwner) return 'ACTIVE';
+    if (accessCodeInfo) return 'ACTIVE';
     return 'PENDING';
   });
+
+  // Avtomatik muddati tugashini tekshirish (har 15 soniyada)
+  useEffect(() => {
+    const checkExpiry = () => {
+      if (isActualOwner) return;
+      if (accessCodeInfo && accessCodeInfo.expiresAtTimestamp) {
+        if (Date.now() > accessCodeInfo.expiresAtTimestamp) {
+          localStorage.removeItem('eduhujjat_active_code');
+          setAccessCodeInfo(null);
+          setUserAccessStatus('PENDING');
+          alert("⚠️ Diqqat: Sizning obuna va kirish kodingiz muddati tugadi! Iltimos, Telegram botimizdan obunani yangilang.");
+        }
+      }
+    };
+    const timer = setInterval(checkExpiry, 15000);
+    return () => clearInterval(timer);
+  }, [accessCodeInfo, isActualOwner]);
 
   useEffect(() => {
     localStorage.setItem('eduhujjat_prices', JSON.stringify(prices));
@@ -77,6 +114,52 @@ export function AuthProvider({ children }) {
     localStorage.setItem('eduhujjat_users', JSON.stringify(usersList));
   }, [usersList]);
 
+  // Kodni tekshirish funksiyasi
+  const verifyAccessCode = (inputCode) => {
+    const clean = String(inputCode).trim().toUpperCase();
+
+    // Master Owner Kodlari
+    if (clean === '1331' || clean === 'OWNER-VIP' || clean === '777777') {
+      const info = {
+        code: clean,
+        plan: 'unlimited',
+        name: 'Master VIP Foydalanuvchi',
+        expiresAtTimestamp: null,
+        enteredAt: new Date().toISOString()
+      };
+      localStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
+      setAccessCodeInfo(info);
+      setUserAccessStatus('ACTIVE');
+      return { success: true, message: "👑 Master VIP kod qabul qilindi! Cheksiz kirish faollashtirildi." };
+    }
+
+    // Bot generatsiya qilgan kodlar (EDU-XXXXXX)
+    if (clean.startsWith('EDU-') || /^\d{6}$/.test(clean)) {
+      const oneDayLater = Date.now() + 24 * 60 * 60 * 1000;
+      const info = {
+        code: clean,
+        plan: 'daily',
+        name: 'Faol Litsenziat',
+        expiresAtTimestamp: oneDayLater,
+        enteredAt: new Date().toISOString()
+      };
+      localStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
+      setAccessCodeInfo(info);
+      setUserAccessStatus('ACTIVE');
+      return { success: true, message: "✅ Kod muvaffaqiyatli tasdiqlandi! Tizimga xush kelibsiz." };
+    }
+
+    return { success: false, message: "❌ Noto'g'ri kod! Kodni Telegram botimiz (@eduhujjat_bot) dan '🔑 Saytga Kirish Kodi' tugmasi orqali oling." };
+  };
+
+  const logoutCode = () => {
+    localStorage.removeItem('eduhujjat_active_code');
+    setAccessCodeInfo(null);
+    if (!isActualOwner) {
+      setUserAccessStatus('PENDING');
+    }
+  };
+
   const addAdmin = (newAdmin) => {
     setAdmins(prev => [...prev, { ...newAdmin, id: Date.now(), addedAt: new Date().toISOString().split('T')[0] }]);
   };
@@ -89,12 +172,11 @@ export function AuthProvider({ children }) {
     setPrices(newPrices);
   };
 
-  // Foydalanuvchiga ruxsat berish (soatlik, 1 martalik, kunlik, oylik va h.k.)
   const approveUser = (userId, planType = 'monthly') => {
     let expiresAt = null;
     let remainingUses = null;
-
     const now = new Date();
+
     if (planType === 'oneTime') {
       remainingUses = 1;
       expiresAt = "1 ta hujjat";
@@ -116,13 +198,7 @@ export function AuthProvider({ children }) {
 
     setUsersList(prev => prev.map(u => {
       if (u.id === userId) {
-        return {
-          ...u,
-          status: 'ACTIVE',
-          plan: planType,
-          expiresAt,
-          remainingUses
-        };
+        return { ...u, status: 'ACTIVE', plan: planType, expiresAt, remainingUses };
       }
       return u;
     }));
@@ -161,7 +237,11 @@ export function AuthProvider({ children }) {
       approveUser,
       blockUser,
       hasAccess,
-      OWNER_USERNAME
+      verifyAccessCode,
+      logoutCode,
+      accessCodeInfo,
+      OWNER_USERNAME,
+      SUPER_OWNER_ID
     }}>
       {children}
     </AuthContext.Provider>
