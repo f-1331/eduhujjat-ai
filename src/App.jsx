@@ -55,7 +55,7 @@ function MainAppContent() {
     { id: 'ai', label: "🤖 EduAI Yordamchi", icon: Bot, color: 'text-indigo-400 font-bold' },
     { id: 'cleaner', label: t.modules.cleaner, icon: Sparkles, color: 'text-indigo-500' },
     { id: 'excel', label: t.modules.excel, icon: FileSpreadsheet, color: 'text-emerald-500' },
-    { id: 'powerpoint', label: t.modules.powerpoint, icon: Presentation, color: 'text-sky-500' },
+    { id: 'powerpoint', label: "🎨 Gamma AI Slayd", icon: Presentation, color: 'text-sky-500 font-bold' },
     { id: 'word', label: t.modules.word, icon: FileText, color: 'text-blue-500' },
     { id: 'orders', label: "Maktab Buyruqlari & Shartnoma", icon: FileBadge2, color: 'text-rose-500' },
     { id: 'analytics', label: "Test Diagnostika & Tahlil", icon: BarChart3, color: 'text-cyan-500' },

@@ -80,7 +80,8 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
       .text("⚡ Tezkor Yoqish").text("🔑 Saytga Kirish Kodi").row()
       .text("🤖 EduAI Yordamchi").text("👥 Foydalanuvchilar").row()
       .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
-      .text("📊 Excel Jadvallar").text("🖼 Slayd Yasash").row()
+      .text("📊 Excel Jadvallar").text("🎨 Gamma AI Taqdimot").row()
+      .text("📜 Faxriy Yorliq").text("🖼 Slayd Yasash").row()
       .text("💰 Narxlar").text("🛡 Adminlar").row()
       .text("📢 Ommaviy Xabar").text("📥 Bazani Yuklash (Excel)").row()
       .text("🎭 Rejimni Almashtirish").text("📊 Statistika").row()
@@ -92,6 +93,7 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
     return new Keyboard()
       .text("🔑 Saytga Kirish Kodi").text("🤖 EduAI Yordamchi").row()
       .text("📑 Hujjat Fabrikasi").text("📄 Demo Ma'lumot").row()
+      .text("📊 Excel Jadvallar").text("🎨 Gamma AI Taqdimot").row()
       .text("🌐 WebApp Ochish").text("🔄 Yangilash /start")
       .resized()
       .persistent();
@@ -137,6 +139,34 @@ bot.command('start', async (ctx) => {
   return ctx.reply(`🔒 **EduHujjat AI Tizimiga xush kelibsiz!**`, { reply_markup: kb });
 });
 
+// Inline Callbacks (Device approval & Gamma presets)
+bot.on('callback_query:data', async (ctx) => {
+  const data = ctx.callbackQuery.data;
+
+  if (data.startsWith('dev_allow_')) {
+    await ctx.answerCallbackQuery({ text: "✅ Yangi qurilmaga ruxsat berildi!" });
+    return ctx.editMessageText(
+      (ctx.callbackQuery.message?.text || '') +
+      `\n\n━━━━━━━━━━━━━━━━━━━━━━\n✅ **RUXSAT BERILDI!**\nAdmin yangi qurilmaga ruxsat berdi. Eski qurilma sessiyasi bekor qilindi.`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  if (data.startsWith('dev_deny_')) {
+    await ctx.answerCallbackQuery({ text: "❌ Kirish rad etildi!", show_alert: true });
+    return ctx.editMessageText(
+      (ctx.callbackQuery.message?.text || '') +
+      `\n\n━━━━━━━━━━━━━━━━━━━━━━\n❌ **RAD ETILDI!**\nAdmin yangi qurilmadan kirishni rad etdi.`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  if (data.startsWith('gamma_preset_')) {
+    await ctx.answerCallbackQuery({ text: "Gamma slayd yaratilmoqda..." });
+    return ctx.reply("🎨 **Gamma AI taqdimoti:** WebApp orqali to'liq tahrirlash va slayd namoyish qilish uchun pastdagi WebApp tugmasini bosing!");
+  }
+});
+
 bot.on('message:text', async (ctx) => {
   const text = ctx.message.text.trim();
   const userId = ctx.from.id;
@@ -158,6 +188,22 @@ bot.on('message:text', async (ctx) => {
     } else {
       return ctx.reply(`🔒 **Sizda faol obuna mavjud emas!** Avval to'lov qiling va tasdiqlangandan so'ng kirish kodini olasiz.`);
     }
+  }
+
+  if (text === '🎨 Gamma AI Taqdimot' || text.startsWith('/gamma')) {
+    const gammaKb = new InlineKeyboard()
+      .text("🧬 Fotosintez", "gamma_preset_fotosintez")
+      .text("🏛 Amir Temur", "gamma_preset_temur").row()
+      .text("🤖 Sun'iy Intellekt", "gamma_preset_ai")
+      .text("📐 Pifagor Teoremasi", "gamma_preset_pifagor").row()
+      .url("🌐 WebAppda Gamma Slayd Ochish", `${WEBAPP_URL}`);
+
+    return ctx.reply(
+      `🎨 **GAMMA & GENSPARK AI TAQDIMOT STUDIYASI:**\n\n` +
+      `Zamonaviy kartochkali, to'q fonli va interaktiv taqdimotlar!\n` +
+      `Mavzu yozish uchun: \`/gamma Mavzu nomi\` yuboring yoki quyidagi tayyor mavzuni tanlang:`,
+      { reply_markup: gammaKb, parse_mode: 'Markdown' }
+    );
   }
 
   if (text === '🤖 EduAI Yordamchi' || text.startsWith('/ai')) {

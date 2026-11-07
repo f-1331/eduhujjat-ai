@@ -10,6 +10,7 @@ import mammoth from 'mammoth';
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
+import http from 'http';
 
 // 1. .env faylini yuklash
 try {
@@ -99,7 +100,9 @@ function loadDatabase() {
       admins: Array.isArray(parsed.admins) ? parsed.admins : ['fayzbek1331'],
       ownerChatId: parsed.ownerChatId || SUPER_OWNER_ID,
       users: mergedUsers,
-      simulatedRoles: parsed.simulatedRoles || {}
+      simulatedRoles: parsed.simulatedRoles || {},
+      deviceAuthorizations: parsed.deviceAuthorizations || {},
+      deviceBindings: parsed.deviceBindings || {}
     };
   } catch (err) {
     console.error("DB o'qishda xatolik:", err);
@@ -115,6 +118,8 @@ const db = {
   users: new Map(Object.entries(memoryDb.users).map(([k, v]) => [parseInt(k, 10), v])),
   userSessions: new Map(),
   simulatedRoles: new Map(Object.entries(memoryDb.simulatedRoles).map(([k, v]) => [parseInt(k, 10), v])),
+  deviceAuthorizations: memoryDb.deviceAuthorizations || {},
+  deviceBindings: memoryDb.deviceBindings || {},
   rateLimits: new Map()
 };
 
@@ -126,7 +131,9 @@ function saveDatabase() {
       admins: Array.from(db.admins),
       ownerChatId: db.ownerChatId,
       users: Object.fromEntries(db.users),
-      simulatedRoles: Object.fromEntries(db.simulatedRoles)
+      simulatedRoles: Object.fromEntries(db.simulatedRoles),
+      deviceAuthorizations: db.deviceAuthorizations || {},
+      deviceBindings: db.deviceBindings || {}
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(serialized, null, 2), 'utf-8');
   } catch (err) {
@@ -561,6 +568,160 @@ async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti
   return await pptx.write({ outputType: 'nodebuffer' });
 }
 
+async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va biosfera", author = "SmartOffice EduAI") {
+  const pptx = new pptxgen();
+  pptx.layout = 'LAYOUT_16x9';
+
+  // Obsidian Dark Theme
+  const bg = '090D16';
+  const cardBg = '131B2E';
+  const accent = '38BDF8'; // Cyan
+  const accent2 = 'A855F7'; // Purple
+  const textColor = 'F8FAFC';
+  const subtextColor = '94A3B8';
+  const cardBorder = '1E293B';
+
+  // Slayd 1: Titul Slaydi (Hero)
+  const slide1 = pptx.addSlide();
+  slide1.background = { color: bg };
+  slide1.addShape(pptx.ShapeType.rect, {
+    x: 0.8, y: 0.9, w: 8.4, h: 5.6,
+    fill: { color: cardBg }, line: { color: cardBorder, width: 1.5 }, rectRadius: 0.15
+  });
+  slide1.addShape(pptx.ShapeType.rect, {
+    x: 1.2, y: 1.4, w: 3.2, h: 0.45,
+    fill: { color: bg }, line: { color: accent, width: 1 }, rectRadius: 0.08
+  });
+  slide1.addText("GAMMA & GENSPARK AI", {
+    x: 1.2, y: 1.4, w: 3.2, h: 0.45, fontSize: 11, bold: true, color: accent, align: 'center'
+  });
+  slide1.addText(topic.toUpperCase(), {
+    x: 1.2, y: 2.1, w: 7.6, h: 1.8, fontSize: 30, bold: true, color: textColor
+  });
+  slide1.addText("Zamonaviy ta'lim va interaktiv ilmiy tahlil taqdimoti", {
+    x: 1.2, y: 4.1, w: 7.6, h: 0.8, fontSize: 15, color: subtextColor
+  });
+  slide1.addText(`👤 Taqdimotchi: ${author}  •  O'zbekiston Ta'lim Tizimi`, {
+    x: 1.2, y: 5.3, w: 7.6, h: 0.5, fontSize: 12, color: accent, bold: true
+  });
+  slide1.addNotes(`Assalomu alaykum! Bugungi taqdimotimiz "${topic}" mavzusiga bag'ishlanadi.`);
+
+  // Slayd 2: Kontekst va Muammo (Split)
+  const slide2 = pptx.addSlide();
+  slide2.background = { color: bg };
+  slide2.addText("Mavzuning Dolzarbligi va Asosiy Qiyinchiliklar", {
+    x: 0.8, y: 0.7, w: 8.4, h: 0.6, fontSize: 22, bold: true, color: textColor
+  });
+  slide2.addShape(pptx.ShapeType.rect, {
+    x: 0.8, y: 1.5, w: 4.05, h: 5.0, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.12
+  });
+  slide2.addText("📌 Joriy Holat va Qiyinchiliklar", {
+    x: 1.1, y: 1.8, w: 3.45, h: 0.45, fontSize: 14, bold: true, color: accent
+  });
+  slide2.addText("• An'anaviy usullarning past samaradorligi\n\n• Nazariya va amaliyot o'rtasidagi uzilish\n\n• O'quvchilar diqqatini jalb qilishdagi qiyinchilik", {
+    x: 1.1, y: 2.4, w: 3.45, h: 3.7, fontSize: 12, color: subtextColor
+  });
+  slide2.addShape(pptx.ShapeType.rect, {
+    x: 5.15, y: 1.5, w: 4.05, h: 5.0, fill: { color: cardBg }, line: { color: accent2, width: 1 }, rectRadius: 0.12
+  });
+  slide2.addText("💡 Yangi Raqamli Yechim", {
+    x: 5.45, y: 1.8, w: 3.45, h: 0.45, fontSize: 14, bold: true, color: accent2
+  });
+  slide2.addText("• Interaktiv vizualizatsiya va Gamma AI modellari\n\n• Bosqichma-bosqich mantiqiy modullar\n\n• Samaradorlikni 2 barobarga oshirish", {
+    x: 5.45, y: 2.4, w: 3.45, h: 3.7, fontSize: 12, color: subtextColor
+  });
+
+  // Slayd 3: 3 Ustun (Pillars Grid)
+  const slide3 = pptx.addSlide();
+  slide3.background = { color: bg };
+  slide3.addText("Asosiy Ilmiy va Amaliy Tamoyillar", {
+    x: 0.8, y: 0.7, w: 8.4, h: 0.5, fontSize: 22, bold: true, color: textColor
+  });
+  const pillars = [
+    { num: "01", t: "Nazariy Baza", d: "Fundamental tamoyillar va tabiiy qonuniyatlarning o'zaro bog'liqligi." },
+    { num: "02", t: "Amaliy Jarayon", d: "Real tajribalar, laboratoriya tahlillari va sinov ma'lumotlari." },
+    { num: "03", t: "Natija & Xulosa", d: "Erishilgan ko'rsatkichlar va kelgusi rivojlanish istiqbollari." }
+  ];
+  pillars.forEach((p, idx) => {
+    const xPos = 0.8 + (idx * 2.9);
+    slide3.addShape(pptx.ShapeType.rect, {
+      x: xPos, y: 1.6, w: 2.65, h: 4.9, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.12
+    });
+    slide3.addText(p.num, { x: xPos + 0.3, y: 1.9, w: 2.05, h: 0.6, fontSize: 28, bold: true, color: accent });
+    slide3.addText(p.t, { x: xPos + 0.3, y: 2.7, w: 2.05, h: 0.6, fontSize: 16, bold: true, color: textColor });
+    slide3.addText(p.d, { x: xPos + 0.3, y: 3.5, w: 2.05, h: 2.6, fontSize: 12, color: subtextColor });
+  });
+
+  // Slayd 4: Chuqur Tahlil & Metrika
+  const slide4 = pptx.addSlide();
+  slide4.background = { color: bg };
+  slide4.addText("Asosiy Ko'rsatkichlar va Tahliliy Metrika", {
+    x: 0.8, y: 0.7, w: 8.4, h: 0.6, fontSize: 22, bold: true, color: textColor
+  });
+  slide4.addShape(pptx.ShapeType.rect, {
+    x: 0.8, y: 1.5, w: 3.2, h: 5.0, fill: { color: cardBg }, line: { color: accent, width: 1.5 }, rectRadius: 0.12
+  });
+  slide4.addText("98.4%", { x: 1.0, y: 2.3, w: 2.8, h: 1.2, fontSize: 50, bold: true, color: accent, align: 'center' });
+  slide4.addText("Samaradorlik va O'zlashtirish", { x: 1.0, y: 3.8, w: 2.8, h: 0.8, fontSize: 13, bold: true, color: textColor, align: 'center' });
+  slide4.addShape(pptx.ShapeType.rect, {
+    x: 4.3, y: 1.5, w: 4.9, h: 5.0, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.12
+  });
+  slide4.addText("🔍 Tizimli Yutuqlar va Natijalar:", {
+    x: 4.6, y: 1.9, w: 4.3, h: 0.45, fontSize: 15, bold: true, color: textColor
+  });
+  slide4.addText("✓  Mavzuni to'liq tushunish va eslab qolish 3 barobarga ortdi\n\n✓  Interaktiv savol-javoblarda barcha o'quvchilar faol qatnashdi\n\n✓  Ilmiy qonuniyatlar amaliy misollar bilan to'liq mustahkamlandi", {
+    x: 4.6, y: 2.6, w: 4.3, h: 3.5, fontSize: 12, color: subtextColor
+  });
+
+  // Slayd 5: Roadmap / Timeline
+  const slide5 = pptx.addSlide();
+  slide5.background = { color: bg };
+  slide5.addText("Amalga Oshirish Bosqichlari (Timeline)", {
+    x: 0.8, y: 0.7, w: 8.4, h: 0.6, fontSize: 22, bold: true, color: textColor
+  });
+  const steps = [
+    { step: "1-QADAM", t: "O'rganish & Reja", d: "Birlamchi manbalar va mavzu maqsadlarini belgilash." },
+    { step: "2-QADAM", t: "Amaliy Sinov", d: "Laboratoriya tajribalari va dars mashg'ulotlarini o'tkazish." },
+    { step: "3-QADAM", t: "Yakuniy Baholash", d: "Natijalarni tahlil qilish va reytingni shakllantirish." }
+  ];
+  steps.forEach((st, idx) => {
+    const yPos = 1.6 + (idx * 1.65);
+    slide5.addShape(pptx.ShapeType.rect, {
+      x: 0.8, y: yPos, w: 8.4, h: 1.4, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.1
+    });
+    slide5.addText(st.step, {
+      x: 1.1, y: yPos + 0.3, w: 1.8, h: 0.4, fontSize: 11, bold: true, color: accent
+    });
+    slide5.addText(st.t, {
+      x: 3.1, y: yPos + 0.25, w: 5.8, h: 0.4, fontSize: 14, bold: true, color: textColor
+    });
+    slide5.addText(st.d, {
+      x: 3.1, y: yPos + 0.7, w: 5.8, h: 0.55, fontSize: 11, color: subtextColor
+    });
+  });
+
+  // Slayd 6: Xulosa
+  const slide6 = pptx.addSlide();
+  slide6.background = { color: bg };
+  slide6.addShape(pptx.ShapeType.rect, {
+    x: 0.8, y: 0.9, w: 8.4, h: 5.6, fill: { color: cardBg }, line: { color: cardBorder, width: 1.5 }, rectRadius: 0.15
+  });
+  slide6.addText("XULOSA VA ASOSIY TAKLIFLAR", {
+    x: 1.2, y: 1.3, w: 7.6, h: 0.6, fontSize: 24, bold: true, color: accent
+  });
+  slide6.addShape(pptx.ShapeType.rect, {
+    x: 1.2, y: 2.1, w: 7.6, h: 1.2, fill: { color: bg }, line: { color: accent2, width: 1 }, rectRadius: 0.1
+  });
+  slide6.addText(`"Ta'limda eng buyuk muvaffaqiyat — murakkab mavzularni sodda va go'zal tushuntira olishdir."`, {
+    x: 1.4, y: 2.2, w: 7.2, h: 1.0, fontSize: 13, italic: true, color: textColor, align: 'center'
+  });
+  slide6.addText("★  Ushbu bilimlar keyingi ilmiy va amaliy faoliyat uchun poydevor bo'ladi.\n\n★  Gamma AI texnologiyasi zamonaviy dars sifatini yangi darajaga olib chiqadi.\n\n★  E'tiboringiz va qimmatli vaqtingiz uchun katta rahmat!", {
+    x: 1.2, y: 3.6, w: 7.6, h: 2.4, fontSize: 13, color: subtextColor
+  });
+
+  return await pptx.write({ outputType: 'nodebuffer' });
+}
+
 async function generateTestWordBuffer(rawText) {
   const lines = rawText.split(/\r?\n/).filter(l => l.trim().length > 5);
   const sampleTopic = lines[0] || "O'zbekiston tarixi va ona tili";
@@ -624,8 +785,8 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
       .text("⚡ Tezkor Yoqish").text("🔑 Saytga Kirish Kodi").row()
       .text("🤖 EduAI Yordamchi").text("👥 Foydalanuvchilar").row()
       .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
-      .text("📊 Excel Jadvallar").text("🖼 Slayd Yasash").row()
-      .text("📜 Faxriy Yorliq").text("🔀 Qizlar/O'g'illar").row()
+      .text("📊 Excel Jadvallar").text("🎨 Gamma AI Taqdimot").row()
+      .text("📜 Faxriy Yorliq").text("🖼 Slayd Yasash").row()
       .text("💰 Narxlar").text("🛡 Adminlar").row()
       .text("📢 Ommaviy Xabar").text("📥 Bazani Yuklash (Excel)").row()
       .text("🎭 Rejimni Almashtirish").text("📊 Statistika").row()
@@ -639,7 +800,7 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
       .text("⚡ Tezkor Yoqish").text("🔑 Saytga Kirish Kodi").row()
       .text("🤖 EduAI Yordamchi").text("👥 Foydalanuvchilar").row()
       .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
-      .text("📊 Excel Jadvallar").text("🖼 Slayd Yasash").row()
+      .text("📊 Excel Jadvallar").text("🎨 Gamma AI Taqdimot").row()
       .text("💰 Narxlar").text("📊 Statistika").row()
       .text("🎭 Rejimni Qaytarish (Owner)").text("🌐 WebApp Ochish").row()
       .text("🔄 Yangilash /start")
@@ -661,7 +822,7 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
     return new Keyboard()
       .text("🔑 Saytga Kirish Kodi").text("🤖 EduAI Yordamchi").row()
       .text("📑 Hujjat Fabrikasi").text("📄 Demo Ma'lumot").row()
-      .text("📊 Excel Jadvallar").text("🖼 Slayd Yasash").row()
+      .text("📊 Excel Jadvallar").text("🎨 Gamma AI Taqdimot").row()
       .text("ℹ️ Mening Hisobim").text("💳 Muddatni Uzaytirish").row()
       .text("🎭 Rejimni Qaytarish (Owner)").text("🌐 WebApp Ochish").row()
       .text("🔄 Yangilash /start")
@@ -935,6 +1096,66 @@ bot.on('message:document', async (ctx) => {
 bot.on('callback_query:data', async (ctx) => {
   const data = ctx.callbackQuery.data;
   const userId = ctx.from.id;
+
+  // 0. QURILMANI TASDIQLASH (Single-Device Authorization Callback)
+  if (data.startsWith('dev_allow_')) {
+    const reqId = data.replace('dev_allow_', '');
+    db.deviceAuthorizations = db.deviceAuthorizations || {};
+    db.deviceAuthorizations[reqId] = { status: 'APPROVED', time: Date.now() };
+    saveDatabase();
+
+    await ctx.answerCallbackQuery({ text: "✅ Ruxsat berildi!" });
+    try {
+      await ctx.editMessageText(
+        (ctx.callbackQuery.message?.text || '') +
+        `\n\n━━━━━━━━━━━━━━━━━━━━━━\n✅ **RUXSAT BERILDI!**\nAdmin (@${ctx.from?.username || ctx.from?.first_name}) yangi qurilmaga ruxsat berdi. Oldingi qurilma sessiyasi avtomatik bekor qilindi.`,
+        { parse_mode: 'Markdown' }
+      );
+    } catch(e){}
+    return;
+  }
+
+  if (data.startsWith('dev_deny_')) {
+    const reqId = data.replace('dev_deny_', '');
+    db.deviceAuthorizations = db.deviceAuthorizations || {};
+    db.deviceAuthorizations[reqId] = { status: 'DENIED', time: Date.now() };
+    saveDatabase();
+
+    await ctx.answerCallbackQuery({ text: "❌ Kirish rad etildi!", show_alert: true });
+    try {
+      await ctx.editMessageText(
+        (ctx.callbackQuery.message?.text || '') +
+        `\n\n━━━━━━━━━━━━━━━━━━━━━━\n❌ **RAD ETILDI!**\nAdmin ushbu yangi qurilmadan kirishni rad etdi.`,
+        { parse_mode: 'Markdown' }
+      );
+    } catch(e){}
+    return;
+  }
+
+  // GAMMA AI TAYYOR PRESET MAVZULAR
+  if (data.startsWith('gamma_preset_')) {
+    const topicKey = data.replace('gamma_preset_', '');
+    const presetTopics = {
+      fotosintez: "Fotosintez jarayoni va o'simliklar biosferasi",
+      temur: "Amir Temur davlati va harbiy strategiyasi",
+      ai: "Sun'iy Intellekt va Raqamli Ta'lim 2026",
+      pifagor: "Pifagor teoremasi va fazoviy geometriya",
+      maktab: "Zamonaviy Maktab Monitoringi va Raqamli Davomat"
+    };
+    const chosenTopic = presetTopics[topicKey] || "Fotosintez jarayoni va biosfera";
+    await ctx.answerCallbackQuery({ text: "Gamma slayd yaratilmoqda..." });
+    const waitMsg = await ctx.reply(`🎨 **"${chosenTopic}" bo'yicha Gamma AI taqdimot tayyorlanmoqda...**\n(Kartochkalar, 3 ustun, metrika va ma'ruzachi nutqi bilan)`);
+    try {
+      const buffer = await generateGammaPresentationBuffer(chosenTopic, ctx.from?.first_name || "SmartOffice EduAI");
+      await ctx.replyWithDocument(new InputFile(buffer, `${topicKey}_Gamma_Taqdimot.pptx`), {
+        caption: `🎨 **Gamma & Genspark AI taqdimoti tayyor!** (.pptx)\n\n📌 Mavzu: **${chosenTopic}**\n✨ Format: 16:9 Widescreen, Obsidian Dark dizaynda kartochkali slaydlar.`
+      });
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    } catch(err) {
+      await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
+    }
+    return;
+  }
 
   if (data === 'switch_roles') {
     if (!isRealSuperOwner(ctx)) return ctx.answerCallbackQuery({ text: "Faqat Super Owner uchun!" });
@@ -1558,28 +1779,44 @@ bot.on('message:text', async (ctx) => {
     );
   }
 
-  if (text === '🖼 Slayd Yasash') {
+  if (text === '🖼 Slayd Yasash' || text === '🎨 Gamma AI Taqdimot') {
+    const gammaKb = new InlineKeyboard()
+      .text("🧬 Fotosintez", "gamma_preset_fotosintez")
+      .text("🏛 Amir Temur", "gamma_preset_temur").row()
+      .text("🤖 Sun'iy Intellekt", "gamma_preset_ai")
+      .text("📐 Pifagor Teoremasi", "gamma_preset_pifagor").row()
+      .text("📊 Maktab Monitoringi", "gamma_preset_maktab").row()
+      .url("🌐 WebAppda Gamma Slayd Ochish", `${WEBAPP_URL}`);
+
     return ctx.reply(
-      `🖼 **POWERPOINT SLAYD GENERATORI (.pptx):**\n\n` +
-      `Mavzu yoki matn yuboring, tizim zamonaviy to'q rangli (dark slate) sarlavha slaydi va kartochkalar bilan tayyor .pptx fayl yasab beradi!`,
-      { reply_markup: getActionInlineKeyboard() }
+      `🎨 **GAMMA & GENSPARK AI TAQDIMOT GENERATORI (.pptx):**\n\n` +
+      `Gamma.app va Genspark uslubida zamonaviy to'q fonli (Obsidian Dark), kartochkali va ma'ruzachi nutqi (Speaker Notes) bilan taqdimotlar tayyorlash!\n\n` +
+      `Quyidagi tayyor mavzulardan birini tanlang yoki o'z mavzungiz bo'yicha yasash uchun:\n` +
+      `👉 \`/gamma Mavzu nomi\` deb yozing!\n` +
+      `Masalan: \`/gamma Amir Temur davlati\` yoki \`/gamma Fotosintez jarayoni\``,
+      { reply_markup: gammaKb, parse_mode: 'Markdown' }
     );
+  }
+
+  if (text.startsWith('/gamma')) {
+    const customTopic = text.replace('/gamma', '').trim() || "Zamonaviy Fan va Axborot Texnologiyalari";
+    const waitMsg = await ctx.reply(`🎨 **"${customTopic}" bo'yicha Gamma AI taqdimot yaratilmoqda...**\n(Kartochkali slaydlar va ma'ruzachi nutqi bilan)`);
+    try {
+      const buffer = await generateGammaPresentationBuffer(customTopic, ctx.from?.first_name || "SmartOffice EduAI");
+      await ctx.replyWithDocument(new InputFile(buffer, `Gamma_Taqdimot_${Date.now()}.pptx`), {
+        caption: `🎨 **Gamma AI taqdimotingiz tayyor!** (.pptx)\n\n📌 Mavzu: **${customTopic}**\n✨ Format: 16:9 Widescreen, Obsidian Dark kartochkali slaydlar.`
+      });
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    } catch(err) {
+      await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
+    }
+    return;
   }
 
   if (text === '📜 Faxriy Yorliq') {
     const buf = await generateOfficialOrderWordBuffer("Faxriy Yorliq va Sertifikat");
     return ctx.replyWithDocument(new InputFile(buf, "Faxriy_Yorliq_EduHujjat.docx"), {
       caption: "🏆 **QR-kodli namunaviy Faxriy Yorliq hujjati tayyor!** (.docx)"
-    });
-  }
-
-  if (text === "🔀 Qizlar/O'g'illar") {
-    const demo = db.userSessions.get(userId) || 
-      "1. Karimova Dildora Baxtiyor qizi 14.05.2008\n2. Abdullayev Jasur Botir o'g'li 02.11.2007\n3. Toshmatova Rayhon Alisher qizi 30.08.2008\n4. Omonov Sardor Qobilovich 25.01.2008";
-    const students = parseStudentsFromText(demo);
-    const buf = generateGenderExcelBuffer(students);
-    return ctx.replyWithDocument(new InputFile(buf, "Qizlar_va_Ogillar_Alohida_Jadvali.xlsx"), {
-      caption: "🔀 **Qizlar va o'g'il bolalar alohida jadvallarga ajratildi!** (.xlsx)"
     });
   }
 
@@ -1810,6 +2047,85 @@ async function setupTelegramChatMenu() {
     console.log("Menu button sozlash:", e.message);
   }
 }
+
+// =========================================================================
+// 10. LOCAL DEVICE AUTH HTTP API (PORT 3001)
+// =========================================================================
+const apiServer = http.createServer((req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    return res.end();
+  }
+
+  const host = req.headers.host || 'localhost:3001';
+  const url = new URL(req.url, `http://${host}`);
+
+  if (url.pathname === '/api/device-auth' && req.method === 'GET') {
+    const reqId = url.searchParams.get('reqId');
+    const code = url.searchParams.get('code');
+    const deviceId = url.searchParams.get('deviceId');
+
+    db.deviceAuthorizations = db.deviceAuthorizations || {};
+    db.deviceBindings = db.deviceBindings || {};
+
+    if (code && deviceId) {
+      const bound = db.deviceBindings[code];
+      if (!bound) {
+        return res.end(JSON.stringify({ valid: true, boundDevice: deviceId }));
+      }
+      return res.end(JSON.stringify({ valid: bound === deviceId, boundDevice: bound }));
+    }
+
+    if (reqId) {
+      const auth = db.deviceAuthorizations[reqId];
+      return res.end(JSON.stringify({ status: auth?.status || 'PENDING' }));
+    }
+    return res.end(JSON.stringify({ ok: true }));
+  }
+
+  if (url.pathname === '/api/device-auth' && req.method === 'POST') {
+    let bodyStr = '';
+    req.on('data', chunk => { bodyStr += chunk; });
+    req.on('end', () => {
+      try {
+        const body = JSON.parse(bodyStr || '{}');
+        const { action, reqId, code, deviceId, pin } = body;
+        db.deviceAuthorizations = db.deviceAuthorizations || {};
+        db.deviceBindings = db.deviceBindings || {};
+
+        if (action === 'request_login') {
+          db.deviceAuthorizations[reqId] = { reqId, code, deviceId, pin, status: 'PENDING' };
+          saveDatabase();
+          return res.end(JSON.stringify({ success: true, reqId }));
+        }
+
+        if (action === 'bind_device') {
+          db.deviceBindings[code] = deviceId;
+          saveDatabase();
+          return res.end(JSON.stringify({ success: true, bound: true }));
+        }
+
+        return res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(500);
+        return res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  res.writeHead(404);
+  res.end(JSON.stringify({ notFound: true }));
+});
+
+const API_PORT = process.env.API_PORT || 3001;
+apiServer.listen(API_PORT, () => {
+  console.log(`🌐 Local Device Auth HTTP API running on port ${API_PORT}`);
+});
 
 console.log("EduHujjat Ultra Standalone Bot Server ishga tushdi...");
 setupTelegramChatMenu();

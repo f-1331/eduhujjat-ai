@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const OWNER_USERNAME = 'fayzbek1331';
 const SUPER_OWNER_ID = 6707839718;
+const BOT_TOKEN = '9001772632:AAEe8hXmKAhWwE7VHK1Vd8FMia6TcqYI0Mk';
 
 export const DEFAULT_PRICES = {
   oneTime: 2000,
@@ -16,9 +17,42 @@ export const DEFAULT_PRICES = {
   unlimited: 290000
 };
 
+// 1. Qurilmani identifikatsiya qilish va yagona qurilma xavfsizligi
+export function getOrCreateDeviceId() {
+  if (typeof window === 'undefined') return 'server_node';
+  let id = localStorage.getItem('eduhujjat_device_id');
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+    localStorage.setItem('eduhujjat_device_id', id);
+  }
+  return id;
+}
+
+export function getDeviceInfo() {
+  if (typeof window === 'undefined') return 'Noma\'lum Qurilma';
+  const ua = navigator.userAgent || '';
+  let os = 'Windows PC';
+  if (/iPhone|iPad|iPod/i.test(ua)) os = 'iPhone / iOS';
+  else if (/Android/i.test(ua)) os = 'Android Qurilma';
+  else if (/Macintosh|Mac OS X/i.test(ua)) os = 'Apple Mac';
+  else if (/Linux/i.test(ua)) os = 'Linux';
+
+  let browser = 'Brauzer';
+  if (/Telegram/i.test(ua)) browser = 'Telegram WebApp';
+  else if (/Chrome/i.test(ua)) browser = 'Chrome';
+  else if (/Safari/i.test(ua)) browser = 'Safari';
+  else if (/Firefox/i.test(ua)) browser = 'Firefox';
+  else if (/Edge/i.test(ua)) browser = 'Edge';
+
+  return `${os} (${browser})`;
+}
+
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  const currentDeviceId = getOrCreateDeviceId();
+  const deviceInfo = getDeviceInfo();
+
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initDataUnsafe?.user) {
@@ -63,7 +97,7 @@ export function AuthProvider({ children }) {
     ];
   });
 
-  // Access Code bilan kirish holati
+  // Access Code va unga bog'langan qurilma
   const [accessCodeInfo, setAccessCodeInfo] = useState(() => {
     const saved = localStorage.getItem('eduhujjat_active_code');
     if (!saved) return null;
@@ -85,22 +119,42 @@ export function AuthProvider({ children }) {
     return 'PENDING';
   });
 
-  // Avtomatik muddati tugashini tekshirish (har 15 soniyada)
+  // Bitta kod orqali faqat 1 ta qurilma ishlashini muntazam nazorat qilish (Single-Device Heartbeat)
   useEffect(() => {
-    const checkExpiry = () => {
-      if (isActualOwner) return;
-      if (accessCodeInfo && accessCodeInfo.expiresAtTimestamp) {
-        if (Date.now() > accessCodeInfo.expiresAtTimestamp) {
-          localStorage.removeItem('eduhujjat_active_code');
-          setAccessCodeInfo(null);
-          setUserAccessStatus('PENDING');
-          alert("⚠️ Diqqat: Sizning obuna va kirish kodingiz muddati tugadi! Iltimos, Telegram botimizdan obunani yangilang.");
+    if (isActualOwner || !accessCodeInfo?.code) return;
+
+    const enforceSingleDevice = async () => {
+      const code = accessCodeInfo.code;
+      // 1. Mahalliy tekshirish
+      const boundDev = localStorage.getItem(`eduhujjat_bound_${code}`);
+      if (boundDev && boundDev !== currentDeviceId) {
+        logoutCode();
+        alert("⚠️ DIQQAT: Ushbu kirish kodi bilan boshqa yangi qurilmadan tizimga kirildi!\n\nQoidaga ko'ra, bitta kod orqali bir vaqtda faqat 1 ta qurilma ishlashi mumkin. Joriy qurilmadagi sessiyangiz bekor qilindi.");
+        return;
+      }
+
+      // 2. Server / API tekshirish (agar server mavjud bo'lsa)
+      try {
+        const res = await fetch(`/api/device-auth?code=${encodeURIComponent(code)}&deviceId=${encodeURIComponent(currentDeviceId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.valid === false) {
+            logoutCode();
+            alert("⚠️ DIQQAT: Sizning kodingiz bilan boshqa yangi qurilmadan kirildi!\n\nBitta kod bilan faqat 1 ta qurilma ishlay oladi. Sessiyangiz tugatildi.");
+          }
         }
+      } catch (e) {}
+
+      // 3. Muddati tugaganini tekshirish
+      if (accessCodeInfo.expiresAtTimestamp && Date.now() > accessCodeInfo.expiresAtTimestamp) {
+        logoutCode();
+        alert("⚠️ Diqqat: Sizning obuna va kirish kodingiz muddati tugadi! Iltimos, Telegram botimizdan yangilang.");
       }
     };
-    const timer = setInterval(checkExpiry, 15000);
+
+    const timer = setInterval(enforceSingleDevice, 10000);
     return () => clearInterval(timer);
-  }, [accessCodeInfo, isActualOwner]);
+  }, [accessCodeInfo, currentDeviceId, isActualOwner]);
 
   useEffect(() => {
     localStorage.setItem('eduhujjat_prices', JSON.stringify(prices));
@@ -114,42 +168,222 @@ export function AuthProvider({ children }) {
     localStorage.setItem('eduhujjat_users', JSON.stringify(usersList));
   }, [usersList]);
 
-  // Kodni tekshirish funksiyasi
-  const verifyAccessCode = (inputCode) => {
+  // YANGI QURILMADAN KIRISH VA TASDIQLASH TIZIMI (Single-Device Access Flow)
+  const requestDeviceAccess = async (inputCode) => {
     const clean = String(inputCode).trim().toUpperCase();
 
-    // Master Owner Kodlari
+    // 1. MASTER OWNER KODLARI (Tezkor kirish va bildirishnoma)
     if (clean === '1331' || clean === 'OWNER-VIP' || clean === '777777') {
       const info = {
         code: clean,
+        deviceId: currentDeviceId,
+        deviceInfo,
         plan: 'unlimited',
-        name: 'Master VIP Foydalanuvchi',
+        name: 'Master VIP (Super Owner)',
         expiresAtTimestamp: null,
         enteredAt: new Date().toISOString()
       };
       localStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
+      localStorage.setItem(`eduhujjat_bound_${clean}`, currentDeviceId);
       setAccessCodeInfo(info);
       setUserAccessStatus('ACTIVE');
-      return { success: true, message: "👑 Master VIP kod qabul qilindi! Cheksiz kirish faollashtirildi." };
+
+      // Super Ownerga xavfsizlik bildirishnomasi
+      try {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: SUPER_OWNER_ID,
+            text: `👑 **SUPER OWNER KIRISHI:**\n\nSiz yangi qurilmadan (\`${deviceInfo}\`) Master VIP kod orqali saytga kirdingiz.\n⏰ Vaqt: ${new Date().toLocaleTimeString('uz-UZ')}`,
+            parse_mode: 'Markdown'
+          })
+        });
+      } catch(e) {}
+
+      return { success: true, instant: true, message: "👑 Master VIP kod qabul qilindi! Cheksiz tizimga xush kelibsiz." };
     }
 
-    // Bot generatsiya qilgan kodlar (EDU-XXXXXX)
+    // 2. ODDIY VA FOYDALANUVCHI KODLARI (EDU-XXXXXX)
     if (clean.startsWith('EDU-') || /^\d{6}$/.test(clean)) {
+      const previousBound = localStorage.getItem(`eduhujjat_bound_${clean}`);
+
+      // Agar ushbu qurilma allaqachon bog'langan bo'lsa:
+      if (previousBound === currentDeviceId) {
+        const oneDayLater = Date.now() + 24 * 60 * 60 * 1000;
+        const info = {
+          code: clean,
+          deviceId: currentDeviceId,
+          deviceInfo,
+          plan: 'daily',
+          name: 'Faol Litsenziat',
+          expiresAtTimestamp: oneDayLater,
+          enteredAt: new Date().toISOString()
+        };
+        localStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
+        setAccessCodeInfo(info);
+        setUserAccessStatus('ACTIVE');
+        return { success: true, instant: true, message: "✅ Xush kelibsiz! Ushbu qurilma tasdiqlangan." };
+      }
+
+      // YANGI QURILMA: Super Ownerdan ruxsat so'rash kerak!
+      const pin = String(Math.floor(1000 + Math.random() * 9000));
+      const reqId = 'req_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+
+      // Telegram Bot orqali Super Owner (@fayzbek1331) ga bildirishnoma yuborish
+      const alertText = 
+        `🚨 **XAVFSIZLIK OGOHLANTIRISHI: Yangi qurilmadan kirishga urinish!**\n\n` +
+        `🔑 **Kirish Kodi:** \`${clean}\`\n` +
+        `📱 **Yangi Qurilma:** ${deviceInfo}\n` +
+        `⏰ **Sana va Vaqt:** ${new Date().toLocaleString('uz-UZ')}\n` +
+        `🔢 **Tasdiqlash PIN-kodi:** \`${pin}\`\n\n` +
+        `⚠️ **QOIDALARI:** Bitta kod orqali faqat **1 ta qurilma** ishlay oladi!\n` +
+        `Ushbu yangi qurilmaga ruxsat berasizmi? (Ruxsat berilsa, oldingi qurilma sessiyasi avtomatik bekor qilinadi)`;
+
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [
+            { text: "✅ Ruxsat berish (Eskisini o'chirish)", callback_data: `dev_allow_${reqId}` },
+            { text: "❌ Rad etish", callback_data: `dev_deny_${reqId}` }
+          ]
+        ]
+      };
+
+      // Serverless API yoki to'g'ridan-to'g'ri Telegram Bot orqali yuborish
+      let tgSent = false;
+      try {
+        const tgRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: SUPER_OWNER_ID,
+            text: alertText,
+            parse_mode: 'Markdown',
+            reply_markup: inlineKeyboard
+          })
+        });
+        const tgData = await tgRes.json();
+        tgSent = tgData.ok;
+      } catch(e) {
+        console.error("Direct TG error:", e);
+      }
+
+      // Serverless API ga ham qayd qilib qo'yish
+      try {
+        await fetch('/api/device-auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'request_login',
+            reqId,
+            code: clean,
+            deviceId: currentDeviceId,
+            deviceInfo,
+            pin
+          })
+        });
+      } catch(e) {}
+
+      return {
+        success: false,
+        requiresApproval: true,
+        reqId,
+        pin,
+        code: clean,
+        deviceInfo,
+        message: "⏳ Yangi qurilma aniqlandi! Super Admin (@fayzbek1331) ga Telegram orqali ruxsat so'rovi yuborildi."
+      };
+    }
+
+    return { 
+      success: false, 
+      message: "❌ Noto'g'ri kod! Kodni Telegram botimiz (@eduhujjat_bot) dan '🔑 Saytga Kirish Kodi' tugmasi orqali oling." 
+    };
+  };
+
+  // PIN-kod orqali tasdiqlash
+  const approveDeviceByPin = (reqData, enteredPin) => {
+    if (!reqData || !enteredPin) return { success: false, message: "PIN-kod kiritilmadi!" };
+
+    if (String(reqData.pin).trim() === String(enteredPin).trim()) {
       const oneDayLater = Date.now() + 24 * 60 * 60 * 1000;
       const info = {
-        code: clean,
+        code: reqData.code,
+        deviceId: currentDeviceId,
+        deviceInfo,
         plan: 'daily',
         name: 'Faol Litsenziat',
         expiresAtTimestamp: oneDayLater,
         enteredAt: new Date().toISOString()
       };
+
+      // Oldingi qurilmani bekor qilib, ushbu qurilmaga bog'lash
+      localStorage.setItem(`eduhujjat_bound_${reqData.code}`, currentDeviceId);
       localStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
       setAccessCodeInfo(info);
       setUserAccessStatus('ACTIVE');
-      return { success: true, message: "✅ Kod muvaffaqiyatli tasdiqlandi! Tizimga xush kelibsiz." };
+
+      // Serverless API ga ham xabar berish
+      try {
+        fetch('/api/device-auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'bind_device',
+            code: reqData.code,
+            deviceId: currentDeviceId,
+            deviceInfo
+          })
+        });
+      } catch(e) {}
+
+      // Telegramda ham tasdiqlanganini e'lon qilish
+      try {
+        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: SUPER_OWNER_ID,
+            text: `✅ **QURILMA TASDIQLANDI!**\n\nKod: \`${reqData.code}\`\nYangi Qurilma: ${deviceInfo}\nSana: ${new Date().toLocaleTimeString('uz-UZ')}\nOldingi qurilma sessiyasi bekor qilindi.`,
+            parse_mode: 'Markdown'
+          })
+        });
+      } catch(e) {}
+
+      return { success: true, message: "✅ Yangi qurilma muvaffaqiyatli tasdiqlandi! Tizimga xush kelibsiz." };
     }
 
-    return { success: false, message: "❌ Noto'g'ri kod! Kodni Telegram botimiz (@eduhujjat_bot) dan '🔑 Saytga Kirish Kodi' tugmasi orqali oling." };
+    return { success: false, message: "❌ Noto'g'ri PIN-kod! Telegram botga yuborilgan 4 xonali kodni kiriting." };
+  };
+
+  // Botdagi [✅ Ruxsat berish] tugmasi bosilganini tekshirish (Polling)
+  const checkRemoteApproval = async (reqId, code) => {
+    try {
+      const res = await fetch(`/api/device-auth?reqId=${encodeURIComponent(reqId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'APPROVED') {
+          const oneDayLater = Date.now() + 24 * 60 * 60 * 1000;
+          const info = {
+            code,
+            deviceId: currentDeviceId,
+            deviceInfo,
+            plan: 'daily',
+            name: 'Faol Litsenziat',
+            expiresAtTimestamp: oneDayLater,
+            enteredAt: new Date().toISOString()
+          };
+          localStorage.setItem(`eduhujjat_bound_${code}`, currentDeviceId);
+          localStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
+          setAccessCodeInfo(info);
+          setUserAccessStatus('ACTIVE');
+          return { approved: true };
+        } else if (data.status === 'DENIED') {
+          return { denied: true };
+        }
+      }
+    } catch(e) {}
+    return { pending: true };
   };
 
   const logoutCode = () => {
@@ -223,23 +457,26 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       currentUser,
-      isActualOwner,
+      currentDeviceId,
+      deviceInfo,
       activeRole,
       setActiveRole,
+      isActualOwner,
       userAccessStatus,
-      setUserAccessStatus,
       prices,
-      updatePrices,
       admins,
+      usersList,
+      accessCodeInfo,
+      requestDeviceAccess,
+      approveDeviceByPin,
+      checkRemoteApproval,
+      logoutCode,
       addAdmin,
       removeAdmin,
-      usersList,
+      updatePrices,
       approveUser,
       blockUser,
       hasAccess,
-      verifyAccessCode,
-      logoutCode,
-      accessCodeInfo,
       OWNER_USERNAME,
       SUPER_OWNER_ID
     }}>
@@ -249,5 +486,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
