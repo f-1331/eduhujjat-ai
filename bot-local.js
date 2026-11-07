@@ -38,6 +38,11 @@ const SUPER_OWNER_ID = 6707839718;
 
 const bot = new Bot(BOT_TOKEN);
 
+// Global Error Handler - Bot hech qachon to'xtab qolmasligi uchun
+bot.catch((err) => {
+  console.error("Bot xatolik yuz berdi (bot.catch):", err.message || err);
+});
+
 // 2. DOIMIY MA'LUMOTLAR BAZASI (PERSISTENT JSON DB)
 const DB_FILE = path.join(process.cwd(), 'data', 'database.json');
 
@@ -1902,88 +1907,6 @@ bot.on('message:text', async (ctx) => {
       await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
     }
     return;
-  }
-
-  // EDUAI DINAMIK MAVZU BO'YICHA FAYL GENERATSIYASI
-  if (data.startsWith('ai_gen_')) {
-    const action = data.replace('ai_gen_', '');
-    const currentText = db.userSessions.get(userId) || "Ta'lim va zamonaviy pedagogika";
-    const topic = currentText.split(/\r?\n/)[0].slice(0, 80) || "Ta'lim va zamonaviy pedagogika";
-
-    if (action === 'gamma') {
-      await ctx.answerCallbackQuery({ text: "Gamma slayd yaratilmoqda..." });
-      const waitMsg = await ctx.reply(`🎨 **"${topic}" bo'yicha Gamma & Genspark AI taqdimot tayyorlanmoqda...**\n(16:9 Obsidian Dark kartochkalar, tahliliy modullar bilan)`);
-      try {
-        const buffer = await generateGammaPresentationBuffer(topic, ctx.from?.first_name || "SmartOffice EduAI");
-        await ctx.replyWithDocument(new InputFile(buffer, `EduAI_Gamma_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.pptx`), {
-          caption: `🎨 **Gamma & Genspark AI taqdimoti tayyor!** (.pptx)\n\n📌 Mavzu: **${topic}**\n✨ Format: 16:9 Widescreen, Obsidian Dark kartochkali slaydlar.`
-        });
-        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      } catch(err) {
-        await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
-      }
-      return;
-    }
-
-    if (action === 'lesson') {
-      await ctx.answerCallbackQuery({ text: "Dars konspekti yaratilmoqda..." });
-      const waitMsg = await ctx.reply(`📝 **"${topic}" bo'yicha 45 daqiqalik namunaviy dars ishlanmasi tayyorlanmoqda...**`);
-      try {
-        const buffer = await generateLessonPlanWordBuffer(topic);
-        await ctx.replyWithDocument(new InputFile(buffer, `Dars_Konspekti_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
-          caption: `📝 **45 Daqiqalik dars ishlanmasi (konspekt) tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Maqsadlar, 6 bosqichli xronometraj, blits-savollar va uyga vazifa bilan.`
-        });
-        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      } catch(err) {
-        await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
-      }
-      return;
-    }
-
-    if (action === 'test') {
-      await ctx.answerCallbackQuery({ text: "Test tuzilmoqda..." });
-      const waitMsg = await ctx.reply(`🎲 **"${topic}" bo'yicha 15 talik nazorat testlari va javoblar kaliti tuzilmoqda...**`);
-      try {
-        const buffer = await generateTestWordBuffer(topic);
-        await ctx.replyWithDocument(new InputFile(buffer, `Test_va_Kalitlar_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
-          caption: `🎲 **15 Talik nazorat testlari va javoblar kaliti tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Variantlar (A, B, C, D) va oxirida o'qituvchi uchun javoblar kaliti.`
-        });
-        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      } catch(err) {
-        await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
-      }
-      return;
-    }
-
-    if (action === 'order') {
-      await ctx.answerCallbackQuery({ text: "Buyruq hujjati yaratilmoqda..." });
-      const waitMsg = await ctx.reply(`📋 **"${topic}" bo'yicha rasmiy maktab buyrug'i tayyorlanmoqda...**`);
-      try {
-        const buffer = await generateOfficialOrderWordBuffer(topic);
-        await ctx.replyWithDocument(new InputFile(buffer, `Maktab_Buyrugi_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
-          caption: `📋 **Rasmiy maktab direktori buyrug'i tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Vazirlik me'yorlari va huquqiy asoslari bilan.`
-        });
-        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      } catch(err) {
-        await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
-      }
-      return;
-    }
-
-    if (action === 'tavsif') {
-      await ctx.answerCallbackQuery({ text: "Tavsifnoma yaratilmoqda..." });
-      const waitMsg = await ctx.reply(`🔍 **"${topic}" bo'yicha namunaviy pedagogik tavsifnoma tayyorlanmoqda...**`);
-      try {
-        const buffer = await generateStudentReferenceWordBuffer(topic, "10-A");
-        await ctx.replyWithDocument(new InputFile(buffer, `Tavsifnoma_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
-          caption: `🔍 **Pedagogik tavsifnoma (xarakteristika) tayyor!** (.docx)\n\n📌 O'quvchi: **${topic}**\n✨ A'lochi va faol o'quvchi uchun rasmiy xarakteristika.`
-        });
-        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      } catch(err) {
-        await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
-      }
-      return;
-    }
   }
 
   if (text === '📜 Faxriy Yorliq') {
