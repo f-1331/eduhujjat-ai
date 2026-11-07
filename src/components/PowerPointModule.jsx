@@ -370,6 +370,23 @@ export default function PowerPointModule() {
               borderColor: `#${activeTheme.cardBorder}`
             }}
           >
+            {/* Ambient Background Glowing Orbs (Gamma / Genspark Mesh Effect) */}
+            <div 
+              className="absolute -top-24 -left-24 w-96 h-96 rounded-full blur-3xl opacity-25 pointer-events-none"
+              style={{ backgroundColor: `#${activeTheme.accent}` }}
+            />
+            <div 
+              className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full blur-3xl opacity-20 pointer-events-none"
+              style={{ backgroundColor: `#${activeTheme.accent2}` }}
+            />
+            {/* Subtle Tech Dot Matrix Grid */}
+            <div 
+              className="absolute inset-0 pointer-events-none opacity-10"
+              style={{
+                backgroundImage: 'radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1px)',
+                backgroundSize: '24px 24px'
+              }}
+            />
             {/* Top Bar Indicator (No author clutter) */}
             <div className="flex items-center justify-between text-[11px] font-mono tracking-wider opacity-70" style={{ color: `#${activeTheme.subtext}` }}>
               <div className="flex items-center gap-2">
@@ -994,9 +1011,26 @@ export default function PowerPointModule() {
       {/* 3. JONLI FULLSCREEN PRESENTATION REJIMI */}
       {isFullscreen && (
         <div 
-          className="fixed inset-0 z-50 flex flex-col justify-between p-6 sm:p-12 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex flex-col justify-between p-6 sm:p-12 animate-in fade-in duration-200 overflow-hidden"
           style={{ backgroundColor: `#${activeTheme.bg}`, color: `#${activeTheme.text}` }}
         >
+          {/* Ambient Background Glowing Orbs (Gamma / Genspark Mesh Effect) */}
+          <div 
+            className="absolute -top-32 -left-32 w-[32rem] h-[32rem] rounded-full blur-3xl opacity-25 pointer-events-none"
+            style={{ backgroundColor: `#${activeTheme.accent}` }}
+          />
+          <div 
+            className="absolute -bottom-32 -right-32 w-[32rem] h-[32rem] rounded-full blur-3xl opacity-20 pointer-events-none"
+            style={{ backgroundColor: `#${activeTheme.accent2}` }}
+          />
+          {/* Subtle Tech Dot Matrix Grid */}
+          <div 
+            className="absolute inset-0 pointer-events-none opacity-10"
+            style={{
+              backgroundImage: 'radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1px)',
+              backgroundSize: '28px 28px'
+            }}
+          />
           {/* Header */}
           <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: `#${activeTheme.cardBorder}` }}>
             <div className="flex items-center gap-3">
