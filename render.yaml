@@ -22,10 +22,8 @@ services:
         value: https://eduhujjat.vercel.app
 
   # 2. EduHujjat Frontend Web Application (High-speed Global Static Site)
-  - type: web
+  - type: static_site
     name: eduhujjat-web
-    env: static
-    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     autoDeploy: true
