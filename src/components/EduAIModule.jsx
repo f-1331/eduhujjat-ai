@@ -55,44 +55,51 @@ export default function EduAIModule() {
     }
   ];
 
-  const handleGenerate = (customPrompt) => {
+  const handleGenerate = async (customPrompt) => {
     const q = customPrompt || prompt;
     if (!q.trim()) return;
 
     setLoading(true);
     setResponse('');
 
-    setTimeout(() => {
-      let aiResult = "";
-      const lower = q.toLowerCase();
+    let aiResult = "";
+    const lower = q.toLowerCase();
+    let type = 'general';
+    if (lower.includes('dars') || lower.includes('konspekt')) type = 'lesson';
+    else if (lower.includes('test') || lower.includes('savol')) type = 'test';
+    else if (lower.includes('buyruq') || lower.includes('qaror')) type = 'order';
+    else if (lower.includes('bayonnoma') || lower.includes('protokol')) type = 'protocol';
+    else if (lower.includes('xarakteristika') || lower.includes('tavsifnoma')) type = 'reference';
 
-      if (lower.includes('dars') || lower.includes('konspekt')) {
-        aiResult = generateAILessonPlan(q);
-      } else if (lower.includes('test') || lower.includes('savol')) {
-        aiResult = generateAITestSuite(q, 10);
-      } else if (lower.includes('buyruq') || lower.includes('qaror')) {
-        aiResult = generateAIOfficialOrder(q);
-      } else if (lower.includes('xarakteristika') || lower.includes('tavsifnoma')) {
-        aiResult = generateAIStudentReference("Aliyev Sardor Baxtiyor o'g'li", "10-A");
-      } else {
-        // Universal pedagogik tahlil
-        aiResult = `🤖 EDUAI PRO INTELLEKTUAL PEDAGOGIK TAHLILI:\n\n` +
-          `📌 Mavzu / So'rov: "${q}"\n` +
-          `🏛 Standart: O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi Mezonlari\n` +
-          `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `1. ASOSIY ILMIY MAZMUN VA XULOSA:\n` +
-          `Ushbu yo'nalish o'quvchilarda tanqidiy tafakkur, tizimli tahlil va amaliy ko'nikmalarni shakllantirishda muhim poydevor hisoblanadi. Berilgan mavzuni davlat ta'lim standartlariga muvofiq, interaktiv metodlar (Klaster, Aqliy hujum, FSMU) asosida o'tish tavsiya etiladi.\n\n` +
-          `2. TAVSIYA ETILADIGAN PEDAGOGIK METODLAR:\n` +
-          `• Mavzuni 3 asosiy blokka ajratish: Nazariy baza, Amaliy laboratoriya/mashq, Natijani baholash;\n` +
-          `• Ko'rgazmali Gamma AI slaydlaridan va 10 talik nazorat testlaridan unumli foydalanish;\n` +
-          `• Dars yakunida har bir o'quvchining faolligini rag'batlantiruvchi baholar bilan mustahkamlash.\n\n` +
-          `3. MATN VA IMKONIYaTLAR:\n` +
-          `Ushbu natijani quyidagi tugmalar yordamida Word (.docx) hujjati qilib yuklab olishingiz yoki to'g'ridan-to'g'ri nusxalashingiz mumkin!`;
+    try {
+      const apiEndpoint = window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini';
+      const res = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, prompt: q })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.result) {
+          aiResult = data.result;
+        }
       }
+    } catch(e) {
+      console.warn("Backend API unavailable, using local fallback:", e);
+    }
 
-      setResponse(aiResult);
-      setLoading(false);
-    }, 600);
+    if (!aiResult) {
+      if (type === 'lesson') aiResult = generateAILessonPlan(q);
+      else if (type === 'test') aiResult = generateAITestSuite(q, 10);
+      else if (type === 'order') aiResult = generateAIOfficialOrder(q);
+      else if (type === 'reference') aiResult = generateAIStudentReference("Aliyev Sardor Baxtiyor o'g'li", "10-A");
+      else {
+        aiResult = `🤖 EDUAI PRO INTELLEKTUAL PEDAGOGIK TAHLILI:\n\n📌 Mavzu: "${q}"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nUshbu yo'nalish davlat ta'lim standartlariga muvofiq tizimli tahlil qilindi.`;
+      }
+    }
+
+    setResponse(aiResult);
+    setLoading(false);
   };
 
   const handleCopy = () => {

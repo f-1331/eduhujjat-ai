@@ -42,15 +42,35 @@ export default function PowerPointModule() {
   const currentCard = cards[activeSlideIndex] || cards[0];
 
   // Haqiqiy AI Generatsiya: kiritilgan mavzu bo'yicha slaydlarni noldan noyob yaratish
-  const handleGenerateRealSlides = () => {
+  const handleGenerateRealSlides = async () => {
     if (!promptInput.trim()) return;
     setIsGenerating(true);
-    setTimeout(() => {
-      const generated = generateRealAIGammaCards(promptInput.trim());
-      setCards(generated);
-      setActiveSlideIndex(0);
-      setIsGenerating(false);
-    }, 400);
+
+    let generated = null;
+    try {
+      const apiEndpoint = window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini';
+      const res = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'cards', prompt: promptInput.trim() })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.result && Array.isArray(data.result) && data.result.length > 0) {
+          generated = data.result;
+        }
+      }
+    } catch(e) {
+      console.warn("Backend API unavailable for cards, using local generator:", e);
+    }
+
+    if (!generated || !Array.isArray(generated) || generated.length === 0) {
+      generated = generateRealAIGammaCards(promptInput.trim());
+    }
+
+    setCards(generated);
+    setActiveSlideIndex(0);
+    setIsGenerating(false);
   };
 
   // PowerPoint (.pptx) yuklab olish

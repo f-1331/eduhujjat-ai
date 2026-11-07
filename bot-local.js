@@ -2439,6 +2439,49 @@ const apiServer = http.createServer((req, res) => {
     return;
   }
 
+
+  if (url.pathname === '/api/gemini' && req.method === 'POST') {
+    let bodyStr = '';
+    req.on('data', chunk => { bodyStr += chunk; });
+    req.on('end', async () => {
+      try {
+        const body = JSON.parse(bodyStr || '{}');
+        const { type, prompt, count } = body;
+        if (!prompt) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Prompt talab qilinadi' }));
+        }
+
+        let result = '';
+        if (type === 'test') {
+          result = await generateAITestWithGemini(prompt, count || 10);
+        } else if (type === 'lesson') {
+          result = await generateAILessonPlanWithGemini(prompt);
+        } else if (type === 'order') {
+          result = await generateAIOfficialOrderWithGemini(prompt);
+        } else if (type === 'protocol') {
+          result = await generateAIProtocolWithGemini(prompt);
+        } else if (type === 'reference') {
+          result = await generateAIStudentReferenceWithGemini(prompt);
+        } else if (type === 'cards') {
+          result = await generateAIGammaCardsWithGemini(prompt);
+        } else {
+          result = await callGemini(
+            prompt,
+            "Siz O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi mezonlari bo'yicha eng yuqori toifali pedagogik ekspert va metodistsiz. Har qanday ta'limiy, metodik savollarga to'liq, ilmiy va tushunarli o'zbek tilida javob bering."
+          );
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, result }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
   res.writeHead(404);
   res.end(JSON.stringify({ notFound: true }));
 });
