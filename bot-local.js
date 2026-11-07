@@ -1,7 +1,10 @@
-// bot-local.js - "SmartOffice & EduAI Pro" Telegram Bot (Professional Server Engine)
+// bot-local.js - "SmartOffice & EduAI Pro" Ultra Super-Engine Telegram Bot
 import { Bot, InlineKeyboard, Keyboard, InputFile } from 'grammy';
 import * as XLSX from 'xlsx';
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx';
+import { 
+  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, 
+  WidthType, AlignmentType, BorderStyle, HeadingLevel 
+} from 'docx';
 import pptxgen from 'pptxgenjs';
 import mammoth from 'mammoth';
 import fs from 'fs';
@@ -21,6 +24,9 @@ try {
 const BOT_TOKEN = process.env.BOT_TOKEN || '9001772632:AAEe8hXmKAhWwE7VHK1Vd8FMia6TcqYI0Mk';
 const WEBAPP_URL = process.env.WEBAPP_URL || 'https://eduhujjat.vercel.app';
 const OWNER_USERNAME = (process.env.OWNER_USERNAME || 'fayzbek1331').replace('@', '');
+
+// SUPER OWNER ID: Fayzbek (Telegram ID: 6707839718, alias: 1)
+const SUPER_OWNER_ID = 6707839718;
 
 const bot = new Bot(BOT_TOKEN);
 
@@ -50,8 +56,20 @@ function loadDatabase() {
       unlimited: 290000
     },
     admins: ['fayzbek1331'],
-    ownerChatId: null,
-    users: {},
+    ownerChatId: SUPER_OWNER_ID,
+    users: {
+      "6707839718": {
+        id: 1,
+        realId: 6707839718,
+        name: "Fayzbek (Super Owner)",
+        username: "fayzbek1331",
+        status: "ACTIVE",
+        plan: "unlimited",
+        expiresAt: "Cheksiz VIP",
+        remainingUses: 999999,
+        registeredAt: new Date().toISOString()
+      }
+    },
     simulatedRoles: {}
   };
 
@@ -63,15 +81,29 @@ function loadDatabase() {
   try {
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
+    const mergedUsers = { ...defaultDb.users, ...(parsed.users || {}) };
+    // Har doim Fayzbekni ID: 1 va faol qilish
+    mergedUsers["6707839718"] = {
+      id: 1,
+      realId: 6707839718,
+      name: "Fayzbek (Super Owner)",
+      username: "fayzbek1331",
+      status: "ACTIVE",
+      plan: "unlimited",
+      expiresAt: "Cheksiz VIP",
+      remainingUses: 999999,
+      registeredAt: mergedUsers["6707839718"]?.registeredAt || new Date().toISOString()
+    };
+
     return {
       prices: { ...defaultDb.prices, ...(parsed.prices || {}) },
       admins: Array.isArray(parsed.admins) ? parsed.admins : ['fayzbek1331'],
-      ownerChatId: parsed.ownerChatId || null,
-      users: parsed.users || {},
+      ownerChatId: parsed.ownerChatId || SUPER_OWNER_ID,
+      users: mergedUsers,
       simulatedRoles: parsed.simulatedRoles || {}
     };
   } catch (err) {
-    console.error("DB o'qishda xatolik, standart baza yuklandi:", err);
+    console.error("DB o'qishda xatolik:", err);
     return defaultDb;
   }
 }
@@ -80,11 +112,11 @@ const memoryDb = loadDatabase();
 const db = {
   prices: memoryDb.prices,
   admins: new Set(memoryDb.admins),
-  ownerChatId: memoryDb.ownerChatId,
+  ownerChatId: memoryDb.ownerChatId || SUPER_OWNER_ID,
   users: new Map(Object.entries(memoryDb.users).map(([k, v]) => [parseInt(k, 10), v])),
   userSessions: new Map(),
   simulatedRoles: new Map(Object.entries(memoryDb.simulatedRoles).map(([k, v]) => [parseInt(k, 10), v])),
-  rateLimits: new Map() // Anti-spam flood control
+  rateLimits: new Map()
 };
 
 function saveDatabase() {
@@ -103,31 +135,48 @@ function saveDatabase() {
   }
 }
 
-// 3. XAVFSIZLIK VA FOYDALANUVCHI HUQUQLARI
+// 3. ID MAPPING VA XAVFSIZLIK
+function resolveUserId(idInput) {
+  const str = String(idInput).trim();
+  if (str === '1' || str === String(SUPER_OWNER_ID)) {
+    return SUPER_OWNER_ID;
+  }
+  return parseInt(str, 10);
+}
+
+function getDisplayUserId(userId) {
+  if (userId === SUPER_OWNER_ID) return 1;
+  return userId;
+}
+
 function isRealSuperOwner(ctx) {
+  const userId = ctx.from?.id;
   const username = ctx.from?.username?.toLowerCase();
-  return username === OWNER_USERNAME.toLowerCase();
+  return userId === SUPER_OWNER_ID || username === OWNER_USERNAME.toLowerCase();
 }
 
 function getEffectiveRole(ctx) {
   const userId = ctx.from?.id;
-  const username = ctx.from?.username?.toLowerCase();
-  const isRealOwner = username === OWNER_USERNAME.toLowerCase();
+  const isRealOwner = isRealSuperOwner(ctx);
 
   if (isRealOwner && db.simulatedRoles.has(userId)) {
     return db.simulatedRoles.get(userId);
   }
 
   if (isRealOwner) return 'OWNER';
+  const username = ctx.from?.username?.toLowerCase();
   if (username && db.admins.has(username)) return 'ADMIN';
   return 'USER';
 }
 
 function isUserActive(userId, username) {
-  const role = db.simulatedRoles.get(userId);
-  if (role === 'USER') {
-    const u = db.users.get(userId);
-    return u?.status === 'ACTIVE';
+  if (userId === SUPER_OWNER_ID) {
+    const role = db.simulatedRoles.get(userId);
+    if (role === 'USER') {
+      const u = db.users.get(userId);
+      return u?.status === 'ACTIVE';
+    }
+    return true;
   }
 
   if (username && username.toLowerCase() === OWNER_USERNAME.toLowerCase()) return true;
@@ -144,18 +193,14 @@ function isUserActive(userId, username) {
   return true;
 }
 
-// Anti-spam tekshiruvi (sekundiga 1 ta so'rov)
 function isSpamming(userId) {
   const now = Date.now();
   const lastTime = db.rateLimits.get(userId) || 0;
-  if (now - lastTime < 700) {
-    return true;
-  }
+  if (now - lastTime < 500) return true;
   db.rateLimits.set(userId, now);
   return false;
 }
 
-// Excel formula injection sanitization
 function sanitizeFormula(val) {
   if (typeof val !== 'string') return val;
   const trimmed = val.trim();
@@ -165,16 +210,13 @@ function sanitizeFormula(val) {
   return trimmed;
 }
 
-// 4. PARSER VA TRANSLITERATSIYA UTILLARI
+// 4. PARSER VA TRANSLITERATSIYA
 const OZB_LATIN_TO_CYR = {
-  "sh": "ш", "Sh": "Ш", "SH": "Ш",
-  "ch": "ч", "Ch": "Ч", "CH": "Ч",
+  "sh": "ш", "Sh": "Ш", "SH": "Ш", "ch": "ч", "Ch": "Ч", "CH": "Ч",
   "o'": "ў", "O'": "Ў", "o‘": "ў", "O‘": "Ў", "o`": "ў", "O`": "Ў",
   "g'": "ғ", "G'": "Ғ", "g‘": "ғ", "G‘": "Ғ", "g`": "ғ", "G`": "Ғ",
-  "yu": "ю", "Yu": "Ю", "YU": "Ю",
-  "ya": "я", "Ya": "Я", "YA": "Я",
-  "yo": "ё", "Yo": "Ё", "YO": "Ё",
-  "ye": "е", "Ye": "Е", "YE": "Е",
+  "yu": "ю", "Yu": "Ю", "YU": "Ю", "ya": "я", "Ya": "Я", "YA": "Я",
+  "yo": "ё", "Yo": "Ё", "YO": "Ё", "ye": "е", "Ye": "Е", "YE": "Е",
   "a": "а", "b": "б", "d": "д", "e": "э", "f": "ф", "g": "г",
   "h": "ҳ", "i": "и", "j": "ж", "k": "к", "l": "л", "m": "м",
   "n": "н", "o": "о", "p": "п", "q": "қ", "r": "р", "s": "с",
@@ -188,9 +230,7 @@ const OZB_LATIN_TO_CYR = {
 function transliterateLatinToCyrillic(str) {
   let res = str;
   const multiKeys = ["sh", "Sh", "SH", "ch", "Ch", "CH", "o'", "O'", "o‘", "O‘", "o`", "O`", "g'", "G'", "g‘", "G‘", "g`", "G`", "yu", "Yu", "YU", "ya", "Ya", "YA", "yo", "Yo", "YO", "ye", "Ye", "YE"];
-  multiKeys.forEach(k => {
-    res = res.split(k).join(OZB_LATIN_TO_CYR[k]);
-  });
+  multiKeys.forEach(k => { res = res.split(k).join(OZB_LATIN_TO_CYR[k]); });
   return res.split('').map(char => OZB_LATIN_TO_CYR[char] || char).join('');
 }
 
@@ -200,10 +240,8 @@ function parseStudentsFromText(rawText) {
   const students = [];
 
   lines.forEach((line, index) => {
-    // 1. Tartib raqamni tozalash: "1. ", "1)", "[1]"
     let clean = line.replace(/^\s*\[?\d+[\.\)\-\]]\s*/, '').trim();
 
-    // 2. Telefon raqamini ajratish: +998901234567 yoki 998901234567
     let phone = '';
     const phoneMatch = clean.match(/(?:\+?998|8)?[\s\-]?(?:\(?\d{2}\)?|\d{2})[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}/);
     if (phoneMatch) {
@@ -215,7 +253,6 @@ function parseStudentsFromText(rawText) {
       clean = clean.replace(phoneMatch[0], ' ').trim();
     }
 
-    // 3. Tug'ilgan sanani ajratish (DD.MM.YYYY yoki YYYY)
     let birthDate = '';
     let birthYear = 2008;
     const dateMatch = clean.match(/\b(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{4})\b/);
@@ -232,7 +269,6 @@ function parseStudentsFromText(rawText) {
       }
     }
 
-    // 4. Sinfni ajratish: "10-A", "9 B", "11-sinf"
     let className = '';
     const classMatch = clean.match(/\b(\d{1,2})\s*[\-\.]?\s*([A-Za-zА-Яа-яЎўҒғҚқҲҳ])\b/);
     if (classMatch) {
@@ -240,7 +276,6 @@ function parseStudentsFromText(rawText) {
       clean = clean.replace(classMatch[0], ' ').trim();
     }
 
-    // 5. Ism-familiya standartlashtirish
     clean = clean.replace(/[,;]/g, ' ').replace(/\s+/g, ' ').trim();
     const words = clean.split(' ').map(w => {
       if (w.toLowerCase() === "o'g'li" || w.toLowerCase() === "og'li") return "o'g'li";
@@ -249,7 +284,6 @@ function parseStudentsFromText(rawText) {
     });
     const fullName = words.join(' ') || `O'quvchi #${index + 1}`;
 
-    // 6. Jinsini aniqlash
     const lower = fullName.toLowerCase();
     let gender = "Noma'lum";
     if (lower.includes('qizi') || lower.endsWith('ova') || lower.endsWith('yeva') || lower.endsWith('ovna') || lower.endsWith('yevna')) {
@@ -275,11 +309,9 @@ function parseStudentsFromText(rawText) {
   return students;
 }
 
-// 5. REAL FAYL GENERATORLARI
-// A) Excel (.xlsx) Generatori
+// 5. MUKAMMAL FAYL GENERATORLARI (DOCX, XLSX, PPTX)
 function generateExcelBuffer(students) {
   const wb = XLSX.utils.book_new();
-
   const headerRow = ["№", "F.I.Sh (To'liq ism)", "Tug'ilgan sana", "Yoshi", "Jinsi", "Telefon raqami", "Sinfi"];
   const dataRows = students.map((s, idx) => [
     idx + 1,
@@ -292,28 +324,80 @@ function generateExcelBuffer(students) {
   ]);
 
   const ws = XLSX.utils.aoa_to_sheet([
-    ["SMARTOFFICE & EDUAI PRO - TARTIBLANGAN RO'YXAT"],
-    [`Hosil qilingan sana: ${new Date().toLocaleDateString('uz-UZ')} | Jami: ${students.length} nafar`],
+    ["SMARTOFFICE & EDUAI PRO - TARTIBLANGAN O'QUVCHILAR RO'YXATI"],
+    [`Hosil qilingan sana: ${new Date().toLocaleDateString('uz-UZ')} | Jami: ${students.length} nafar o'quvchi`],
     [],
     headerRow,
     ...dataRows
   ]);
 
   ws['!cols'] = [
-    { wch: 6 },
-    { wch: 34 },
-    { wch: 16 },
-    { wch: 10 },
-    { wch: 16 },
-    { wch: 22 },
-    { wch: 12 }
+    { wch: 6 }, { wch: 34 }, { wch: 16 }, { wch: 10 }, { wch: 16 }, { wch: 22 }, { wch: 12 }
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, "Tartiblangan ro'yxat");
   return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 }
 
-// B) Word (.docx) Generatori
+// Qizlar va O'g'il bolalarga alohida jadvallar bilan Excel
+function generateGenderExcelBuffer(students) {
+  const wb = XLSX.utils.book_new();
+  const boys = students.filter(s => s.gender.includes('Erkak'));
+  const girls = students.filter(s => s.gender.includes('Ayol'));
+
+  const header = ["№", "F.I.Sh", "Tug'ilgan sana", "Yoshi", "Telefon", "Sinfi"];
+
+  const boysRows = boys.map((s, i) => [i + 1, s.fullName, s.birthDate, s.age, s.phone, s.className]);
+  const girlsRows = girls.map((s, i) => [i + 1, s.fullName, s.birthDate, s.age, s.phone, s.className]);
+
+  const wsBoys = XLSX.utils.aoa_to_sheet([
+    ["O'G'IL BOLALAR RO'YXATI", `Jami: ${boys.length} nafar (${Math.round((boys.length / (students.length || 1)) * 100)}%)`],
+    [], header, ...boysRows
+  ]);
+  const wsGirls = XLSX.utils.aoa_to_sheet([
+    ["QIZLAR RO'YXATI", `Jami: ${girls.length} nafar (${Math.round((girls.length / (students.length || 1)) * 100)}%)`],
+    [], header, ...girlsRows
+  ]);
+
+  wsBoys['!cols'] = [{ wch: 6 }, { wch: 32 }, { wch: 16 }, { wch: 10 }, { wch: 20 }, { wch: 10 }];
+  wsGirls['!cols'] = [{ wch: 6 }, { wch: 32 }, { wch: 16 }, { wch: 10 }, { wch: 20 }, { wch: 10 }];
+
+  XLSX.utils.book_append_sheet(wb, wsBoys, "O'g'il bolalar");
+  XLSX.utils.book_append_sheet(wb, wsGirls, "Qizlar");
+  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+}
+
+// Barcha foydalanuvchilar bazasini Excelga eksport qilish
+function generateUsersExcelBuffer() {
+  const wb = XLSX.utils.book_new();
+  const userList = Array.from(db.users.values());
+  const header = ["№", "ID", "Real Telegram ID", "F.I.Sh / Nomi", "Username", "Holati", "Tarif", "Muddati", "Ro'yxatdan o'tgan"];
+  const rows = userList.map((u, i) => [
+    i + 1,
+    u.id,
+    u.realId || u.id,
+    sanitizeFormula(u.name || ''),
+    u.username ? `@${u.username}` : 'yo\'q',
+    u.status,
+    u.plan || 'none',
+    u.expiresAt || (u.remainingUses ? `${u.remainingUses} ta` : 'Cheksiz'),
+    u.registeredAt || '-'
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet([
+    ["EDUKATSIYA TIZIMI - BARCHA FOYDALANUVCHILAR BAZASI"],
+    [`Eksport sanasi: ${new Date().toLocaleString('uz-UZ')} | Jami: ${userList.length} ta foydalanuvchi`],
+    [],
+    header,
+    ...rows
+  ]);
+
+  ws['!cols'] = [{ wch: 6 }, { wch: 10 }, { wch: 18 }, { wch: 30 }, { wch: 20 }, { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 24 }];
+  XLSX.utils.book_append_sheet(wb, ws, "Foydalanuvchilar");
+  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+}
+
+// Word (.docx) Generatori
 async function generateWordBuffer(students) {
   const tableRows = [
     new TableRow({
@@ -374,14 +458,68 @@ async function generateWordBuffer(students) {
   return await Packer.toBuffer(doc);
 }
 
-// C) PowerPoint (.pptx) Generatori
+// 45 daqiqalik Dars Ishlanmasi (.docx)
+async function generateLessonPlanWordBuffer(topic = "Ona tili va adabiyot") {
+  const doc = new Document({
+    sections: [{
+      properties: { page: { margin: { top: 720, bottom: 720, left: 1080, right: 720 } } },
+      children: [
+        new Paragraph({ text: "O'ZBEKISTON RESPUBLIKASI MAKTAB TA'LIMI", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER }),
+        new Paragraph({ text: "45 DAQIQALIK NAMUNAVIY DARS ISHLANMASI (KONSPEKT)", heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
+        new Paragraph({ text: `Mavzu: "${topic}" | Sinf: 9-A | Fan: Davlat standarti`, alignment: AlignmentType.CENTER }),
+        new Paragraph({ text: "----------------------------------------------------------------------------------" }),
+        new Paragraph({ children: [new TextRun({ text: "I. DARS MAQSADLARI:", bold: true })] }),
+        new Paragraph({ text: "1. Ta'limiy maqsad: O'quvchilarga mavzu bo'yicha to'liq ilmiy tushuncha va amaliy ko'nikmalar berish." }),
+        new Paragraph({ text: "2. Tarbiyaviy maqsad: Vatanga muhabbat, milliy qadriyatlarga hurmat va jamoada ishlash madaniyatini shakllantirish." }),
+        new Paragraph({ text: "3. Rivojlantiruvchi maqsad: Mustaqil mantiqiy fikrlash va tahlil qilish qobiliyatini rivojlantirish." }),
+        new Paragraph({ text: "" }),
+        new Paragraph({ children: [new TextRun({ text: "II. DARSNING 45 DAQIQALIK XRONOMETRAJI VA BOSQICHLARI:", bold: true })] }),
+        new Paragraph({ text: "• 1. Tashkiliy qism (3 daqiqa): Salomlashish, davomatni aniqlash, o'quv qurollarini tayyorlash." }),
+        new Paragraph({ text: "• 2. O'tilgan mavzuni so'rash va mustahkamlash (7 daqiqa): Savol-javob, tezkor blits-savollar." }),
+        new Paragraph({ text: "• 3. Yangi mavzu bayoni (20 daqiqa): Mavzuni interaktiv metodlar va slaydlar orqali tushuntirish." }),
+        new Paragraph({ text: "• 4. Yangi mavzuni mustahkamlash (10 daqiqa): Amaliy mashqlar, guruhlarda ishlash." }),
+        new Paragraph({ text: "• 5. O'quvchilarni baholash va rag'batlantirish (3 daqiqa): Darsdagi faolligiga qarab ball qo'yish." }),
+        new Paragraph({ text: "• 6. Uyga vazifa berish va yo'riqnoma (2 daqiqa): Darslikdagi tegishli mashqlarni bajarish." }),
+        new Paragraph({ text: "" }),
+        new Paragraph({ text: "Fan o'qituvchisi imzosi: ___________________" })
+      ]
+    }]
+  });
+  return await Packer.toBuffer(doc);
+}
+
+// Maktab Buyrug'i Shabloni (.docx)
+async function generateOfficialOrderWordBuffer(orderTitle = "O'quvchilarni rag'batlantirish to'g'risida") {
+  const doc = new Document({
+    sections: [{
+      properties: { page: { margin: { top: 720, bottom: 720, left: 1080, right: 720 } } },
+      children: [
+        new Paragraph({ text: "O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER }),
+        new Paragraph({ text: "TOSHKENT SHAHAR 123-SONLI UMUMTA'LIM MAKTABI", alignment: AlignmentType.CENTER }),
+        new Paragraph({ text: "BUYRUG'I", heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
+        new Paragraph({ text: `№ 45-B                                                                            Sana: ${new Date().toLocaleDateString('uz-UZ')}` }),
+        new Paragraph({ text: `Mavzu: ${orderTitle}`, heading: HeadingLevel.HEADING_3, alignment: AlignmentType.CENTER }),
+        new Paragraph({ text: "" }),
+        new Paragraph({ text: "Maktab o'quvchilarining o'quv yili davomida fan olimpiadalari va sport musobaqalaridagi yuqori natijalarini inobatga olgan holda hamda pedagogik kengash qaroriga asosan," }),
+        new Paragraph({ children: [new TextRun({ text: "BUYURAMAN:", bold: true })] }),
+        new Paragraph({ text: "1. Ta'lim va tarbiyada o'rnak ko'rsatgan a'lochi o'quvchilar faxriy yorliq bilan taqdirlansin." }),
+        new Paragraph({ text: "2. Sinf rahbarlari o'quvchilarning faolligini ota-onalar majlisida alohida e'tirof etsin." }),
+        new Paragraph({ text: "3. Ushbu buyruq ijrosini nazorat qilish ma'naviy-ma'rifiy ishlar bo'yicha direktor o'rinbosari zimmasiga yuklatilsin." }),
+        new Paragraph({ text: "" }),
+        new Paragraph({ text: "Maktab direktori:                                              ___________________ (Imzo va Muhr)" })
+      ]
+    }]
+  });
+  return await Packer.toBuffer(doc);
+}
+
+// PowerPoint (.pptx) Generatori
 async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti") {
   const pptx = new pptxgen();
   pptx.layout = 'LAYOUT_16x9';
 
-  // Sarlavha slaydi
   const slide1 = pptx.addSlide();
-  slide1.background = { color: '0F172A' }; // Dark slate
+  slide1.background = { color: '0F172A' };
   slide1.addText(title.toUpperCase(), {
     x: 0.8, y: 2.2, w: '85%', fontSize: 32, bold: true, color: '38BDF8', align: 'center'
   });
@@ -392,7 +530,6 @@ async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti
     x: 1.0, y: 5.5, w: '80%', fontSize: 14, color: '64748B', align: 'center'
   });
 
-  // Tarkib slaydlari (har bir slaydga 5 tadan o'quvchi kartochkasi)
   const chunkSize = 5;
   for (let i = 0; i < Math.min(students.length, 25); i += chunkSize) {
     const chunk = students.slice(i, i + chunkSize);
@@ -417,7 +554,6 @@ async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti
     });
   }
 
-  // Yakuniy slayd
   const lastSlide = pptx.addSlide();
   lastSlide.background = { color: '0F172A' };
   lastSlide.addText("E'TIBORINGIZ UCHUN RAHMAT!", {
@@ -427,7 +563,7 @@ async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti
   return await pptx.write({ outputType: 'nodebuffer' });
 }
 
-// D) 15 talik Test Generatori (.docx)
+// 15 talik Test Generatori (.docx)
 async function generateTestWordBuffer(rawText) {
   const lines = rawText.split(/\r?\n/).filter(l => l.trim().length > 5);
   const sampleTopic = lines[0] || "O'zbekiston tarixi va ona tili";
@@ -452,24 +588,15 @@ async function generateTestWordBuffer(rawText) {
   }
 
   const docChildren = [
-    new Paragraph({
-      text: "NAZORAT TEST VARIANTI (1-VARIANT)",
-      heading: HeadingLevel.TITLE,
-      alignment: AlignmentType.CENTER
-    }),
-    new Paragraph({
-      text: `Mavzu: ${sampleTopic.slice(0, 50)} | Jami: 15 ta savol`,
-      alignment: AlignmentType.CENTER
-    }),
+    new Paragraph({ text: "NAZORAT TEST VARIANTI (1-VARIANT)", heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: `Mavzu: ${sampleTopic.slice(0, 50)} | Jami: 15 ta savol`, alignment: AlignmentType.CENTER }),
     new Paragraph({ text: "----------------------------------------------------------------------------------" }),
     new Paragraph({ text: "" })
   ];
 
   questions.forEach((item, index) => {
     docChildren.push(
-      new Paragraph({
-        children: [new TextRun({ text: `${index + 1}. ${item.q}`, bold: true })]
-      }),
+      new Paragraph({ children: [new TextRun({ text: `${index + 1}. ${item.q}`, bold: true })] }),
       new Paragraph({ text: `   A) ${item.a}` }),
       new Paragraph({ text: `   B) ${item.b}` }),
       new Paragraph({ text: `   C) ${item.c}` }),
@@ -478,15 +605,9 @@ async function generateTestWordBuffer(rawText) {
     );
   });
 
-  // Javoblar kaliti
   docChildren.push(
-    new Paragraph({
-      text: "JAVOBLAR KALITI (O'QITUVCHI UCHUN):",
-      heading: HeadingLevel.HEADING_2
-    }),
-    new Paragraph({
-      text: "1-A, 2-A, 3-A, 4-A, 5-A, 6-A, 7-A, 8-A, 9-A, 10-A, 11-A, 12-A, 13-A, 14-A, 15-A"
-    })
+    new Paragraph({ text: "JAVOBLAR KALITI (O'QITUVCHI UCHUN):", heading: HeadingLevel.HEADING_2 }),
+    new Paragraph({ text: "1-A, 2-A, 3-A, 4-A, 5-A, 6-A, 7-A, 8-A, 9-A, 10-A, 11-A, 12-A, 13-A, 14-A, 15-A" })
   );
 
   const doc = new Document({
@@ -499,15 +620,18 @@ async function generateTestWordBuffer(rawText) {
   return await Packer.toBuffer(doc);
 }
 
-// 6. KLAVIATURADA TURADIGAN TUGMALAR (REPLY KEYBOARDS)
+// 6. KLAVIATURADA TURADIGAN SUPER TUGMALAR (REPLY KEYBOARDS)
 function getReplyKeyboardForRole(role, isRegisteredActive = false) {
   if (role === 'OWNER') {
     return new Keyboard()
-      .text("🎭 Rejimni Almashtirish").text("⚡ Tezkor Yoqish").row()
-      .text("💰 Narxlar").text("👥 Foydalanuvchilar").row()
-      .text("🛡 Adminlar").text("📊 Statistika").row()
-      .text("📢 Ommaviy Xabar").text("🌐 WebApp Ochish").row()
-      .text("🔄 Yangilash /start")
+      .text("⚡ Tezkor Yoqish").text("👥 Foydalanuvchilar").row()
+      .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
+      .text("📊 Excel Jadvallar").text("🖼 Slayd Yasash").row()
+      .text("📜 Faxriy Yorliq").text("🔀 Qizlar/O'g'illar").row()
+      .text("💰 Narxlar").text("🛡 Adminlar").row()
+      .text("📢 Ommaviy Xabar").text("📥 Bazani Yuklash (Excel)").row()
+      .text("🎭 Rejimni Almashtirish").text("📊 Statistika").row()
+      .text("🌐 WebApp Ochish").text("🔄 Yangilash /start")
       .resized()
       .persistent();
   }
@@ -515,6 +639,8 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
   if (role === 'ADMIN') {
     return new Keyboard()
       .text("⚡ Tezkor Yoqish").text("👥 Foydalanuvchilar").row()
+      .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
+      .text("📊 Excel Jadvallar").text("🖼 Slayd Yasash").row()
       .text("💰 Narxlar").text("📊 Statistika").row()
       .text("🎭 Rejimni Qaytarish (Owner)").text("🌐 WebApp Ochish").row()
       .text("🔄 Yangilash /start")
@@ -525,8 +651,9 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
   if (role === 'INSPECTOR') {
     return new Keyboard()
       .text("🔍 Nazorat / Tekshirish").text("📊 Statistika").row()
-      .text("👥 Foydalanuvchilar").text("🎭 Rejimni Qaytarish (Owner)").row()
-      .text("🌐 WebApp Ochish").text("🔄 Yangilash /start")
+      .text("👥 Foydalanuvchilar").text("📥 Bazani Yuklash (Excel)").row()
+      .text("🎭 Rejimni Qaytarish (Owner)").text("🌐 WebApp Ochish").row()
+      .text("🔄 Yangilash /start")
       .resized()
       .persistent();
   }
@@ -534,9 +661,11 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
   // Oddiy Foydalanuvchi:
   if (isRegisteredActive) {
     return new Keyboard()
-      .text("📄 Demo Ma'lumot").text("ℹ️ Mening Hisobim").row()
-      .text("💳 Muddatni Uzaytirish").text("🌐 WebApp Ochish").row()
-      .text("🎭 Rejimni Qaytarish (Owner)").text("🔄 Yangilash /start")
+      .text("📄 Demo Ma'lumot").text("📑 Hujjat Fabrikasi").row()
+      .text("📊 Excel Jadvallar").text("🖼 Slayd Yasash").row()
+      .text("ℹ️ Mening Hisobim").text("💳 Muddatni Uzaytirish").row()
+      .text("🎭 Rejimni Qaytarish (Owner)").text("🌐 WebApp Ochish").row()
+      .text("🔄 Yangilash /start")
       .resized()
       .persistent();
   } else {
@@ -570,21 +699,23 @@ function getTariffInlineKeyboard(userId) {
 }
 
 function getOwnerActionKeyboard(targetUserId) {
+  const displayId = getDisplayUserId(targetUserId);
   return new InlineKeyboard()
-    .text(`⚡ 1 Martalik`, `act_${targetUserId}_1time`)
-    .text(`⚡ 2 Martalik`, `act_${targetUserId}_2time`)
-    .text(`⚡ 5 Martalik`, `act_${targetUserId}_5time`)
+    .text(`👑 Cheksiz VIP (Unlimited)`, `act_${targetUserId}_vip`)
     .row()
-    .text(`⏱ 1 Soat`, `act_${targetUserId}_1h`)
-    .text(`⏱ 2 Soat`, `act_${targetUserId}_2h`)
+    .text(`⭐ 1 Oylik`, `act_${targetUserId}_1m`)
+    .text(`🗓 1 Haftalik`, `act_${targetUserId}_1w`)
+    .text(`📅 1 Kunlik`, `act_${targetUserId}_1d`)
+    .row()
     .text(`⏱ 3 Soat`, `act_${targetUserId}_3h`)
+    .text(`⏱ 2 Soat`, `act_${targetUserId}_2h`)
+    .text(`⏱ 1 Soat`, `act_${targetUserId}_1h`)
     .row()
-    .text(`📅 1 Kun`, `act_${targetUserId}_1d`)
-    .text(`🗓 1 Hafta`, `act_${targetUserId}_1w`)
-    .text(`⭐ 1 Oy`, `act_${targetUserId}_1m`)
+    .text(`⚡ 5 Martalik`, `act_${targetUserId}_5time`)
+    .text(`⚡ 2 Martalik`, `act_${targetUserId}_2time`)
+    .text(`⚡ 1 Martalik`, `act_${targetUserId}_1time`)
     .row()
-    .text(`👑 Cheksiz VIP`, `act_${targetUserId}_vip`)
-    .text(`❌ Rad etish`, `block_${targetUserId}`);
+    .text(`❌ Rad etish / Bloklash`, `block_${targetUserId}`);
 }
 
 function getRoleSwitchKeyboard() {
@@ -609,12 +740,30 @@ function getActionInlineKeyboard() {
     .text("🖼 Slayd (.pptx) yuklash", "act_export_pptx")
     .text("❓ 15 ta Test (.docx)", "act_export_test")
     .row()
+    .text("🔀 Qizlar / O'g'illar jadvali", "act_export_gender")
     .text("🔄 Lotin <-> Kirill o'girish", "act_translit")
     .row()
     .webApp("🌐 WebApp-da to'liq ochish", WEBAPP_URL);
 }
 
-// Telegramdan faylni Buffer qilib yuklab olish
+function getDocumentFactoryKeyboard() {
+  return new InlineKeyboard()
+    .text("📋 Maktab Buyrug'i (.docx)", "doc_order")
+    .text("📝 Dars Ishlanmasi (.docx)", "doc_lesson")
+    .row()
+    .text("🎓 Referat / Titul (.docx)", "doc_referat")
+    .text("📄 Rasmiy Ariza (.docx)", "doc_ariza")
+    .row()
+    .text("🏆 Faxriy Yorliq (.docx)", "doc_certificate")
+    .text("🔍 O'quvchi Tavsifnoma (.docx)", "doc_tavsif")
+    .row()
+    .text("📊 Davomat Tabeli (.xlsx)", "doc_davomat")
+    .text("📈 Baholar Jurnali (.xlsx)", "doc_grades")
+    .row()
+    .text("🗂 Dars Jadvali (.xlsx)", "doc_schedule")
+    .text("🎲 2 Variantli Test (.docx)", "act_export_test");
+}
+
 function downloadTelegramFile(fileUrl) {
   return new Promise((resolve, reject) => {
     https.get(fileUrl, (res) => {
@@ -626,7 +775,7 @@ function downloadTelegramFile(fileUrl) {
   });
 }
 
-// 7. BOT BUYRUQLARI VA HODISALARI
+// 7. /start BUYRUG'I
 bot.command('start', async (ctx) => {
   const user = ctx.from;
   const userId = user.id;
@@ -639,14 +788,16 @@ bot.command('start', async (ctx) => {
   }
 
   if (!db.users.has(userId)) {
+    const isOwnerUser = isRealSuperOwner(ctx);
     db.users.set(userId, {
-      id: userId,
+      id: isOwnerUser ? 1 : userId,
+      realId: userId,
       name: fullName,
       username,
-      status: isRealSuperOwner(ctx) ? 'ACTIVE' : 'PENDING',
-      plan: isRealSuperOwner(ctx) ? 'unlimited' : 'none',
-      expiresAt: null,
-      remainingUses: null,
+      status: isOwnerUser ? 'ACTIVE' : 'PENDING',
+      plan: isOwnerUser ? 'unlimited' : 'none',
+      expiresAt: isOwnerUser ? 'Cheksiz VIP' : null,
+      remainingUses: isOwnerUser ? 999999 : null,
       registeredAt: new Date().toISOString()
     });
     saveDatabase();
@@ -655,18 +806,24 @@ bot.command('start', async (ctx) => {
   const role = getEffectiveRole(ctx);
   const active = isUserActive(userId, username);
   const replyKeyboard = getReplyKeyboardForRole(role, active);
+  const displayId = getDisplayUserId(userId);
 
   if (role === 'OWNER') {
     return ctx.reply(
       `👑 **ASSALOMU ALAYKUM SUPER OWNER @${OWNER_USERNAME}!**\n\n` +
-      `Siz **EduHujjat AI & SmartOffice Pro** tizimining mutlaq boshqaruvchisiz.\n\n` +
-      `⌨️ **Klaviatura tugmalari faol:** Pastdagi tugmalar orqali to'liq boshqaring.\n` +
-      `🎭 **Rejim almashtirish:** O'zingizni *Admin*, *Tekshiruvchi* yoki *Oddiy Foydalanuvchi* sifatida sinab ko'rishingiz mumkin.\n\n` +
-      `📁 **Fayl qabul qilish:** Word (.docx), Excel (.xlsx) yoki matn yuboring — bot 3 soniyada tayyorlab beradi!\n\n` +
-      `⚡ **Tezkor Faollashtirish:**\n` +
-      `• \`/active ID 2h\` yoki \`${userId} 2soat\`\n` +
-      `• \`/active ID 2time\` yoki \`${userId} 2martalik\`\n` +
-      `• \`/setprice oneTime 3000\` (Narxni o'zgartirish)`,
+      `Siz **EduHujjat AI & SmartOffice Pro** tizimining mutlaq boshqaruvchisiz.\n` +
+      `🆔 **Sizning tizimdagi ID raqamingiz:** \`1\` *(Telegram ID: ${userId})*\n\n` +
+      `⌨️ **Klaviatura tugmalari to'liq yuklandi!** Pastda barcha super funksiyalar mavjud:\n` +
+      `• \`⚡ Tezkor Yoqish\` | \`👥 Foydalanuvchilar\`\n` +
+      `• \`📑 Hujjat Fabrikasi\` | \`🎲 Test Generatori\`\n` +
+      `• \`📊 Excel Jadvallar\` | \`🖼 Slayd Yasash\`\n` +
+      `• \`📜 Faxriy Yorliq\` | \`🔀 Qizlar/O'g'illar\`\n` +
+      `• \`💰 Narxlar\` | \`🛡 Adminlar\` | \`📢 Ommaviy Xabar\`\n` +
+      `• \`📥 Bazani Yuklash (Excel)\` | \`🎭 Rejimni Almashtirish\`\n\n` +
+      `⚡ **Faollashtirish buyruqlari:**\n` +
+      `• \`/active ${displayId} unlimited\` yoki \`/active ${userId} unlimited\`\n` +
+      `• \`/active ID 2h\` yoki \`/active ID 2time\`\n` +
+      `• Yoki shunchaki \`⚡ Tezkor Yoqish\` tugmasini bosing!`,
       { parse_mode: 'Markdown', reply_markup: replyKeyboard }
     );
   }
@@ -674,8 +831,8 @@ bot.command('start', async (ctx) => {
   if (role === 'ADMIN') {
     return ctx.reply(
       `🛡️ **ASSALOMU ALAYKUM ADMINISTRATOR!**\n\n` +
-      `Foydalanuvchilarni faollashtirish, muddat berish va statistikani ko'rish huquqiga egasiz.\n` +
-      `Pastdagi boshqaruv tugmalaridan foydalaning:`,
+      `Foydalanuvchilarni faollashtirish, litsenziya berish va barcha generatorlardan foydalanish huquqiga egasiz.\n` +
+      `Pastdagi barcha boshqaruv tugmalaridan foydalaning:`,
       { parse_mode: 'Markdown', reply_markup: replyKeyboard }
     );
   }
@@ -683,7 +840,7 @@ bot.command('start', async (ctx) => {
   if (role === 'INSPECTOR') {
     return ctx.reply(
       `🔍 **ASSALOMU ALAYKUM TEKSHIRUVCHI (AUDITOR)!**\n\n` +
-      `Siz tizim statistikasi, arxivlar va foydalanuvchilar holatini tekshirish rejimidasiz.`,
+      `Siz tizim statistikasi, arxivlar va foydalanuvchilar hisobotini tekshirish rejimidasiz.`,
       { parse_mode: 'Markdown', reply_markup: replyKeyboard }
     );
   }
@@ -693,7 +850,7 @@ bot.command('start', async (ctx) => {
       `🔒 **ASSALOMU ALAYKUM, ${fullName}!**\n\n` +
       `**"EduHujjat AI"** — Maktablar, o'qituvchilar va ofislar uchun professional hujjatlar platformasi.\n\n` +
       `Sizning Telegram ID: \`${userId}\`\n\n` +
-      `👇 **Kerakli tarifni tanlang:** Ma'lumotlaringiz va narx avtomatik tarzda boshqaruvchiga (@${OWNER_USERNAME}) yuboriladi va to'lovdan so'ng hisobingiz darhol yoqib beriladi:`,
+      `👇 **Kerakli tarifni tanlang:** Ma'lumotlaringiz avtomatik boshqaruvchiga (@${OWNER_USERNAME}) yuboriladi va to'lovdan so'ng hisobingiz darhol yoqib beriladi:`,
       { parse_mode: 'Markdown', reply_markup: replyKeyboard }
     ).then(() => {
       ctx.reply(`👇 **Tarifni tanlang:**`, { reply_markup: getTariffInlineKeyboard(userId) });
@@ -706,12 +863,12 @@ bot.command('start', async (ctx) => {
   return ctx.reply(
     `✅ **XUSH KELIBSIZ, ${fullName}!**\n\n` +
     `Sizning hisobingiz faol! ${remainingInfo}\n\n` +
-    `📎 **Word (.docx), Excel (.xlsx) faylini tashlang yoki matn yozing** — tizim bir necha soniyada qayta ishlab, tayyor faylni qaytaradi!`,
+    `📎 **Word (.docx), Excel (.xlsx) faylini tashlang yoki matn yuboring** — tizim 3 soniyada tayyorlab beradi!`,
     { parse_mode: 'Markdown', reply_markup: replyKeyboard }
   );
 });
 
-// 8. FAYL QABUL QILISH (WORD, EXCEL, TXT)
+// 8. FAYL QABUL QILISH (WORD, EXCEL, CSV, TXT)
 bot.on('message:document', async (ctx) => {
   const userId = ctx.from.id;
   const username = ctx.from.username;
@@ -729,7 +886,7 @@ bot.on('message:document', async (ctx) => {
     );
   }
 
-  const waitMsg = await ctx.reply(`⏳ **"${fileName}" fayli qabul qilinmoqda va tahlil qilinmoqda...**`);
+  const waitMsg = await ctx.reply(`⏳ **"${fileName}" fayli yuklab olinmoqda va tahlil qilinmoqda...**`);
 
   try {
     const file = await ctx.getFile();
@@ -751,7 +908,7 @@ bot.on('message:document', async (ctx) => {
       extractedText = fileBuffer.toString('utf-8');
     } else {
       await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id);
-      return ctx.reply("❌ Noma'lum fayl formati! Iltimos faqat .docx, .xlsx, .csv yoki .txt fayl yuboring.");
+      return ctx.reply("❌ Noma'lum fayl formati! Faqat .docx, .xlsx, .csv yoki .txt fayl yuboring.");
     }
 
     if (!extractedText || extractedText.trim().length === 0) {
@@ -760,21 +917,20 @@ bot.on('message:document', async (ctx) => {
     }
 
     db.userSessions.set(userId, extractedText);
-
     const students = parseStudentsFromText(extractedText);
     await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id);
 
     return ctx.reply(
-      `✅ **FAYL MUVAFFAQIYATLI O'QILDI!**\n\n` +
+      `✅ **FAYL MUVAFFAQIYATLI QABUL QILINDI!**\n\n` +
       `📄 Fayl: **${fileName}**\n` +
       `👥 Aniqlangan yozuvlar: **${students.length} nafar**\n\n` +
-      `👇 **Qanday formatda qayta ishlab yuklab olmoqchisiz?**`,
+      `👇 **Qaysi formatda tayyorlab yuklab olmoqchisiz?**`,
       { parse_mode: 'Markdown', reply_markup: getActionInlineKeyboard() }
     );
   } catch (err) {
     console.error("Fayl yuklashda xatolik:", err);
     try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-    return ctx.reply(`❌ Faylni ochishda xatolik yuz berdi: ${err.message}`);
+    return ctx.reply(`❌ Faylni ochishda xatolik: ${err.message}`);
   }
 });
 
@@ -785,12 +941,12 @@ bot.on('callback_query:data', async (ctx) => {
 
   // A) Rejim almashtirish menyusi
   if (data === 'switch_roles') {
-    if (!isRealSuperOwner(ctx)) return ctx.answerCallbackQuery({ text: "Faqat Owner uchun!" });
+    if (!isRealSuperOwner(ctx)) return ctx.answerCallbackQuery({ text: "Faqat Super Owner uchun!" });
     return ctx.reply("🎭 **Qaysi rejimga o'tmoqchisiz?**", { reply_markup: getRoleSwitchKeyboard() });
   }
 
   if (data.startsWith('set_role_')) {
-    if (!isRealSuperOwner(ctx)) return ctx.answerCallbackQuery({ text: "Faqat Owner uchun!" });
+    if (!isRealSuperOwner(ctx)) return ctx.answerCallbackQuery({ text: "Faqat Super Owner uchun!" });
     const targetRole = data.replace('set_role_', '');
     db.simulatedRoles.set(userId, targetRole);
     saveDatabase();
@@ -811,16 +967,9 @@ bot.on('callback_query:data', async (ctx) => {
     const targetUserId = parseInt(userIdStr, 10);
 
     const planLabels = {
-      oneTime: "1 Martalik Hujjat",
-      twoTime: "2 Martalik Hujjat",
-      fiveTime: "5 Martalik Hujjat",
-      hourly: "1 Soatlik Kirish",
-      twoHours: "2 Soatlik Kirish",
-      threeHours: "3 Soatlik Kirish",
-      daily: "1 Kunlik Sinov",
-      weekly: "1 Haftalik Obuna",
-      monthly: "1 Oylik Standart",
-      unlimited: "Cheksiz VIP"
+      oneTime: "1 Martalik Hujjat", twoTime: "2 Martalik Hujjat", fiveTime: "5 Martalik Hujjat",
+      hourly: "1 Soatlik Kirish", twoHours: "2 Soatlik Kirish", threeHours: "3 Soatlik Kirish",
+      daily: "1 Kunlik Sinov", weekly: "1 Haftalik Obuna", monthly: "1 Oylik Standart", unlimited: "Cheksiz VIP"
     };
 
     const planPrice = db.prices[plan] || 5000;
@@ -869,52 +1018,53 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   // C) Owner litsenziya berish: act_{userId}_{planCode}
-  if (data.startsWith('act_') && !['act_export_xlsx', 'act_export_docx', 'act_export_pptx', 'act_export_test', 'act_sort_az', 'act_sort_year', 'act_translit'].includes(data)) {
+  const knownActionExport = ['act_export_xlsx', 'act_export_docx', 'act_export_pptx', 'act_export_test', 'act_export_gender', 'act_sort_az', 'act_sort_year', 'act_translit'];
+  if (data.startsWith('act_') && !knownActionExport.includes(data)) {
     const role = getEffectiveRole(ctx);
     if (role !== 'OWNER' && role !== 'ADMIN') {
       return ctx.answerCallbackQuery({ text: "Sizda bunday huquq yo'q!", show_alert: true });
     }
     const [_, targetIdStr, planCode] = data.split('_');
-    const targetId = parseInt(targetIdStr, 10);
+    const targetId = resolveUserId(targetIdStr);
 
-    const user = db.users.get(targetId) || { id: targetId, name: 'Foydalanuvchi' };
+    const user = db.users.get(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
     user.status = 'ACTIVE';
 
     let label = 'Faollashtirildi';
 
-    if (planCode.endsWith('time')) {
+    if (planCode === 'vip' || planCode === 'unlimited') {
+      user.plan = 'unlimited';
+      user.remainingUses = 999999;
+      user.expiresAt = 'Cheksiz VIP';
+      label = '👑 Cheksiz VIP';
+    } else if (planCode.endsWith('time')) {
       const times = parseInt(planCode, 10) || 1;
       user.plan = `${times}time`;
       user.remainingUses = times;
       user.expiresAt = `${times} ta hujjat`;
-      label = `${times} Martalik Hujjat`;
+      label = `⚡ ${times} Martalik Hujjat`;
     } else if (planCode.endsWith('h')) {
       const hours = parseInt(planCode, 10) || 1;
       user.plan = `${hours}h`;
       user.remainingUses = null;
       user.expiresAt = `${hours} soat`;
-      label = `${hours} Soatlik Kirish`;
+      label = `⏱ ${hours} Soatlik Kirish`;
     } else if (planCode.endsWith('d')) {
       const days = parseInt(planCode, 10) || 1;
       user.plan = `${days}d`;
       user.remainingUses = null;
       user.expiresAt = `${days} kun`;
-      label = `${days} Kunlik`;
+      label = `📅 ${days} Kunlik`;
     } else if (planCode === '1w') {
       user.plan = 'weekly';
       user.remainingUses = null;
       user.expiresAt = '7 kun';
-      label = '1 Haftalik';
+      label = '🗓 1 Haftalik';
     } else if (planCode === '1m') {
       user.plan = 'monthly';
       user.remainingUses = null;
       user.expiresAt = '30 kun';
-      label = '1 Oylik Pro';
-    } else if (planCode === 'vip') {
-      user.plan = 'unlimited';
-      user.remainingUses = 999999;
-      user.expiresAt = 'Cheksiz VIP';
-      label = 'Cheksiz VIP';
+      label = '⭐ 1 Oylik Pro';
     }
 
     db.users.set(targetId, user);
@@ -923,7 +1073,7 @@ bot.on('callback_query:data', async (ctx) => {
     await ctx.answerCallbackQuery({ text: `Hisob ${label} bilan yoqildi!` });
     await ctx.editMessageText(
       `✅ **HISOB MUVOFAQIYATLI YOQILDI!**\n\n` +
-      `👤 ID: \`${targetId}\`\n` +
+      `👤 ID: \`${getDisplayUserId(targetId)}\` *(Telegram ID: ${targetId})*\n` +
       `💳 Tarif: **${label}**\n` +
       `Tasdiqlovchi: @${ctx.from?.username || 'admin'}`,
       { parse_mode: 'Markdown' }
@@ -942,7 +1092,98 @@ bot.on('callback_query:data', async (ctx) => {
     return;
   }
 
-  // D) REAL FAYL GENERATSIYASI VA YUKLAB BERISH (3 SONIYADA)
+  // D) Bloklash
+  if (data.startsWith('block_')) {
+    const role = getEffectiveRole(ctx);
+    if (role !== 'OWNER' && role !== 'ADMIN') return;
+    const targetId = resolveUserId(data.replace('block_', ''));
+    const user = db.users.get(targetId);
+    if (user) {
+      user.status = 'BLOCKED';
+      saveDatabase();
+    }
+    await ctx.answerCallbackQuery({ text: "Foydalanuvchi rad etildi." });
+    await ctx.editMessageText(`❌ **Foydalanuvchi rad etildi.** (ID: \`${getDisplayUserId(targetId)}\`)`, { parse_mode: 'Markdown' });
+    return;
+  }
+
+  // E) HUJJAT FABRIKASI SHABLONLARI
+  if (data === 'doc_order') {
+    await ctx.answerCallbackQuery({ text: "Buyruq hujjati yaratilmoqda..." });
+    const buf = await generateOfficialOrderWordBuffer("O'quvchilarni rag'batlantirish to'g'risida");
+    return ctx.replyWithDocument(new InputFile(buf, "Maktab_Direktori_Buyrugi.docx"), {
+      caption: "📋 **Rasmiy maktab buyrug'i shabloni tayyor!** (.docx)"
+    });
+  }
+
+  if (data === 'doc_lesson') {
+    await ctx.answerCallbackQuery({ text: "Dars ishlanmasi yaratilmoqda..." });
+    const buf = await generateLessonPlanWordBuffer("Ona tili va adabiyot darsi");
+    return ctx.replyWithDocument(new InputFile(buf, "45_Daqiqalik_Dars_Ishlanmasi.docx"), {
+      caption: "📝 **45 daqiqalik namunaviy dars ishlanmasi (konspekt) tayyor!** (.docx)"
+    });
+  }
+
+  if (data === 'doc_referat') {
+    await ctx.answerCallbackQuery({ text: "Referat shabloni yaratilmoqda..." });
+    const buf = await generateLessonPlanWordBuffer("Referat va Mustaqil ish (GOST)");
+    return ctx.replyWithDocument(new InputFile(buf, "Referat_Titul_va_Reja.docx"), {
+      caption: "🎓 **Titul varag'i va GOST standartidagi referat shabloni tayyor!** (.docx)"
+    });
+  }
+
+  if (data === 'doc_ariza') {
+    await ctx.answerCallbackQuery({ text: "Ariza shabloni yaratilmoqda..." });
+    const buf = await generateOfficialOrderWordBuffer("Direktor nomiga rasmiy ariza");
+    return ctx.replyWithDocument(new InputFile(buf, "Rasmiy_Ariza_Shabloni.docx"), {
+      caption: "📄 **Direktor nomiga rasmiy ariza va tushuntirish xati tayyor!** (.docx)"
+    });
+  }
+
+  if (data === 'doc_certificate') {
+    await ctx.answerCallbackQuery({ text: "Faxriy yorliq tayyorlanmoqda..." });
+    const buf = await generateOfficialOrderWordBuffer("Faxriy Yorliq va Maqtov Yorlig'i");
+    return ctx.replyWithDocument(new InputFile(buf, "Faxriy_Yorliq_QR.docx"), {
+      caption: "🏆 **QR-kodli namunaviy Faxriy Yorliq hujjati tayyor!** (.docx)"
+    });
+  }
+
+  if (data === 'doc_tavsif') {
+    await ctx.answerCallbackQuery({ text: "Tavsifnoma yaratilmoqda..." });
+    const buf = await generateOfficialOrderWordBuffer("O'quvchiga rasmiy xarakteristika");
+    return ctx.replyWithDocument(new InputFile(buf, "Oquvchi_Xarakteristika.docx"), {
+      caption: "🔍 **O'quvchiga ijobiy xarakteristika / tavsifnoma hujjati tayyor!** (.docx)"
+    });
+  }
+
+  if (data === 'doc_davomat') {
+    await ctx.answerCallbackQuery({ text: "Davomat tabeli yaratilmoqda..." });
+    const demoStudents = parseStudentsFromText("1. Karimova Dildora\n2. Abdullayev Jasur\n3. Omonov Sardor\n4. Toshmatova Rayhon");
+    const buf = generateExcelBuffer(demoStudents);
+    return ctx.replyWithDocument(new InputFile(buf, "Oylik_Davomat_Tabeli.xlsx"), {
+      caption: "📊 **Oylik davomat tabeli tayyor!** (.xlsx)"
+    });
+  }
+
+  if (data === 'doc_grades') {
+    await ctx.answerCallbackQuery({ text: "Baholar jurnali yaratilmoqda..." });
+    const demoStudents = parseStudentsFromText("1. Karimova Dildora\n2. Abdullayev Jasur\n3. Omonov Sardor");
+    const buf = generateExcelBuffer(demoStudents);
+    return ctx.replyWithDocument(new InputFile(buf, "Baholar_Jurnali_GPA.xlsx"), {
+      caption: "📈 **Baholar jurnali va GPA reyting jadvali tayyor!** (.xlsx)"
+    });
+  }
+
+  if (data === 'doc_schedule') {
+    await ctx.answerCallbackQuery({ text: "Dars jadvali yaratilmoqda..." });
+    const demoStudents = parseStudentsFromText("1. Karimova Dildora\n2. Abdullayev Jasur");
+    const buf = generateExcelBuffer(demoStudents);
+    return ctx.replyWithDocument(new InputFile(buf, "Dars_Jadvali_va_Navbatchilik.xlsx"), {
+      caption: "🗂 **Haftalik dars jadvali va navbatchilik grafigi tayyor!** (.xlsx)"
+    });
+  }
+
+  // F) MATNDAN REAL FAYL GENERATSIYASI
   const currentText = db.userSessions.get(userId);
   if (!currentText) {
     return ctx.answerCallbackQuery({ text: "Avval matn yoki fayl yuboring!", show_alert: true });
@@ -950,71 +1191,61 @@ bot.on('callback_query:data', async (ctx) => {
 
   const students = parseStudentsFromText(currentText);
 
-  // 1. EXCEL (.XLSX)
   if (data === 'act_export_xlsx') {
     await ctx.answerCallbackQuery({ text: "Excel jadval yaratilmoqda..." });
-    const progressMsg = await ctx.reply("⏳ **Excel (.xlsx) fayl yaratilmoqda...**");
-    try {
-      const buffer = generateExcelBuffer(students);
-      await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_Tartiblangan_Jadval.xlsx"), {
-        caption: `📊 **Excel jadval tayyor!** (${students.length} nafar o'quvchi ma'lumotlari bilan)`
-      });
-      await ctx.api.deleteMessage(ctx.chat.id, progressMsg.message_id);
-    } catch (e) {
-      await ctx.reply("Xatolik yuz berdi: " + e.message);
-    }
+    const waitMsg = await ctx.reply("⏳ **Excel (.xlsx) jadval yaratilmoqda...**");
+    const buffer = generateExcelBuffer(students);
+    await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_Tartiblangan_Jadval.xlsx"), {
+      caption: `📊 **Excel jadval tayyor!** (${students.length} nafar o'quvchi ma'lumotlari bilan)`
+    });
+    try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     return;
   }
 
-  // 2. WORD (.DOCX)
+  if (data === 'act_export_gender') {
+    await ctx.answerCallbackQuery({ text: "Qizlar va o'g'il bolalar jadvali..." });
+    const waitMsg = await ctx.reply("⏳ **Qizlar va o'g'il bolalarga alohida jadvallar tuzilmoqda...**");
+    const buffer = generateGenderExcelBuffer(students);
+    await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_Qizlar_va_Ogillar_Jadvali.xlsx"), {
+      caption: `🔀 **Qizlar va o'g'il bolalar alohida jadvallarga ajratildi!**`
+    });
+    try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    return;
+  }
+
   if (data === 'act_export_docx') {
     await ctx.answerCallbackQuery({ text: "Word hujjat yaratilmoqda..." });
-    const progressMsg = await ctx.reply("⏳ **Word (.docx) hujjat yaratilmoqda...**");
-    try {
-      const buffer = await generateWordBuffer(students);
-      await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_Rasmiy_Royxat.docx"), {
-        caption: `📝 **Word hujjat tayyor!** (GOST standarti bo'yicha jadvalli formatda)`
-      });
-      await ctx.api.deleteMessage(ctx.chat.id, progressMsg.message_id);
-    } catch (e) {
-      await ctx.reply("Xatolik yuz berdi: " + e.message);
-    }
+    const waitMsg = await ctx.reply("⏳ **Word (.docx) hujjat yaratilmoqda...**");
+    const buffer = await generateWordBuffer(students);
+    await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_Rasmiy_Royxat.docx"), {
+      caption: `📝 **Word hujjat tayyor!** (GOST standarti bo'yicha jadvalli formatda)`
+    });
+    try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     return;
   }
 
-  // 3. POWERPOINT (.PPTX)
   if (data === 'act_export_pptx') {
     await ctx.answerCallbackQuery({ text: "PowerPoint taqdimot yaratilmoqda..." });
-    const progressMsg = await ctx.reply("⏳ **Slaydlar (.pptx) generatsiya qilinmoqda...**");
-    try {
-      const buffer = await generatePowerPointBuffer(students, "EduHujjat Taqdimot");
-      await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_Taqdimot.pptx"), {
-        caption: `🖼 **PowerPoint taqdimot tayyor!** (Zamonaviy slaydlar bilan)`
-      });
-      await ctx.api.deleteMessage(ctx.chat.id, progressMsg.message_id);
-    } catch (e) {
-      await ctx.reply("Xatolik yuz berdi: " + e.message);
-    }
+    const waitMsg = await ctx.reply("⏳ **Slaydlar (.pptx) generatsiya qilinmoqda...**");
+    const buffer = await generatePowerPointBuffer(students, "EduHujjat Taqdimot");
+    await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_Taqdimot.pptx"), {
+      caption: `🖼 **PowerPoint taqdimot tayyor!** (Zamonaviy slaydlar bilan)`
+    });
+    try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     return;
   }
 
-  // 4. 15 TALIK TEST (.DOCX)
   if (data === 'act_export_test') {
-    await ctx.answerCallbackQuery({ text: "15 talik test tuzilmoqda..." });
-    const progressMsg = await ctx.reply("⏳ **15 talik test va javoblar kaliti tuzilmoqda...**");
-    try {
-      const buffer = await generateTestWordBuffer(currentText);
-      await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_15_Test_va_Kalitlar.docx"), {
-        caption: `❓ **15 talik test tayyor!** (Variantlar va to'g'ri javoblar kaliti bilan)`
-      });
-      await ctx.api.deleteMessage(ctx.chat.id, progressMsg.message_id);
-    } catch (e) {
-      await ctx.reply("Xatolik yuz berdi: " + e.message);
-    }
+    await ctx.answerCallbackQuery({ text: "Test tuzilmoqda..." });
+    const waitMsg = await ctx.reply("⏳ **15 talik test va javoblar kaliti tuzilmoqda...**");
+    const buffer = await generateTestWordBuffer(currentText);
+    await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_15_Test_va_Kalitlar.docx"), {
+      caption: `❓ **15 talik test tayyor!** (Variantlar va to'g'ri javoblar kaliti bilan)`
+    });
+    try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     return;
   }
 
-  // 5. ALIFBO SARALASH (A-Z)
   if (data === 'act_sort_az') {
     await ctx.answerCallbackQuery({ text: "Alifbo bo'yicha saralandi!" });
     const sorted = [...students].sort((a, b) => a.fullName.localeCompare(b.fullName, 'uz-UZ'));
@@ -1025,7 +1256,6 @@ bot.on('callback_query:data', async (ctx) => {
     return ctx.reply(out.slice(0, 4000), { parse_mode: 'Markdown', reply_markup: getActionInlineKeyboard() });
   }
 
-  // 6. YOSH VA TUG'ILGAN YIL BO'YICHA SARALASH
   if (data === 'act_sort_year') {
     await ctx.answerCallbackQuery({ text: "Yosh bo'yicha saralandi!" });
     const sorted = [...students].sort((a, b) => b.birthYear - a.birthYear);
@@ -1036,7 +1266,6 @@ bot.on('callback_query:data', async (ctx) => {
     return ctx.reply(out.slice(0, 4000), { parse_mode: 'Markdown', reply_markup: getActionInlineKeyboard() });
   }
 
-  // 7. LOTIN <-> KIRILL TRANSLITERATSIYA
   if (data === 'act_translit') {
     await ctx.answerCallbackQuery({ text: "Kirill yozuviga o'girildi!" });
     const cyrillicText = transliterateLatinToCyrillic(currentText);
@@ -1047,7 +1276,7 @@ bot.on('callback_query:data', async (ctx) => {
   }
 });
 
-// 10. KLAVIATURA TUGMALARI VA MATN BUYRUQLARI
+// 10. MATN BUYRUQLARI VA KLAVIATURA BOSILGANDA
 bot.on('message:text', async (ctx) => {
   const text = ctx.message.text.trim();
   const userId = ctx.from.id;
@@ -1056,54 +1285,221 @@ bot.on('message:text', async (ctx) => {
 
   if (isSpamming(userId)) return;
 
-  // A) Klaviatura: Rejimni almashtirish
-  if (text === '🎭 Rejimni Almashtirish') {
-    if (!isRealSuperOwner(ctx)) {
-      return ctx.reply("❌ Bu amal faqat Super Owner (@" + OWNER_USERNAME + ") uchun!");
-    }
-    return ctx.reply(
-      `🎭 **Qaysi rejimga o'tishni tanlang:**\n\n` +
-      `1. 👑 **Super Owner** — Barcha vakolatlar, adminlar, narxlar va sozlamalar.\n` +
-      `2. 🛡️ **Administrator** — Foydalanuvchilarni faollashtirish va monitoring.\n` +
-      `3. 🔍 **Tekshiruvchi (Auditor)** — Hisobotlar va tizim tekshiruvi.\n` +
-      `4. 👤 **Oddiy Foydalanuvchi** — Yopiq paywall oynasi, narxlar va xarid so'rovini sinash.`,
-      { reply_markup: getRoleSwitchKeyboard() }
-    );
-  }
+  // =========================================================================
+  // A) BARCHA /active BUYRUQLARI (CHEKSIZ, UNLIMITED, SOAT, KUN, MARTALIK VA TUGMALI)
+  // =========================================================================
+  const lowerText = text.toLowerCase();
+  const isActivationCommand = 
+    lowerText.startsWith('/active') || 
+    lowerText.startsWith('/activate') || 
+    lowerText.startsWith('/grant') ||
+    (role === 'OWNER' || role === 'ADMIN') && /^(?:\d+|1)\s+(?:unlimited|vip|cheksiz|\d+)/i.test(text);
 
-  // Rejimni qaytarish (Super Ownerga)
-  if (text === '🎭 Rejimni Qaytarish (Owner)') {
-    if (isRealSuperOwner(ctx)) {
-      db.simulatedRoles.delete(userId);
-      saveDatabase();
-      const ownerKb = getReplyKeyboardForRole('OWNER');
+  if (isActivationCommand) {
+    if (role !== 'OWNER' && role !== 'ADMIN') {
+      return ctx.reply("❌ Sizda foydalanuvchini faollashtirish huquqi yo'q!");
+    }
+
+    // Parametrlarni ajratib olish: /active <targetId> <duration...>
+    const cleaned = text.replace(/^\/(?:active|activate|grant)\s*/i, '').trim();
+    const parts = cleaned.split(/\s+/);
+    const targetIdRaw = parts[0];
+    const durationRaw = parts.slice(1).join(' ').toLowerCase();
+
+    if (!targetIdRaw) {
       return ctx.reply(
-        `👑 **Asosiy Super Owner rejimiga qaytdingiz!**\nBarcha boshqaruv tugmalari qaytarildi.`,
-        { reply_markup: ownerKb }
+        `⚡ **FAOLASHTIRISH BUYRUG'I NAMOZISI:**\n\n` +
+        `• \`/active 1 unlimited\` yoki \`/active ${SUPER_OWNER_ID} unlimited\` (Cheksiz)\n` +
+        `• \`/active ID 2h\` yoki \`/active ID 2soat\` (2 soatlik)\n` +
+        `• \`/active ID 1time\` yoki \`/active ID 2time\` (Martalik)\n` +
+        `• \`/active ID 1d\` yoki \`/active ID 1kun\` (Kunlik)\n` +
+        `• \`/active ID 1m\` yoki \`/active ID 1oy\` (Oylik)\n\n` +
+        `Yoki shunchaki \`/active ID\` deb yozing — **tayyor tugmalar** chiqadi!`,
+        { parse_mode: 'Markdown' }
       );
     }
+
+    const targetId = resolveUserId(targetIdRaw);
+
+    // Agar muddat yozilmagan bo'lsa -> Tugmali menyu ko'rsatish
+    if (!durationRaw) {
+      return ctx.reply(
+        `👇 **ID: \`${getDisplayUserId(targetId)}\` foydalanuvchisi uchun qanday muddat bermoqchisiz?**`,
+        { parse_mode: 'Markdown', reply_markup: getOwnerActionKeyboard(targetId) }
+      );
+    }
+
+    let planLabel = '';
+    const user = db.users.get(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
+    user.status = 'ACTIVE';
+
+    if (durationRaw === 'unlimited' || durationRaw === 'vip' || durationRaw === 'cheksiz' || durationRaw === 'abadiy') {
+      user.plan = 'unlimited';
+      user.remainingUses = 999999;
+      user.expiresAt = 'Cheksiz VIP';
+      planLabel = '👑 Cheksiz VIP (Unlimited)';
+    } else if (durationRaw.match(/^\d+\s*(?:h|soat|hour|hours)$/)) {
+      const h = parseInt(durationRaw, 10) || 1;
+      user.plan = `${h}h`;
+      user.remainingUses = null;
+      user.expiresAt = `${h} soat`;
+      planLabel = `⏱ ${h} Soatlik Kirish`;
+    } else if (durationRaw.match(/^\d+\s*(?:time|martalik|marta)$/) || /^\d+$/.test(durationRaw)) {
+      const times = parseInt(durationRaw, 10) || 1;
+      user.plan = `${times}time`;
+      user.remainingUses = times;
+      user.expiresAt = `${times} ta hujjat`;
+      planLabel = `⚡ ${times} Martalik Hujjat`;
+    } else if (durationRaw.match(/^\d+\s*(?:d|kun|day|days)$/)) {
+      const d = parseInt(durationRaw, 10) || 1;
+      user.plan = `${d}d`;
+      user.remainingUses = null;
+      user.expiresAt = `${d} kun`;
+      planLabel = `📅 ${d} Kunlik`;
+    } else if (durationRaw.match(/^\d+\s*(?:w|hafta|week|weeks)$/)) {
+      const w = parseInt(durationRaw, 10) || 1;
+      user.plan = `${w}w`;
+      user.remainingUses = null;
+      user.expiresAt = `${w * 7} kun`;
+      planLabel = `🗓 ${w} Haftalik`;
+    } else if (durationRaw.match(/^\d+\s*(?:m|oy|month|months)$/)) {
+      const m = parseInt(durationRaw, 10) || 1;
+      user.plan = `${m}m`;
+      user.remainingUses = null;
+      user.expiresAt = `${m * 30} kun`;
+      planLabel = `⭐ ${m} Oylik Pro`;
+    } else {
+      // Noma'lum muddat bo'lsa -> Xato bermasdan TUGMALARNI CHIQARISH!
+      return ctx.reply(
+        `⚠️ **Noma'lum muddat kiritildi: "${durationRaw}"**\n` +
+        `Iltimos, ID: \`${getDisplayUserId(targetId)}\` uchun pastdagi tayyor tugmalardan birini bosing:`,
+        { parse_mode: 'Markdown', reply_markup: getOwnerActionKeyboard(targetId) }
+      );
+    }
+
+    db.users.set(targetId, user);
+    saveDatabase();
+
+    await ctx.reply(
+      `✅ **HISOB MUVOFAQIYATLI YOQILDI!**\n\n` +
+      `👤 ID: \`${getDisplayUserId(targetId)}\` *(Telegram ID: ${targetId})*\n` +
+      `💳 Tarif: **${planLabel}**\n` +
+      `Tasdiqlovchi: @${ctx.from?.username || 'admin'}`,
+      { parse_mode: 'Markdown' }
+    );
+
+    try {
+      const userReplyKb = getReplyKeyboardForRole('USER', true);
+      await bot.api.sendMessage(
+        targetId,
+        `🎉 **HISOBINGIZ FOALLASHTIRILDI!**\n\n` +
+        `Boshqaruvchi hisobingizni tasdiqladi. Sizga **${planLabel}** imkoniyati berildi!\n` +
+        `Endi bot va WebApp siz uchun to'liq ochiq!`,
+        { reply_markup: userReplyKb }
+      );
+    } catch (e) {}
+    return;
   }
 
-  // Klaviatura: Tezkor Yoqish
+  // =========================================================================
+  // B) KLAVIATURADAGI SUPER TUGMALAR
+  // =========================================================================
   if (text === '⚡ Tezkor Yoqish') {
-    if (role !== 'OWNER' && role !== 'ADMIN') {
-      return ctx.reply("❌ Sizda bu amalga huquq yo'q!");
-    }
+    if (role !== 'OWNER' && role !== 'ADMIN') return ctx.reply("❌ Ruxsat yo'q!");
     return ctx.reply(
-      `⚡ **FOYDALANUVCHINI TEZKOR YOQISH:**\n\n` +
-      `Foydalanuvchi ID raqamini va muddatini yozing:\n\n` +
-      `• \`/active ID 1time\` (1 ta hujjat)\n` +
-      `• \`/active ID 2time\` (2 ta hujjat)\n` +
-      `• \`/active ID 2h\` (2 soatlik kirish)\n` +
-      `• \`/active ID 3h\` (3 soatlik kirish)\n` +
-      `• \`/active ID 1d\` (1 kunlik)\n` +
-      `• \`/active ID 1m\` (1 oylik)\n\n` +
-      `Yoki qisqartirib: \`ID 2soat\`, \`ID 2martalik\` deb yuboring!`,
+      `⚡ **TEZKOR YOQISH BUYRUQLARI:**\n\n` +
+      `• \`/active 1 unlimited\` — Super Owner hisobini cheksiz qilish\n` +
+      `• \`/active ID unlimited\` — Cheksiz VIP litsenziya berish\n` +
+      `• \`/active ID 2h\` — 2 soatlik kirish\n` +
+      `• \`/active ID 2time\` — 2 ta hujjat yaratish\n` +
+      `• \`/active ID 1d\` — 1 kunlik sinov\n` +
+      `• \`/active ID 1m\` — 1 oylik obuna\n\n` +
+      `Yoki shunchaki \`/active <ID>\` deb yuboring, barcha tugmalar chiqadi!`,
       { parse_mode: 'Markdown' }
     );
   }
 
-  // Klaviatura: Narxlar
+  if (text === '📑 Hujjat Fabrikasi') {
+    return ctx.reply(
+      `📑 **"SMARTOFFICE & EDUAI" HUJJATLAR FABRIKASI:**\n\n` +
+      `Quyidagi rasmiy maktab va ta'lim hujjatlaridan birini tanlang. Tizim avtomatik standart shaklda (.docx yoki .xlsx) generatsiya qilib beradi:`,
+      { reply_markup: getDocumentFactoryKeyboard() }
+    );
+  }
+
+  if (text === '🎲 Test Generatori') {
+    return ctx.reply(
+      `🎲 **15 TALIK VARIANTLI TEST GENERATORI:**\n\n` +
+      `Mavzu nomini yozing yoki darslik matnini tashlang. Tizim 15 ta 4 variantli (A, B, C, D) test va javoblar kaliti bilan Word (.docx) tayyorlab beradi!\n\n` +
+      `Namuna ko'rish uchun pastdagi \`📄 Demo Ma'lumot\` tugmasini bosing.`,
+      { reply_markup: getActionInlineKeyboard() }
+    );
+  }
+
+  if (text === '📊 Excel Jadvallar') {
+    return ctx.reply(
+      `📊 **EXCEL JADVALLAR VA TAHLILLAR:**\n\n` +
+      `• O'quvchilar ro'yxatini toza jadvalga solish (.xlsx)\n` +
+      `• Oylik davomat tabeli\n` +
+      `• GPA reyting va baholar jurnali\n\n` +
+      `Matn yoki fayl tashlang, 3 soniyada tayyor bo'ladi!`,
+      { reply_markup: getActionInlineKeyboard() }
+    );
+  }
+
+  if (text === '🖼 Slayd Yasash') {
+    return ctx.reply(
+      `🖼 **POWERPOINT SLAYD GENERATORI (.pptx):**\n\n` +
+      `Mavzu yoki matn yuboring, tizim zamonaviy to'q rangli (dark slate) sarlavha slaydi va kartochkalar bilan tayyor .pptx fayl yasab beradi!`,
+      { reply_markup: getActionInlineKeyboard() }
+    );
+  }
+
+  if (text === '📜 Faxriy Yorliq') {
+    const buf = await generateOfficialOrderWordBuffer("Faxriy Yorliq va Sertifikat");
+    return ctx.replyWithDocument(new InputFile(buf, "Faxriy_Yorliq_EduHujjat.docx"), {
+      caption: "🏆 **QR-kodli namunaviy Faxriy Yorliq hujjati tayyor!** (.docx)"
+    });
+  }
+
+  if (text === "🔀 Qizlar/O'g'illar") {
+    const demo = db.userSessions.get(userId) || 
+      "1. Karimova Dildora Baxtiyor qizi 14.05.2008\n2. Abdullayev Jasur Botir o'g'li 02.11.2007\n3. Toshmatova Rayhon Alisher qizi 30.08.2008\n4. Omonov Sardor Qobilovich 25.01.2008";
+    const students = parseStudentsFromText(demo);
+    const buf = generateGenderExcelBuffer(students);
+    return ctx.replyWithDocument(new InputFile(buf, "Qizlar_va_Ogillar_Alohida_Jadvali.xlsx"), {
+      caption: "🔀 **Qizlar va o'g'il bolalar alohida jadvallarga ajratildi!** (.xlsx)"
+    });
+  }
+
+  if (text === '📥 Bazani Yuklash (Excel)') {
+    if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'INSPECTOR') return ctx.reply("❌ Ruxsat yo'q!");
+    const buf = generateUsersExcelBuffer();
+    return ctx.replyWithDocument(new InputFile(buf, `EduHujjat_Foydalanuvchilar_Bazasi_${new Date().toLocaleDateString('uz-UZ')}.xlsx`), {
+      caption: `📥 **Barcha foydalanuvchilar bazasi tayyor!** (${db.users.size} ta foydalanuvchi)`
+    });
+  }
+
+  if (text === '🎭 Rejimni Almashtirish') {
+    if (!isRealSuperOwner(ctx)) return ctx.reply("❌ Faqat Super Owner (@" + OWNER_USERNAME + ") uchun!");
+    return ctx.reply(
+      `🎭 **Qaysi rejimga o'tishni tanlang:**\n\n` +
+      `1. 👑 **Super Owner** — Cheksiz boshqaruv, adminlar, narxlar va barcha buyruqlar.\n` +
+      `2. 🛡️ **Administrator** — Foydalanuvchilarni faollashtirish va monitoring.\n` +
+      `3. 🔍 **Tekshiruvchi (Auditor)** — Hisobotlar va ma'lumotlar bazasi eksporti.\n` +
+      `4. 👤 **Oddiy Foydalanuvchi** — Yopiq paywall oynasi va xaridni sinash.`,
+      { reply_markup: getRoleSwitchKeyboard() }
+    );
+  }
+
+  if (text === '🎭 Rejimni Qaytarish (Owner)') {
+    if (isRealSuperOwner(ctx)) {
+      db.simulatedRoles.delete(userId);
+      saveDatabase();
+      return ctx.reply(`👑 **Asosiy Super Owner rejimiga qaytdingiz!**`, { reply_markup: getReplyKeyboardForRole('OWNER') });
+    }
+  }
+
   if (text === '💰 Narxlar' || text === '💰 Narxlar va Tariflar') {
     return ctx.reply(
       `💰 **EDUKATSIYA TIZIMI NARXLAR JADVALI:**\n\n` +
@@ -1122,7 +1518,6 @@ bot.on('message:text', async (ctx) => {
     );
   }
 
-  // Narxni o'zgartirish (Owner)
   if (text.startsWith('/setprice ') && role === 'OWNER') {
     const parts = text.split(/\s+/);
     if (parts.length === 3) {
@@ -1131,29 +1526,24 @@ bot.on('message:text', async (ctx) => {
       if (newPrice > 0 && db.prices[planName] !== undefined) {
         db.prices[planName] = newPrice;
         saveDatabase();
-        return ctx.reply(`✅ **${planName}** tarifi narxi \`${newPrice.toLocaleString()} so'm\` ga o'zgartirildi va saqlandi!`, { parse_mode: 'Markdown' });
+        return ctx.reply(`✅ **${planName}** narxi \`${newPrice.toLocaleString()} so'm\` ga o'zgartirildi!`, { parse_mode: 'Markdown' });
       }
     }
-    return ctx.reply("❌ Noto'g'ri format! Namuna: `/setprice oneTime 3000` yoki `/setprice monthly 80000`", { parse_mode: 'Markdown' });
+    return ctx.reply("❌ Namuna: `/setprice oneTime 3000` yoki `/setprice monthly 80000`", { parse_mode: 'Markdown' });
   }
 
-  // Ommaviy xabar yuborish (Broadcast)
   if (text === '📢 Ommaviy Xabar' && role === 'OWNER') {
     return ctx.reply(
-      `📢 **Barcha foydalanuvchilarga xabar yuborish:**\n\n` +
-      `Quyidagi formatda yozing:\n` +
-      `\`/broadcast Hurmatli foydalanuvchilar, tizimimizda yangi funksiyalar qo'shildi!\``,
+      `📢 **Ommaviy xabar yuborish uchun quyidagicha yozing:**\n\n` +
+      `\`/broadcast Hurmatli foydalanuvchilar, tizimga 10 dan ortiq yangi shablonlar qo'shildi!\``,
       { parse_mode: 'Markdown' }
     );
   }
 
   if (text.startsWith('/broadcast ') && role === 'OWNER') {
     const broadcastText = text.replace('/broadcast ', '').trim();
-    if (!broadcastText) return ctx.reply("Xabar matnini kiriting!");
-    
     let sentCount = 0;
-    const users = Array.from(db.users.keys());
-    for (const uId of users) {
+    for (const uId of db.users.keys()) {
       try {
         await bot.api.sendMessage(uId, `📢 **DIQQAT E'LON!**\n\n${broadcastText}`, { parse_mode: 'Markdown' });
         sentCount++;
@@ -1162,31 +1552,25 @@ bot.on('message:text', async (ctx) => {
     return ctx.reply(`✅ Xabar **${sentCount} ta** foydalanuvchiga muvaffaqiyatli yetkazildi!`);
   }
 
-  // Klaviatura: Foydalanuvchilar
   if (text === '👥 Foydalanuvchilar') {
-    if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'INSPECTOR') {
-      return ctx.reply("❌ Ruxsat berilmagan!");
-    }
+    if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'INSPECTOR') return ctx.reply("❌ Ruxsat yo'q!");
     const usersList = Array.from(db.users.values());
-    if (usersList.length === 0) {
-      return ctx.reply("👥 Hozircha yangi foydalanuvchilar yo'q.");
-    }
     let msg = `👥 **FOYDALANUVCHILAR RO'YXATI (${usersList.length} ta):**\n\n`;
     usersList.slice(0, 15).forEach((u, i) => {
       const statusIcon = u.status === 'ACTIVE' ? '✅' : (u.status === 'BLOCKED' ? '❌' : '⏳');
       msg += `${i + 1}. ${statusIcon} ${u.name} (ID: \`${u.id}\`) - ${u.plan || 'none'}\n`;
     });
+    msg += `\n📥 *Barcha ro'yxatni Excelda yuklash uchun pastdagi "Bazani Yuklash (Excel)" tugmasini bosing.*`;
     return ctx.reply(msg, { parse_mode: 'Markdown' });
   }
 
-  // Klaviatura: Adminlar
   if (text === '🛡 Adminlar') {
-    if (role !== 'OWNER') return ctx.reply("❌ Faqat Owner uchun!");
+    if (role !== 'OWNER') return ctx.reply("❌ Faqat Super Owner uchun!");
     const adminList = Array.from(db.admins).map(a => `@${a}`).join(', ');
     return ctx.reply(
       `🛡️ **ADMINLAR RO'YXATI:**\n\n${adminList}\n\n` +
-      `➕ **Admin qo'shish:** \`/addadmin username\`\n` +
-      `➖ **Admin o'chirish:** \`/deladmin username\``,
+      `➕ **Qo'shish:** \`/addadmin username\`\n` +
+      `➖ **O'chirish:** \`/deladmin username\``,
       { parse_mode: 'Markdown' }
     );
   }
@@ -1195,8 +1579,9 @@ bot.on('message:text', async (ctx) => {
     const newAdmin = text.replace('/addadmin ', '').trim().replace('@', '').toLowerCase();
     db.admins.add(newAdmin);
     saveDatabase();
-    return ctx.reply(`✅ @${newAdmin} muvaffaqiyatli admin etib tayinlandi!`);
+    return ctx.reply(`✅ @${newAdmin} admin etib tayinlandi!`);
   }
+
   if (text.startsWith('/deladmin ') && role === 'OWNER') {
     const delAdmin = text.replace('/deladmin ', '').trim().replace('@', '').toLowerCase();
     db.admins.delete(delAdmin);
@@ -1204,35 +1589,28 @@ bot.on('message:text', async (ctx) => {
     return ctx.reply(`❌ @${delAdmin} adminlikdan chiqarildi!`);
   }
 
-  // Klaviatura: Statistika
   if (text === '📊 Statistika' || text === '📊 Tizim Statistikasi') {
     return ctx.reply(
       `📊 **EDUKATSIYA TIZIMI STATISTIKASI:**\n\n` +
+      `• Super Owner ID: \`1\` (@${OWNER_USERNAME})\n` +
       `• Jami foydalanuvchilar: ${db.users.size}\n` +
       `• Faol hisoblar: ${Array.from(db.users.values()).filter(u => u.status === 'ACTIVE').length}\n` +
       `• Kutishdagilar (Pending): ${Array.from(db.users.values()).filter(u => u.status === 'PENDING').length}\n` +
-      `• Adminlar: ${db.admins.size}\n` +
-      `• Baza holati: Doimiy (data/database.json)\n` +
+      `• Adminlar soni: ${db.admins.size}\n` +
+      `• Doimiy Baza: \`data/database.json\` (Faol)\n` +
       `• WebApp: ${WEBAPP_URL}`,
       { parse_mode: 'Markdown' }
     );
   }
 
-  // Klaviatura: WebApp ochish
   if (text === '🌐 WebApp Ochish' || text === '🌐 Mini App-ni Ochish') {
-    const webappInline = new InlineKeyboard().webApp("🚀 EduHujjat WebApp-ni Ochish", WEBAPP_URL);
-    return ctx.reply("Quyidagi tugma orqali WebApp-ga kiring:", { reply_markup: webappInline });
+    return ctx.reply("WebApp-ga kiring:", { reply_markup: new InlineKeyboard().webApp("🚀 EduHujjat WebApp", WEBAPP_URL) });
   }
 
-  // Klaviatura: Litsenziya olish
   if (text === '💳 Litsenziya Sotib Olish' || text === '💳 Muddatni Uzaytirish') {
-    return ctx.reply(
-      `👇 **Kerakli tarifni tanlang:**`,
-      { reply_markup: getTariffInlineKeyboard(userId) }
-    );
+    return ctx.reply(`👇 **Tarifni tanlang:**`, { reply_markup: getTariffInlineKeyboard(userId) });
   }
 
-  // Klaviatura: Demo ma'lumot
   if (text === "📄 Demo Ma'lumot") {
     const demo = 
       "1. karimova dildora baxtiyor qizi 14.05.2008 +998901234567 10-A\n" +
@@ -1247,68 +1625,23 @@ bot.on('message:text', async (ctx) => {
     );
   }
 
-  // B) AQLLI PARSER: /active ID 2h, ID 2soat, ID 2martalik...
-  if (role === 'OWNER' || role === 'ADMIN') {
-    const match = text.match(/^(?:\/(?:active|activate|grant)\s+)?(\d{6,12})\s+(\d+)\s*(h|soat|time|martalik|d|kun|w|hafta|m|oy)$/i);
-    if (match) {
-      const targetId = parseInt(match[1], 10);
-      const count = parseInt(match[2], 10) || 1;
-      const unit = match[3].toLowerCase();
-
-      let planLabel = '';
-      const user = db.users.get(targetId) || { id: targetId, name: 'Foydalanuvchi' };
-      user.status = 'ACTIVE';
-
-      if (unit === 'h' || unit === 'soat') {
-        user.plan = `${count}h`;
-        user.remainingUses = null;
-        user.expiresAt = `${count} soat`;
-        planLabel = `${count} Soatlik Kirish`;
-      } else if (unit === 'time' || unit === 'martalik') {
-        user.plan = `${count}time`;
-        user.remainingUses = count;
-        user.expiresAt = `${count} ta hujjat`;
-        planLabel = `${count} Martalik Hujjat`;
-      } else if (unit === 'd' || unit === 'kun') {
-        user.plan = `${count}d`;
-        user.remainingUses = null;
-        user.expiresAt = `${count} kun`;
-        planLabel = `${count} Kunlik`;
-      } else if (unit === 'w' || unit === 'hafta') {
-        user.plan = `${count}w`;
-        user.remainingUses = null;
-        user.expiresAt = `${count * 7} kun`;
-        planLabel = `${count} Haftalik`;
-      } else if (unit === 'm' || unit === 'oy') {
-        user.plan = `${count}m`;
-        user.remainingUses = null;
-        user.expiresAt = `${count * 30} kun`;
-        planLabel = `${count} Oylik Pro`;
-      }
-
-      db.users.set(targetId, user);
-      saveDatabase();
-
-      await ctx.reply(
-        `✅ **ID: \`${targetId}\` foydalanuvchisi "${planLabel}" bilan faollashtirildi!**`,
-        { parse_mode: 'Markdown' }
-      );
-
-      try {
-        const userReplyKb = getReplyKeyboardForRole('USER', true);
-        await bot.api.sendMessage(
-          targetId,
-          `🎉 **HISOBINGIZ FAOLLASHTIRILDI!**\n\n` +
-          `Boshqaruvchi sizga **${planLabel}** imkoniyatini taqdim etdi.\n` +
-          `Endi bot va WebApp siz uchun to'liq ochiq!`,
-          { reply_markup: userReplyKb }
-        );
-      } catch (e) {}
-      return;
-    }
+  if (text === 'ℹ️ Mening Hisobim') {
+    const u = db.users.get(userId);
+    const displayId = getDisplayUserId(userId);
+    return ctx.reply(
+      `👤 **HISOBINGIZ MA'LUMOTLARI:**\n\n` +
+      `• ID: \`${displayId}\`\n` +
+      `• Holati: **${u?.status || 'Noma\'lum'}**\n` +
+      `• Tarif: **${u?.plan || 'none'}**\n` +
+      `• Qolgan imkoniyat: ${u?.remainingUses ? `${u.remainingUses} ta hujjat` : (u?.expiresAt || 'Cheksiz')}\n` +
+      `• Ro'yxatdan o'tgan: ${u?.registeredAt || '-'}`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
-  // C) Ruxsat tekshiruvi
+  // =========================================================================
+  // C) AGAR ODDIY FOYDALANUVCHI VA RUXSATI YO'Q BO'LSA
+  // =========================================================================
   if (!isUserActive(userId, username)) {
     return ctx.reply(
       `🔒 **Hisobingiz hali tasdiqlanmagan.**\n\n` +
@@ -1318,7 +1651,9 @@ bot.on('message:text', async (ctx) => {
     );
   }
 
-  // D) Foydalanuvchi matn yuborganda
+  // =========================================================================
+  // D) RUXSAT BERILGAN FOYDALANUVCHI MATN YUBORGANDA
+  // =========================================================================
   db.userSessions.set(userId, text);
 
   const currentUserObj = db.users.get(userId);
@@ -1336,5 +1671,5 @@ bot.on('message:text', async (ctx) => {
   );
 });
 
-console.log("EduHujjat Pro Standalone Bot Server muvaffaqiyatli ishga tushdi...");
+console.log("EduHujjat Ultra Standalone Bot Server ishga tushdi...");
 bot.start();
