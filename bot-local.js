@@ -2677,11 +2677,21 @@ const apiServer = http.createServer((req, res) => {
     return;
   }
 
+  // Render & Cloud Health Check
+  if (url.pathname === '/' || url.pathname === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ 
+      status: 'ok', 
+      service: 'EduHujjat Ultra Bot & Gemini API', 
+      time: new Date().toISOString() 
+    }));
+  }
+
   res.writeHead(404);
   res.end(JSON.stringify({ notFound: true }));
 });
 
-const API_PORT = process.env.API_PORT || 3001;
+const API_PORT = process.env.PORT || process.env.API_PORT || 3001;
 apiServer.listen(API_PORT, () => {
   console.log(`🌐 Local Device Auth HTTP API running on port ${API_PORT}`);
 });

@@ -1,0 +1,36 @@
+services:
+  # 1. EduHujjat Telegram Bot & AI HTTP Server (Runs 24/7 on Render)
+  - type: web
+    name: eduhujjat-bot
+    env: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install
+    startCommand: node bot-local.js
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BOT_TOKEN
+        value: 9001772632:AAEe8hXmKAhWwE7VHK1Vd8FMia6TcqYI0Mk
+      - key: OWNER_USERNAME
+        value: fayzbek1331
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: WEBAPP_URL
+        value: https://eduhujjat.vercel.app
+
+  # 2. EduHujjat Frontend Web Application (High-speed Global Static Site)
+  - type: web
+    name: eduhujjat-web
+    env: static
+    plan: free
+    region: frankfurt
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
