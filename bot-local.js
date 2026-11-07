@@ -2686,6 +2686,26 @@ apiServer.listen(API_PORT, () => {
   console.log(`🌐 Local Device Auth HTTP API running on port ${API_PORT}`);
 });
 
-console.log("EduHujjat Ultra Standalone Bot Server ishga tushdi...");
-setupTelegramChatMenu();
-bot.start();
+async function startBotWithRetry() {
+  while (true) {
+    try {
+      console.log("EduHujjat Ultra Standalone Bot Server ishga tushdi...");
+      try { await setupTelegramChatMenu(); } catch (e) {}
+      await bot.start({
+        drop_pending_updates: true,
+        onStart: (botInfo) => {
+          console.log(`🤖 Bot @${botInfo.username} muvaffaqiyatli ishga tushdi va xabarlarni qabul qilmoqda!`);
+        }
+      });
+    } catch (err) {
+      console.error("Bot polling error:", err.message);
+      if (err.message?.includes('409') || err.message?.includes('Conflict')) {
+        console.log("Telegram 409 Conflict aniqlandi. 5 soniya kutilmoqda va avtomatik qayta ulanmoqda...");
+        await new Promise(r => setTimeout(r, 5000));
+      } else {
+        await new Promise(r => setTimeout(r, 3000));
+      }
+    }
+  }
+}
+startBotWithRetry();
