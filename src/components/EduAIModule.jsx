@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
-import { Bot, Sparkles, Send, Copy, Download, Check, RefreshCw, FileText, FileSpreadsheet, Lightbulb } from 'lucide-react';
+import { Bot, Sparkles, Send, Copy, Download, Check, RefreshCw, FileText, FileSpreadsheet, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { generateOfficialDocumentDocx } from '../utils/wordGenerator';
+import { 
+  generateAITestSuite, 
+  generateAILessonPlan, 
+  generateAIOfficialOrder, 
+  generateAIStudentReference 
+} from '../utils/universalAiBrain';
 import { saveAs } from 'file-saver';
 
 export default function EduAIModule() {
@@ -61,92 +67,27 @@ export default function EduAIModule() {
       const lower = q.toLowerCase();
 
       if (lower.includes('dars') || lower.includes('konspekt')) {
-        aiResult = `📚 O'ZBEKISTON RESPUBLIKASI MAKTAB TA'LIMI
-45 DAQIQALIK NAMUNAVIY DARS ISHLANMASI (KONSPEKT)
-
-Mavzu: "${q.slice(0, 50)}"
-Sinf: 9-sinf | Fan: Davlat ta'lim standarti asosida
-
-I. DARS MAQSADLARI:
-1. Ta'limiy: O'quvchilarga mavzu bo'yicha ilmiy asoslangan tushuncha va amaliy malakalarni shakllantirish.
-2. Tarbiyaviy: Milliy qadriyatlarga hurmat, vatanga sadoqat va jamoada ishlash madaniyatini singdirish.
-3. Rivojlantiruvchi: Mantiqiy fikrlash, tanqidiy mulohaza va mustaqil xulosa chiqarishni o'stirish.
-
-II. DARSNING BOSQICHLARI VA XRONOMETRAJI (45 MINUT):
-1. Tashkiliy qism (3 min): Salomlashish, davomatni yo'qlash, sinf xonasi va o'quv qurollarini tayyorlash.
-2. O'tilgan mavzuni so'rash (7 min): "Zinama-zina" va blits-savol usullari orqali bilimlarni tekshirish.
-3. Yangi mavzu bayoni (20 min): Slaydlar, ko'rgazmali vositalar va interaktiv taqdimot orqali mavzuni tushuntirish.
-4. Mustahkamlash (10 min): O'quvchilarni kichik guruhlarga bo'lib amaliy mashqlar va krossvord yechish.
-5. Baholash (3 min): Darsda faol ishtirok etgan o'quvchilarni rag'batlantirish va baholarini jurnalga qayd etish.
-6. Uyga vazifa (2 min): Darslikdagi asosiy qoidalarni takrorlash va ijodiy topshiriqni bajarish.
-
-Tuzuvchi: EduAI Pro Ilg'or Pedagogik Modeli`;
+        aiResult = generateAILessonPlan(q);
       } else if (lower.includes('test') || lower.includes('savol')) {
-        aiResult = `🎲 NAZORAT TESTLARI VARIANTI (10 TALIK)
-Mavzu: "${q.slice(0, 50)}"
-
-1. Mavzuning asosiy ilmiy mohiyati nima?
-   A) Aniq qonuniyat va amaliy tajriba asosida isbotlangan nazariya
-   B) Tasodifiy taxminlar to'plami
-   C) Faqat og'zaki afsonalar
-   D) To'g'ri javob yo'q
-
-2. Ushbu jarayonning amaliyotdagi eng asosiy vazifasi qaysi?
-   A) Inson faoliyati va ta'lim samaradorligini oshirish
-   B) Jarayonni sekinlashtirish
-   C) Xarajatlarni oshirish
-   D) Ma'lumotlarni o'chirish
-
-3. Ilmiy izlanishlarda qaysi mezon eng yuqori hisoblanadi?
-   A) Aniqlik va ishonchlilik
-   B) Ko'p vaqt sarflash
-   C) Faqat tashqi ko'rinish
-   D) Murakkab so'zlar ishlatish
-
-4. O'zbekiston ta'lim tizimida qaysi standart amal qiladi?
-   A) Davlat Ta'lim Standartlari (DTS)
-   B) Ixtiyoriy qoidalar
-   C) Shaxsiy fikrlar
-   D) Faqat xorijiy ko'rsatmalar
-
-5. Mazkur mavzuni mustahkamlashda qaysi metod eng samarali?
-   A) Interaktiv keys-stadi va amaliy mashqlar
-   B) Faqat matnni yodlash
-   C) Savollarni e'tiborsiz qoldirish
-   D) Baholashni bekor qilish
-
----------------------------------------------------
-JAVOBLAR KALITI (O'QITUVCHI UCHUN):
-1-A, 2-A, 3-A, 4-A, 5-A, 6-A, 7-A, 8-A, 9-A, 10-A`;
+        aiResult = generateAITestSuite(q, 10);
+      } else if (lower.includes('buyruq') || lower.includes('qaror')) {
+        aiResult = generateAIOfficialOrder(q);
       } else if (lower.includes('xarakteristika') || lower.includes('tavsifnoma')) {
-        aiResult = `🔍 O'QUVCHIGA RASMIY TAVSIFNOMA (XARAKTERISTIKA)
-
-Ushbu tavsifnoma Toshkent shahar 123-sonli umumta'lim maktabining 10-A sinf o'quvchisi Aliyev Sardor Anvarovichga berildi.
-
-Aliyev Sardor o'qish davrida o'zini namunali, odobli va tirishqoq o'quvchi sifatida namoyon etdi. Maktab ichki tartib-qoidalariga to'liq rioya qiladi, ustozlariga va tengdoshlariga nisbatan doimo hurmatda.
-
-Fanlarni o'zlashtirish darajasi a'lo (o'rtacha balli: 5.0). Ayniqsa, aniq fanlar va chet tillariga qiziqishi yuqori bo'lib, maktab va tuman bosqichidagi fan olimpiadalarida faxrli 1-o'rinni egallab kelmoqda.
-
-Sinf jamoat ishlarida doimo tashabbuskor va faol. Tengdoshlari orasida yuksak obro'ga ega. Zararli odatlardan xoli, sog'lom turmush tarziga amal qiladi.
-
-Tavsifnoma talab qilingan joyga taqdim etish uchun berildi.
-
-Maktab direktori: _________________ (Imzo)
-Sinf rahbari:      _________________ (Imzo)
-M.O'.`;
+        aiResult = generateAIStudentReference("Aliyev Sardor Baxtiyor o'g'li", "10-A");
       } else {
-        aiResult = `🤖 EDUAI PRO TAHLILI VA JAVOBI:
-
-So'rov mavzusi: "${q}"
-
-Tahlil va xulosa:
-1. Asosiy maqsad: Kiritilgan ta'limiy talabni davlat me'yorlari va GOST standartlariga muvofiq rasmiylashtirish.
-2. Tavsiya etiladigan amaliy qadamlar:
-   - Dars yoki hujjat matnini mantiqiy qismlarga (Kirish, Asosiy bayon, Xulosa) ajratish;
-   - Atamalar va imlo qoidalarini O'zbek tili lug'at mezonlariga moslashtirish;
-   - Hujjatni tegishli shaxslar (rahbariyat, o'qituvchilar) imzosi bilan tasdiqlash.
-
-Natija to'liq shakllantirildi. Ushbu matnni quyidagi tugmalar orqali Word (.docx) formatida yuklab olishingiz yoki to'g'ridan-to'g'ri nusxalashingiz mumkin!`;
+        // Universal pedagogik tahlil
+        aiResult = `🤖 EDUAI PRO INTELLEKTUAL PEDAGOGIK TAHLILI:\n\n` +
+          `📌 Mavzu / So'rov: "${q}"\n` +
+          `🏛 Standart: O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi Mezonlari\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `1. ASOSIY ILMIY MAZMUN VA XULOSA:\n` +
+          `Ushbu yo'nalish o'quvchilarda tanqidiy tafakkur, tizimli tahlil va amaliy ko'nikmalarni shakllantirishda muhim poydevor hisoblanadi. Berilgan mavzuni davlat ta'lim standartlariga muvofiq, interaktiv metodlar (Klaster, Aqliy hujum, FSMU) asosida o'tish tavsiya etiladi.\n\n` +
+          `2. TAVSIYA ETILADIGAN PEDAGOGIK METODLAR:\n` +
+          `• Mavzuni 3 asosiy blokka ajratish: Nazariy baza, Amaliy laboratoriya/mashq, Natijani baholash;\n` +
+          `• Ko'rgazmali Gamma AI slaydlaridan va 10 talik nazorat testlaridan unumli foydalanish;\n` +
+          `• Dars yakunida har bir o'quvchining faolligini rag'batlantiruvchi baholar bilan mustahkamlash.\n\n` +
+          `3. MATN VA IMKONIYaTLAR:\n` +
+          `Ushbu natijani quyidagi tugmalar yordamida Word (.docx) hujjati qilib yuklab olishingiz yoki to'g'ridan-to'g'ri nusxalashingiz mumkin!`;
       }
 
       setResponse(aiResult);
