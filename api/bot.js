@@ -1,9 +1,9 @@
 // Vercel Serverless Function: api/bot.js
 import { Bot, webhookCallback, InlineKeyboard } from 'grammy';
 
-const BOT_TOKEN = process.env.BOT_TOKEN || '9001772632:AAEe8hXmKAhWwE7VHK1Vd8FMia6TcqYI0Mk';
+const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEBAPP_URL = process.env.WEBAPP_URL || 'https://eduhujjat.vercel.app';
-const OWNER_USERNAME = 'fayzbek1331';
+const OWNER_USERNAME = process.env.OWNER_USERNAME || 'fayzbek1331';
 
 const bot = new Bot(BOT_TOKEN);
 

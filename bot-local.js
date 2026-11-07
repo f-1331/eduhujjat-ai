@@ -4,9 +4,15 @@ import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx';
 import pptxgen from 'pptxgenjs';
 
-const BOT_TOKEN = '9001772632:AAEe8hXmKAhWwE7VHK1Vd8FMia6TcqYI0Mk';
-const WEBAPP_URL = 'https://eduhujjat.vercel.app';
-const OWNER_USERNAME = 'fayzbek1331';
+import 'dotenv/config';
+
+const BOT_TOKEN = process.env.BOT_TOKEN;
+if (!BOT_TOKEN) {
+  console.error("Xatolik: .env faylida BOT_TOKEN ko'rsatilmagan!");
+  process.exit(1);
+}
+const WEBAPP_URL = process.env.WEBAPP_URL || 'https://eduhujjat.vercel.app';
+const OWNER_USERNAME = process.env.OWNER_USERNAME || 'fayzbek1331';
 
 const bot = new Bot(BOT_TOKEN);
 
