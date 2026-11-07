@@ -3,13 +3,70 @@
 
 const CANDIDATE_MODELS = [
   'gemini-flash-lite-latest',
+  'gemini-flash-latest',
   'gemini-3.5-flash-lite',
-  'gemini-3.5-flash',
-  'gemini-flash-latest'
+  'gemini-3.5-flash'
 ];
 
 function getApiKey() {
   return process.env.GEMINI_API_KEY || '';
+}
+
+/**
+ * LaTeX va matematik belgilarni oddiy, o'qishga qulay o'zbekcha formatga tozalash
+ */
+export function cleanLatexAndFormat(text) {
+  if (!text) return "";
+  let clean = String(text);
+
+  // 1. Aralash kasrlar: 3\frac{2}{5} -> 3 butun 2/5
+  clean = clean.replace(/(\d+)\s*\\(?:d|t)?frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g, '$1 butun $2/$3');
+
+  // 2. Oddiy kasrlar: \frac{a}{b} -> a/b
+  clean = clean.replace(/\\(?:d|t)?frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g, '$1/$2');
+  // Ichma-ich kasrlar uchun ikkinchi bor tekshirish
+  clean = clean.replace(/\\(?:d|t)?frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g, '$1/$2');
+
+  // 3. Matematik amallar
+  clean = clean.replace(/\\cdot/g, '·');
+  clean = clean.replace(/\\times/g, '×');
+  clean = clean.replace(/\\div/g, ':');
+
+  // 4. Ildizlar va darajalar
+  clean = clean.replace(/\\sqrt\s*\{([^{}]+)\}/g, '√($1)');
+  clean = clean.replace(/\\sqrt/g, '√');
+  clean = clean.replace(/\^\{2\}/g, '²');
+  clean = clean.replace(/\^\{3\}/g, '³');
+  clean = clean.replace(/\^2\b/g, '²');
+  clean = clean.replace(/\^3\b/g, '³');
+
+  // 5. Belgilar va harflar
+  clean = clean.replace(/\\pi/g, 'π');
+  clean = clean.replace(/\\approx/g, '≈');
+  clean = clean.replace(/\\neq/g, '≠');
+  clean = clean.replace(/\\leq/g, '≤');
+  clean = clean.replace(/\\geq/g, '≥');
+  clean = clean.replace(/\\pm/g, '±');
+  clean = clean.replace(/\\degree/g, '°');
+  clean = clean.replace(/\\circ/g, '°');
+  clean = clean.replace(/\\infty/g, '∞');
+
+  // 6. LaTeX bloklari va dollar belgilarini olib tashlash
+  clean = clean.replace(/\\\[([\s\S]*?)\\\]/g, '$1');
+  clean = clean.replace(/\\\(([\s\S]*?)\\\)/g, '$1');
+  clean = clean.replace(/\$\$([\s\S]*?)\$\$/g, '$1');
+  clean = clean.replace(/\$([^\$\n]+)\$/g, '$1');
+  clean = clean.replace(/\$/g, '');
+
+  // 7. Maxsus LaTeX matn buyruqlari
+  clean = clean.replace(/\\text\s*\{([^{}]+)\}/g, '$1');
+  clean = clean.replace(/\\mathrm\s*\{([^{}]+)\}/g, '$1');
+  clean = clean.replace(/\\mathbf\s*\{([^{}]+)\}/g, '$1');
+
+  // 8. Ortiqcha probellarni tozalash
+  clean = clean.replace(/[ \t]{2,}/g, ' ');
+
+  return clean.trim();
 }
 
 /**
@@ -21,6 +78,13 @@ export async function callGemini(prompt, systemInstruction = "") {
     throw new Error("GEMINI_API_KEY mavjud emas");
   }
 
+  const formattingRule = 
+    "\n\nQAT'IY QOIDA: Hech qachon LaTeX yoki dollar belgilaridan ($...$, \\frac{}{}) foydalanmang! " +
+    "Matematik amallar va kasrlarni oddiy o'zbek tili va klaviatura formatida yozing: masalan 7/12, 3 butun 2/5, 31/7, a*b, x - 5/13 = 6/13. " +
+    "Dollar belgisi ($) mutlaqo ishlatilmasin!";
+
+  const finalInstruction = (systemInstruction || "") + formattingRule;
+
   const payload = {
     contents: [
       {
@@ -31,9 +95,9 @@ export async function callGemini(prompt, systemInstruction = "") {
     ]
   };
 
-  if (systemInstruction) {
+  if (finalInstruction) {
     payload.systemInstruction = {
-      parts: [{ text: systemInstruction }]
+      parts: [{ text: finalInstruction }]
     };
   }
 
@@ -52,7 +116,8 @@ export async function callGemini(prompt, systemInstruction = "") {
 
       const data = await response.json();
       if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-        return data.candidates[0].content.parts[0].text;
+        const rawText = data.candidates[0].content.parts[0].text;
+        return cleanLatexAndFormat(rawText);
       }
     } catch (e) {
       // Keyingi modelga o'tish
@@ -70,6 +135,7 @@ export async function generateAITestWithGemini(topic, count = 10) {
     "Siz O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi uchun eng tajribali ekspert-metodist va fan o'qituvchisisiz. " +
     "Siz faqat aniq faktlar, to'g'ri ilmiy terminologiya va Davlat Ta'lim Standartlari (DTS) asosida mukammal testlar tuzasiz. " +
     "Savollar takrorlanmasin, javob variantlari (A, B, C, D) bir tekis tasodifiy taqsimlansin (faqat A bo'lib qolmasin). " +
+    "Matematik formulalar va kasrlarni aslo LaTeX yoki dollar belgisi ($...$) bilan yozmang, oddiy 7/12, 3 butun 2/5 ko'rinishida yozing! " +
     "Test oxirida aniq javoblar kalitini va qisqa ilmiy tushuntirishlarni keltiring.";
 
   const prompt = 
@@ -80,7 +146,8 @@ export async function generateAITestWithGemini(topic, count = 10) {
     `2. Har bir savol raqamlangan bo'lsin: 1., 2., ... ${count}.\n` +
     `3. Variantlar: A), B), C), D).\n` +
     `4. Oxirida "🔑 JAVOBLAR KALITI VA IZOHLAR:" bo'limida har bir savolning to'g'ri javobi va 1 qatorlik sababi yozilsin.\n` +
-    `5. Javob sof, ravon o'zbek adabiy tilida bo'lsin.`;
+    `5. Kasrlar va formulalar oddiy klaviatura belgilarida bo'lsin: 7/12, 3 butun 2/5. Dollar ($) yoki LaTeX ishlatilmasin!\n` +
+    `6. Javob sof, ravon o'zbek adabiy tilida bo'lsin.`;
 
   return await callGemini(prompt, systemInstruction);
 }
@@ -90,7 +157,8 @@ export async function generateAITestWithGemini(topic, count = 10) {
  */
 export async function generateAILessonPlanWithGemini(topic) {
   const systemInstruction = 
-    "Siz O'zbekistonning ilg'or amaliyotchi o'qituvchisisiz. 45 daqiqalik dars ishlanmalarini yangi pedagogik texnologiyalar (FSMU, Aqliy hujum, Klaster, Sinkveyn) asosida to'liq xronometraj bilan yozasiz.";
+    "Siz O'zbekistonning ilg'or amaliyotchi o'qituvchisisiz. 45 daqiqalik dars ishlanmalarini yangi pedagogik texnologiyalar (FSMU, Aqliy hujum, Klaster, Sinkveyn) asosida to'liq xronometraj bilan yozasiz. " +
+    "Matematik ifodalar va kasrlarni oddiy tushunarli formatda yozing (masalan 7/12, 3 butun 2/5), aslo dollar yoki LaTeX ishlatmang!";
 
   const prompt = 
     `Mavzu: "${topic}"\n` +
@@ -155,6 +223,7 @@ export async function generateAIGammaCardsWithGemini(topic) {
   const prompt = 
     `Mavzu: "${topic}"\n` +
     `Vazifa: Ushbu mavzu bo'yicha Gamma.app va Genspark uslubida 6 ta zamonaviy, chuqur slayd kartochkalarini JSON formatida tayyorlab ber.\n` +
+    `QAT'IY QOIDA: Hech qanday LaTeX yoki dollar ($) belgisidan foydalanmang. Kasrlarni 7/12 kabi oddiy yozing.\n` +
     `Faqat quyidagi JSON formatida javob qaytar (boshqa hech qanday so'z yozma):\n` +
     `[\n` +
     `  {\n` +
@@ -212,7 +281,7 @@ export async function generateAIGammaCardsWithGemini(topic) {
     `]`;
 
   try {
-    const raw = await callGemini(prompt, "Siz faqat valid JSON array qaytaruvchi AI taqdimot generatorsiz.");
+    const raw = await callGemini(prompt, "Siz faqat valid JSON array qaytaruvchi AI taqdimot generatorsiz. Dollar va LaTeX belgilari ishlatilmasin.");
     const jsonMatch = raw.match(/\[\s*\{[\s\S]*\}\s*\]/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
