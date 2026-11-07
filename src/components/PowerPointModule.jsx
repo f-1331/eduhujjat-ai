@@ -274,10 +274,13 @@ export default function PowerPointModule() {
             <div className="grid grid-cols-2 gap-1.5">
               {[
                 { type: 'hero', label: 'Titul (Hero)' },
+                { type: 'concept', label: 'Ta\'rif / Qoida' },
+                { type: 'grid4', label: '2x2 Kartalar' },
                 { type: 'split', label: '2 Ustun' },
                 { type: 'pillars', label: '3 Ustun' },
-                { type: 'deep_dive', label: 'Metrika' },
-                { type: 'roadmap', label: 'Yo\'l Xaritasi' },
+                { type: 'stats', label: 'Raqamlar / Metrika' },
+                { type: 'timeline', label: 'Ketma-ketlik' },
+                { type: 'quiz_slide', label: 'Interaktiv Savol' },
                 { type: 'summary', label: 'Xulosa' }
               ].map((ly) => (
                 <button
@@ -414,6 +417,130 @@ export default function PowerPointModule() {
                 </div>
               )}
 
+              {/* CONCEPT SLAYDI */}
+              {currentCard.type === 'concept' && (
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={currentCard.title || ''}
+                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                    className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                    style={{ color: `#${activeTheme.text}` }}
+                  />
+                  <div 
+                    className="p-5 rounded-2xl border space-y-2 shadow-lg"
+                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                  >
+                    <input
+                      type="text"
+                      value={currentCard.badge || "FUNDAMENTAL QOIDA"}
+                      onChange={(e) => updateCurrentCard({ badge: e.target.value })}
+                      className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase border bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400"
+                      style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}` }}
+                    />
+                    <textarea
+                      rows={2}
+                      value={currentCard.mainConcept || ''}
+                      onChange={(e) => updateCurrentCard({ mainConcept: e.target.value })}
+                      className="w-full bg-transparent text-sm sm:text-base font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                      style={{ color: `#${activeTheme.text}` }}
+                      placeholder="Asosiy ta'rif yoki qoida..."
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div 
+                      className="p-4 rounded-xl border space-y-2 shadow"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+                    >
+                      <h4 className="text-xs font-bold" style={{ color: `#${activeTheme.accent}` }}>📌 Ilmiy Sharh:</h4>
+                      <textarea
+                        rows={3}
+                        value={currentCard.explanation || ''}
+                        onChange={(e) => updateCurrentCard({ explanation: e.target.value })}
+                        className="w-full bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                        style={{ color: `#${activeTheme.subtext}` }}
+                      />
+                    </div>
+                    <div 
+                      className="p-4 rounded-xl border space-y-2 shadow"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+                    >
+                      <h4 className="text-xs font-bold" style={{ color: `#${activeTheme.accent2}` }}>✓ Muhim Asoslar:</h4>
+                      <div className="space-y-1">
+                        {(currentCard.bullets || []).map((b, i) => (
+                          <input
+                            key={i}
+                            type="text"
+                            value={b}
+                            onChange={(e) => {
+                              const newB = [...(currentCard.bullets || [])];
+                              newB[i] = e.target.value;
+                              updateCurrentCard({ bullets: newB });
+                            }}
+                            className="w-full bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                            style={{ color: `#${activeTheme.subtext}` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* GRID4 SLAYDI (2x2 KARTALAR) */}
+              {currentCard.type === 'grid4' && (
+                <div className="space-y-4">
+                  <div>
+                    <input
+                      type="text"
+                      value={currentCard.title || ''}
+                      onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                      className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                      style={{ color: `#${activeTheme.text}` }}
+                    />
+                    <input
+                      type="text"
+                      value={currentCard.subtitle || ''}
+                      onChange={(e) => updateCurrentCard({ subtitle: e.target.value })}
+                      className="w-full bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 rounded mt-1"
+                      style={{ color: `#${activeTheme.subtext}` }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(currentCard.items || []).slice(0, 4).map((it, i) => (
+                      <div 
+                        key={i}
+                        className="p-3.5 rounded-xl border space-y-1.5 shadow"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: i % 2 === 0 ? `#${activeTheme.accent}` : `#${activeTheme.accent2}` }}
+                      >
+                        <input
+                          type="text"
+                          value={it.title || ''}
+                          onChange={(e) => {
+                            const newItems = [...(currentCard.items || [])];
+                            newItems[i] = { ...newItems[i], title: e.target.value };
+                            updateCurrentCard({ items: newItems });
+                          }}
+                          className="w-full bg-transparent text-xs font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                          style={{ color: `#${activeTheme.text}` }}
+                        />
+                        <textarea
+                          rows={2}
+                          value={it.desc || ''}
+                          onChange={(e) => {
+                            const newItems = [...(currentCard.items || [])];
+                            newItems[i] = { ...newItems[i], desc: e.target.value };
+                            updateCurrentCard({ items: newItems });
+                          }}
+                          className="w-full bg-transparent text-[11px] focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                          style={{ color: `#${activeTheme.subtext}` }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* 2. SPLIT COMPARISON (2 USTUN) */}
               {currentCard.type === 'split' && (
                 <div className="space-y-4">
@@ -505,39 +632,46 @@ export default function PowerPointModule() {
                       type="text"
                       value={currentCard.subtitle || ''}
                       onChange={(e) => updateCurrentCard({ subtitle: e.target.value })}
-                      className="w-full bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                      className="w-full bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 rounded mt-1"
                       style={{ color: `#${activeTheme.subtext}` }}
                     />
                   </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {(currentCard.cards || []).map((c, i) => (
                       <div 
                         key={i}
-                        className="p-4 rounded-2xl border space-y-2 shadow flex flex-col justify-between"
+                        className="p-4 rounded-2xl border space-y-2 shadow"
                         style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
                       >
-                        <span className="text-xl font-black" style={{ color: `#${activeTheme.accent}` }}>
-                          {c.num}
-                        </span>
+                        <input
+                          type="text"
+                          value={c.num || `0${i + 1}`}
+                          onChange={(e) => {
+                            const newCols = [...(currentCard.cards || [])];
+                            newCols[i] = { ...newCols[i], num: e.target.value };
+                            updateCurrentCard({ cards: newCols });
+                          }}
+                          className="w-full bg-transparent text-xl font-black focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                          style={{ color: `#${activeTheme.accent}` }}
+                        />
                         <input
                           type="text"
                           value={c.title || ''}
                           onChange={(e) => {
-                            const newCards = [...(currentCard.cards || [])];
-                            newCards[i] = { ...newCards[i], title: e.target.value };
-                            updateCurrentCard({ cards: newCards });
+                            const newCols = [...(currentCard.cards || [])];
+                            newCols[i] = { ...newCols[i], title: e.target.value };
+                            updateCurrentCard({ cards: newCols });
                           }}
-                          className="w-full bg-transparent text-xs sm:text-sm font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                          className="w-full bg-transparent text-xs font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
                           style={{ color: `#${activeTheme.text}` }}
                         />
                         <textarea
-                          rows={3}
+                          rows={4}
                           value={c.desc || ''}
                           onChange={(e) => {
-                            const newCards = [...(currentCard.cards || [])];
-                            newCards[i] = { ...newCards[i], desc: e.target.value };
-                            updateCurrentCard({ cards: newCards });
+                            const newCols = [...(currentCard.cards || [])];
+                            newCols[i] = { ...newCols[i], desc: e.target.value };
+                            updateCurrentCard({ cards: newCols });
                           }}
                           className="w-full bg-transparent text-[11px] focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
                           style={{ color: `#${activeTheme.subtext}` }}
@@ -548,8 +682,8 @@ export default function PowerPointModule() {
                 </div>
               )}
 
-              {/* 4. CHUQUR TAHLIL VA METRIKA */}
-              {currentCard.type === 'deep_dive' && (
+              {/* 4. CHUQUR TAHLIL VA METRIKA / STATS */}
+              {(currentCard.type === 'deep_dive' || currentCard.type === 'stats') && (
                 <div className="space-y-4">
                   <input
                     type="text"
@@ -558,58 +692,104 @@ export default function PowerPointModule() {
                     className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
                     style={{ color: `#${activeTheme.text}` }}
                   />
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
-                    <div 
-                      className="sm:col-span-4 p-5 rounded-2xl border text-center flex flex-col items-center justify-center shadow"
-                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
-                    >
-                      <input
-                        type="text"
-                        value={currentCard.metricValue || ''}
-                        onChange={(e) => updateCurrentCard({ metricValue: e.target.value })}
-                        className="w-full text-center bg-transparent text-3xl sm:text-5xl font-black focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
-                        style={{ color: `#${activeTheme.accent}` }}
-                      />
-                      <input
-                        type="text"
-                        value={currentCard.metricLabel || ''}
-                        onChange={(e) => updateCurrentCard({ metricLabel: e.target.value })}
-                        className="w-full text-center bg-transparent text-xs font-bold mt-2 focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
-                        style={{ color: `#${activeTheme.text}` }}
-                      />
+                  {currentCard.stats && Array.isArray(currentCard.stats) && currentCard.stats.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {currentCard.stats.slice(0, 3).map((st, i) => (
+                        <div 
+                          key={i}
+                          className="p-4 rounded-2xl border text-center space-y-1 shadow"
+                          style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                        >
+                          <input
+                            type="text"
+                            value={st.value || ''}
+                            onChange={(e) => {
+                              const newSt = [...currentCard.stats];
+                              newSt[i] = { ...newSt[i], value: e.target.value };
+                              updateCurrentCard({ stats: newSt });
+                            }}
+                            className="w-full text-center bg-transparent text-2xl font-black focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                            style={{ color: `#${activeTheme.accent}` }}
+                          />
+                          <input
+                            type="text"
+                            value={st.label || ''}
+                            onChange={(e) => {
+                              const newSt = [...currentCard.stats];
+                              newSt[i] = { ...newSt[i], label: e.target.value };
+                              updateCurrentCard({ stats: newSt });
+                            }}
+                            className="w-full text-center bg-transparent text-xs font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                            style={{ color: `#${activeTheme.text}` }}
+                          />
+                          <textarea
+                            rows={2}
+                            value={st.desc || ''}
+                            onChange={(e) => {
+                              const newSt = [...currentCard.stats];
+                              newSt[i] = { ...newSt[i], desc: e.target.value };
+                              updateCurrentCard({ stats: newSt });
+                            }}
+                            className="w-full text-center bg-transparent text-[10px] focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                            style={{ color: `#${activeTheme.subtext}` }}
+                          />
+                        </div>
+                      ))}
                     </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                      <div 
+                        className="sm:col-span-4 p-5 rounded-2xl border text-center flex flex-col items-center justify-center shadow"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                      >
+                        <input
+                          type="text"
+                          value={currentCard.metricValue || ''}
+                          onChange={(e) => updateCurrentCard({ metricValue: e.target.value })}
+                          className="w-full text-center bg-transparent text-3xl sm:text-5xl font-black focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                          style={{ color: `#${activeTheme.accent}` }}
+                        />
+                        <input
+                          type="text"
+                          value={currentCard.metricLabel || ''}
+                          onChange={(e) => updateCurrentCard({ metricLabel: e.target.value })}
+                          className="w-full text-center bg-transparent text-xs font-bold mt-2 focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                          style={{ color: `#${activeTheme.text}` }}
+                        />
+                      </div>
 
-                    <div 
-                      className="sm:col-span-8 p-5 rounded-2xl border space-y-2 shadow"
-                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
-                    >
-                      <h4 className="text-xs sm:text-sm font-bold" style={{ color: `#${activeTheme.text}` }}>
-                        🔍 Tahliliy Faktlar va Natijalar:
-                      </h4>
-                      <div className="space-y-1.5 text-[11px] sm:text-xs" style={{ color: `#${activeTheme.subtext}` }}>
-                        {(currentCard.bullets || []).map((b, i) => (
-                          <div key={i} className="flex items-start gap-1.5">
-                            <span style={{ color: `#${activeTheme.accent}` }}>✓</span>
-                            <input
-                              type="text"
-                              value={b}
-                              onChange={(e) => {
-                                const newBullets = [...(currentCard.bullets || [])];
-                                newBullets[i] = e.target.value;
-                                updateCurrentCard({ bullets: newBullets });
-                              }}
-                              className="w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
-                            />
-                          </div>
-                        ))}
+                      <div 
+                        className="sm:col-span-8 p-5 rounded-2xl border space-y-2 shadow"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+                      >
+                        <h4 className="text-xs sm:text-sm font-bold" style={{ color: `#${activeTheme.text}` }}>
+                          🔍 Tahliliy Faktlar va Natijalar:
+                        </h4>
+                        <div className="space-y-1.5 text-[11px] sm:text-xs" style={{ color: `#${activeTheme.subtext}` }}>
+                          {(currentCard.bullets || []).map((b, i) => (
+                            <div key={i} className="flex items-start gap-1.5">
+                              <span style={{ color: `#${activeTheme.accent}` }}>✓</span>
+                              <input
+                                type="text"
+                                value={b}
+                                onChange={(e) => {
+                                  const newBullets = [...(currentCard.bullets || [])];
+                                  newBullets[i] = e.target.value;
+                                  updateCurrentCard({ bullets: newBullets });
+                                }}
+                                className="w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                              />
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
               {/* 5. ROADMAP / TIMELINE */}
-              {currentCard.type === 'roadmap' && (
+              {(currentCard.type === 'roadmap' || currentCard.type === 'timeline') && (
                 <div className="space-y-3">
                   <input
                     type="text"
@@ -622,40 +802,41 @@ export default function PowerPointModule() {
                     {(currentCard.steps || []).map((st, i) => (
                       <div 
                         key={i}
-                        className="p-3.5 rounded-xl border flex items-center gap-4 shadow"
+                        className="p-3.5 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center gap-3 shadow"
                         style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
                       >
-                        <span 
-                          className="px-2.5 py-1 rounded-lg text-[10px] font-black shrink-0 border"
-                          style={{ 
-                            color: `#${activeTheme.accent}`, 
-                            borderColor: `#${activeTheme.accent}`,
-                            backgroundColor: `#${activeTheme.bg}`
+                        <input
+                          type="text"
+                          value={st.step || `${i + 1}-BOSQICH`}
+                          onChange={(e) => {
+                            const newSteps = [...(currentCard.steps || [])];
+                            newSteps[i] = { ...newSteps[i], step: e.target.value };
+                            updateCurrentCard({ steps: newSteps });
                           }}
-                        >
-                          {st.step}
-                        </span>
-                        <div className="flex-1 space-y-0.5">
+                          className="px-2.5 py-1 rounded-lg text-xs font-black uppercase border bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400"
+                          style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}` }}
+                        />
+                        <div className="flex-1 w-full space-y-1">
                           <input
                             type="text"
-                            value={st.title}
+                            value={st.title || ''}
                             onChange={(e) => {
                               const newSteps = [...(currentCard.steps || [])];
                               newSteps[i] = { ...newSteps[i], title: e.target.value };
                               updateCurrentCard({ steps: newSteps });
                             }}
-                            className="w-full bg-transparent text-xs sm:text-sm font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                            className="w-full bg-transparent text-xs font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
                             style={{ color: `#${activeTheme.text}` }}
                           />
                           <input
                             type="text"
-                            value={st.text}
+                            value={st.desc || st.text || ''}
                             onChange={(e) => {
                               const newSteps = [...(currentCard.steps || [])];
-                              newSteps[i] = { ...newSteps[i], text: e.target.value };
+                              newSteps[i] = { ...newSteps[i], desc: e.target.value, text: e.target.value };
                               updateCurrentCard({ steps: newSteps });
                             }}
-                            className="w-full bg-transparent text-[10px] sm:text-[11px] focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                            className="w-full bg-transparent text-[11px] focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
                             style={{ color: `#${activeTheme.subtext}` }}
                           />
                         </div>
@@ -665,8 +846,67 @@ export default function PowerPointModule() {
                 </div>
               )}
 
-              {/* 6. SUMMARY */}
-              {currentCard.type === 'summary' && (
+              {/* QUIZ SLIDE (INTERAKTIV BILIMNI SINASH) */}
+              {currentCard.type === 'quiz_slide' && (
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={currentCard.title || ''}
+                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                    className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                    style={{ color: `#${activeTheme.text}` }}
+                  />
+                  <div 
+                    className="p-4 rounded-2xl border space-y-2 shadow-lg"
+                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                  >
+                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: `#${activeTheme.accent}` }}>
+                      ❓ Interaktiv Savol
+                    </span>
+                    <textarea
+                      rows={2}
+                      value={currentCard.question || ''}
+                      onChange={(e) => updateCurrentCard({ question: e.target.value })}
+                      className="w-full bg-transparent text-sm font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                      style={{ color: `#${activeTheme.text}` }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {(currentCard.options || []).slice(0, 4).map((opt, i) => (
+                      <input
+                        key={i}
+                        type="text"
+                        value={opt}
+                        onChange={(e) => {
+                          const newOpts = [...(currentCard.options || [])];
+                          newOpts[i] = e.target.value;
+                          updateCurrentCard({ options: newOpts });
+                        }}
+                        className="p-2.5 rounded-xl border text-xs bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}`, color: `#${activeTheme.text}` }}
+                      />
+                    ))}
+                  </div>
+                  <div 
+                    className="p-3.5 rounded-xl border space-y-1 shadow"
+                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent2}` }}
+                  >
+                    <span className="text-[10px] font-bold uppercase" style={{ color: `#${activeTheme.accent2}` }}>
+                      🔑 Javob Kaliti va Sharh
+                    </span>
+                    <textarea
+                      rows={2}
+                      value={currentCard.answer || ''}
+                      onChange={(e) => updateCurrentCard({ answer: e.target.value })}
+                      className="w-full bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                      style={{ color: `#${activeTheme.subtext}` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 6. SUMMARY / CONCLUSION */}
+              {(currentCard.type === 'summary' || currentCard.type === 'conclusion') && (
                 <div 
                   className="p-6 sm:p-8 rounded-2xl border space-y-4 shadow-xl"
                   style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
@@ -803,6 +1043,87 @@ export default function PowerPointModule() {
               </div>
             )}
 
+            {/* CONCEPT */}
+            {currentCard.type === 'concept' && (
+              <div className="space-y-6">
+                <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
+                  {currentCard.title}
+                </h2>
+                <div 
+                  className="p-8 rounded-3xl border space-y-4 shadow-2xl"
+                  style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                >
+                  <span 
+                    className="inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase border"
+                    style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}`, backgroundColor: `#${activeTheme.bg}` }}
+                  >
+                    {currentCard.badge || "FUNDAMENTAL QOIDA"}
+                  </span>
+                  <p className="text-xl sm:text-2xl font-bold leading-relaxed" style={{ color: `#${activeTheme.text}` }}>
+                    {currentCard.mainConcept}
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div 
+                    className="p-6 rounded-2xl border space-y-3"
+                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+                  >
+                    <h4 className="text-base font-bold" style={{ color: `#${activeTheme.accent}` }}>
+                      📌 Ilmiy Sharh:
+                    </h4>
+                    <p className="text-sm opacity-90 leading-relaxed" style={{ color: `#${activeTheme.subtext}` }}>
+                      {currentCard.explanation}
+                    </p>
+                  </div>
+                  <div 
+                    className="p-6 rounded-2xl border space-y-3"
+                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+                  >
+                    <h4 className="text-base font-bold" style={{ color: `#${activeTheme.accent2}` }}>
+                      ✓ Asosiy Qoidalar:
+                    </h4>
+                    <ul className="text-sm space-y-2 list-disc list-inside opacity-90" style={{ color: `#${activeTheme.subtext}` }}>
+                      {(currentCard.bullets || []).map((b, i) => (
+                        <li key={i}>{b}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* GRID4 */}
+            {currentCard.type === 'grid4' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
+                    {currentCard.title}
+                  </h2>
+                  {currentCard.subtitle && (
+                    <p className="text-sm opacity-80 mt-1" style={{ color: `#${activeTheme.subtext}` }}>
+                      {currentCard.subtitle}
+                    </p>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {(currentCard.items || []).slice(0, 4).map((it, i) => (
+                    <div 
+                      key={i}
+                      className="p-6 rounded-2xl border space-y-2 shadow-lg"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: i % 2 === 0 ? `#${activeTheme.accent}` : `#${activeTheme.accent2}` }}
+                    >
+                      <h4 className="text-base font-bold" style={{ color: `#${activeTheme.text}` }}>
+                        {it.title}
+                      </h4>
+                      <p className="text-xs sm:text-sm opacity-85 leading-relaxed" style={{ color: `#${activeTheme.subtext}` }}>
+                        {it.desc}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* SPLIT */}
             {currentCard.type === 'split' && (
               <div className="space-y-6">
@@ -868,46 +1189,68 @@ export default function PowerPointModule() {
               </div>
             )}
 
-            {/* DEEP DIVE */}
-            {currentCard.type === 'deep_dive' && (
+            {/* DEEP DIVE / STATS */}
+            {(currentCard.type === 'deep_dive' || currentCard.type === 'stats') && (
               <div className="space-y-6">
                 <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
                   {currentCard.title}
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-6">
-                  <div 
-                    className="sm:col-span-5 p-8 rounded-3xl border text-center flex flex-col justify-center items-center"
-                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
-                  >
-                    <span className="text-6xl sm:text-7xl font-black" style={{ color: `#${activeTheme.accent}` }}>
-                      {currentCard.metricValue}
-                    </span>
-                    <p className="text-base font-bold mt-3" style={{ color: `#${activeTheme.text}` }}>
-                      {currentCard.metricLabel}
-                    </p>
+                {currentCard.stats && Array.isArray(currentCard.stats) && currentCard.stats.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    {currentCard.stats.slice(0, 3).map((st, i) => (
+                      <div 
+                        key={i}
+                        className="p-8 rounded-3xl border text-center space-y-3 shadow-xl"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                      >
+                        <span className="text-5xl sm:text-6xl font-black" style={{ color: `#${activeTheme.accent}` }}>
+                          {st.value}
+                        </span>
+                        <h4 className="text-base font-bold" style={{ color: `#${activeTheme.text}` }}>
+                          {st.label}
+                        </h4>
+                        <p className="text-xs sm:text-sm opacity-80" style={{ color: `#${activeTheme.subtext}` }}>
+                          {st.desc}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                  <div 
-                    className="sm:col-span-7 p-8 rounded-3xl border space-y-4"
-                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
-                  >
-                    <h4 className="text-lg font-bold" style={{ color: `#${activeTheme.text}` }}>
-                      🔍 Tahliliy Faktlar va Natijalar:
-                    </h4>
-                    <div className="space-y-3 text-sm opacity-90" style={{ color: `#${activeTheme.subtext}` }}>
-                      {(currentCard.bullets || []).map((b, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <span style={{ color: `#${activeTheme.accent}` }}>✓</span>
-                          <span>{b}</span>
-                        </div>
-                      ))}
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-6">
+                    <div 
+                      className="sm:col-span-5 p-8 rounded-3xl border text-center flex flex-col justify-center items-center"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                    >
+                      <span className="text-6xl sm:text-7xl font-black" style={{ color: `#${activeTheme.accent}` }}>
+                        {currentCard.metricValue}
+                      </span>
+                      <p className="text-base font-bold mt-3" style={{ color: `#${activeTheme.text}` }}>
+                        {currentCard.metricLabel}
+                      </p>
+                    </div>
+                    <div 
+                      className="sm:col-span-7 p-8 rounded-3xl border space-y-4"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+                    >
+                      <h4 className="text-lg font-bold" style={{ color: `#${activeTheme.text}` }}>
+                        🔍 Tahliliy Faktlar va Natijalar:
+                      </h4>
+                      <div className="space-y-3 text-sm opacity-90" style={{ color: `#${activeTheme.subtext}` }}>
+                        {(currentCard.bullets || []).map((b, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <span style={{ color: `#${activeTheme.accent}` }}>✓</span>
+                            <span>{b}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
-            {/* ROADMAP */}
-            {currentCard.type === 'roadmap' && (
+            {/* ROADMAP / TIMELINE */}
+            {(currentCard.type === 'roadmap' || currentCard.type === 'timeline') && (
               <div className="space-y-6">
                 <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
                   {currentCard.title}
@@ -930,7 +1273,7 @@ export default function PowerPointModule() {
                           {st.title}
                         </h4>
                         <p className="text-xs opacity-80" style={{ color: `#${activeTheme.subtext}` }}>
-                          {st.text}
+                          {st.desc || st.text}
                         </p>
                       </div>
                     </div>
@@ -939,8 +1282,55 @@ export default function PowerPointModule() {
               </div>
             )}
 
-            {/* SUMMARY */}
-            {currentCard.type === 'summary' && (
+            {/* QUIZ SLIDE */}
+            {currentCard.type === 'quiz_slide' && (
+              <div className="space-y-6">
+                <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
+                  {currentCard.title}
+                </h2>
+                <div 
+                  className="p-8 rounded-3xl border space-y-3 shadow-xl"
+                  style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                >
+                  <span 
+                    className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase border"
+                    style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}`, backgroundColor: `#${activeTheme.bg}` }}
+                  >
+                    ❓ Interaktiv Nazorat Savoli
+                  </span>
+                  <p className="text-xl sm:text-2xl font-bold leading-relaxed" style={{ color: `#${activeTheme.text}` }}>
+                    {currentCard.question}
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {(currentCard.options || []).slice(0, 4).map((opt, i) => (
+                    <div 
+                      key={i}
+                      className="p-5 rounded-2xl border text-sm font-semibold shadow"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}`, color: `#${activeTheme.text}` }}
+                    >
+                      {opt}
+                    </div>
+                  ))}
+                </div>
+                {currentCard.answer && (
+                  <div 
+                    className="p-6 rounded-2xl border space-y-1 shadow"
+                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent2}` }}
+                  >
+                    <span className="text-xs font-bold uppercase" style={{ color: `#${activeTheme.accent2}` }}>
+                      🔑 O'qituvchi Kaliti va Ilmiy Sharh:
+                    </span>
+                    <p className="text-sm opacity-90" style={{ color: `#${activeTheme.subtext}` }}>
+                      {currentCard.answer}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SUMMARY / CONCLUSION */}
+            {(currentCard.type === 'summary' || currentCard.type === 'conclusion') && (
               <div 
                 className="p-10 rounded-3xl border space-y-6"
                 style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
@@ -953,7 +1343,7 @@ export default function PowerPointModule() {
                     className="p-6 rounded-2xl border italic text-base sm:text-lg text-center"
                     style={{ backgroundColor: `#${activeTheme.bg}`, borderColor: `#${activeTheme.accent2}`, color: `#${activeTheme.text}` }}
                   >
-                    {currentCard.quote}
+                    "{currentCard.quote}"
                   </div>
                 )}
                 <div className="space-y-3 text-sm opacity-90" style={{ color: `#${activeTheme.subtext}` }}>
@@ -966,41 +1356,6 @@ export default function PowerPointModule() {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Pastki Navigatsiya */}
-          <div className="flex items-center justify-between border-t pt-4" style={{ borderColor: `#${activeTheme.cardBorder}` }}>
-            <button
-              onClick={() => setActiveSlideIndex(prev => Math.max(prev - 1, 0))}
-              disabled={activeSlideIndex === 0}
-              className="px-5 py-2.5 rounded-xl font-bold text-xs bg-white/10 hover:bg-white/20 border border-white/20 disabled:opacity-30 transition flex items-center gap-1.5"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Oldingi Slayd
-            </button>
-
-            {/* Slide Dots */}
-            <div className="flex items-center gap-2">
-              {cards.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveSlideIndex(i)}
-                  className={`w-3 h-3 rounded-full transition ${
-                    activeSlideIndex === i ? 'scale-125' : 'opacity-40'
-                  }`}
-                  style={{ backgroundColor: activeSlideIndex === i ? `#${activeTheme.accent}` : '#ffffff' }}
-                />
-              ))}
-            </div>
-
-            <button
-              onClick={() => setActiveSlideIndex(prev => Math.min(prev + 1, cards.length - 1))}
-              disabled={activeSlideIndex === cards.length - 1}
-              className="px-5 py-2.5 rounded-xl font-bold text-xs bg-white/10 hover:bg-white/20 border border-white/20 disabled:opacity-30 transition flex items-center gap-1.5"
-            >
-              Keyingi Slayd
-              <ChevronRight className="w-4 h-4" />
-            </button>
           </div>
         </div>
       )}

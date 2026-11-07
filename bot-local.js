@@ -626,7 +626,65 @@ async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti
   return await pptx.write({ outputType: 'nodebuffer' });
 }
 
-async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va biosfera") {
+function getGammaDynamicTheme(topic = "") {
+  const t = String(topic || '').toLowerCase();
+  if (/biolog|qon|hujayra|o'simlik|hayvon|anatomi|genetika|ekolog|tibbiyot|salomat|yurak|jigar/i.test(t)) {
+    return {
+      bg: '06130E',
+      cardBg: '0B211A',
+      cardBorder: '144033',
+      accent: '10B981', // Emerald
+      accent2: '34D399', // Mint
+      textColor: 'F0FDF4',
+      subtextColor: '94A3B8'
+    };
+  }
+  if (/tarix|adabiyot|huquq|falsafa|til|ona tili|ingliz|rus|san'at|madaniyat|geograf/i.test(t)) {
+    return {
+      bg: '120E08',
+      cardBg: '1F170D',
+      cardBorder: '3D2C17',
+      accent: 'F59E0B', // Amber
+      accent2: 'FBBF24', // Gold
+      textColor: 'FFFBEB',
+      subtextColor: 'A8A29E'
+    };
+  }
+  if (/fizika|astronom|kimyo|energiya|mexanika|atom|kvant/i.test(t)) {
+    return {
+      bg: '0C0B18',
+      cardBg: '16142A',
+      cardBorder: '2C2754',
+      accent: 'A855F7', // Purple
+      accent2: 'EC4899', // Pink
+      textColor: 'FAF5FF',
+      subtextColor: '94A3B8'
+    };
+  }
+  if (/matematik|algebra|geometr|hisob|iqtisod|moliya|biznes|statistika/i.test(t)) {
+    return {
+      bg: '070F1E',
+      cardBg: '0D1A33',
+      cardBorder: '183260',
+      accent: '3B82F6', // Blue
+      accent2: '38BDF8', // Sky
+      textColor: 'F0F9FF',
+      subtextColor: '94A3B8'
+    };
+  }
+  // Default Obsidian Cyber
+  return {
+    bg: '090D16',
+    cardBg: '131B2E',
+    cardBorder: '1E293B',
+    accent: '38BDF8', // Cyan
+    accent2: '818CF8', // Indigo
+    textColor: 'F8FAFC',
+    subtextColor: '94A3B8'
+  };
+}
+
+async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va biosfera", authorName = "SmartOffice EduAI") {
   let cards = null;
   try {
     cards = await generateAIGammaCardsWithGemini(topic);
@@ -637,13 +695,8 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
   const pptx = new pptxgen();
   pptx.layout = 'LAYOUT_16x9';
 
-  const bg = '090D16';
-  const cardBg = '131B2E';
-  const accent = '38BDF8'; // Cyan
-  const accent2 = 'A855F7'; // Purple
-  const textColor = 'F8FAFC';
-  const subtextColor = '94A3B8';
-  const cardBorder = '1E293B';
+  const theme = getGammaDynamicTheme(topic);
+  const { bg, cardBg, accent, accent2, textColor, subtextColor, cardBorder } = theme;
 
   cards.forEach((card, index) => {
     const slide = pptx.addSlide();
@@ -657,118 +710,257 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
       slide.addNotes(card.speakerNotes);
     }
 
-    if (card.type === 'hero' || index === 0) {
+    const type = card.type || (index === 0 ? 'hero' : 'concept');
+
+    // 1. HERO SLAYD
+    if (type === 'hero' || (index === 0 && type !== 'split' && type !== 'pillars')) {
       slide.addShape(pptx.ShapeType.rect, {
-        x: 0.8, y: 0.9, w: 8.4, h: 5.6, fill: { color: cardBg }, line: { color: cardBorder, width: 1.5 }, rectRadius: 0.15
+        x: 0.8, y: 0.85, w: 8.4, h: 4.6, fill: { color: cardBg }, line: { color: cardBorder, width: 1.5 }, rectRadius: 0.15
       });
       slide.addShape(pptx.ShapeType.rect, {
-        x: 1.2, y: 1.4, w: 3.2, h: 0.45, fill: { color: bg }, line: { color: accent, width: 1 }, rectRadius: 0.08
+        x: 1.2, y: 1.25, w: 3.5, h: 0.42, fill: { color: bg }, line: { color: accent, width: 1 }, rectRadius: 0.08
       });
       slide.addText(card.badge || "GAMMA AI TAQDIMOT", {
-        x: 1.2, y: 1.4, w: 3.2, h: 0.45, fontSize: 11, bold: true, color: accent, align: 'center'
+        x: 1.2, y: 1.25, w: 3.5, h: 0.42, fontSize: 11, bold: true, color: accent, align: 'center'
       });
-      slide.addText(card.title.toUpperCase(), {
-        x: 1.2, y: 2.1, w: 7.6, h: 1.8, fontSize: 30, bold: true, color: textColor
+      slide.addText((card.title || topic).toUpperCase(), {
+        x: 1.2, y: 1.85, w: 7.6, h: 1.6, fontSize: 28, bold: true, color: textColor
       });
       slide.addText(card.subtitle || "Zamonaviy ta'lim va tahliliy taqdimot", {
-        x: 1.2, y: 4.1, w: 7.6, h: 1.2, fontSize: 16, color: subtextColor
+        x: 1.2, y: 3.65, w: 7.6, h: 1.1, fontSize: 15, color: subtextColor
       });
-    } else if (card.type === 'split') {
-      slide.addText(card.title, {
-        x: 0.8, y: 0.7, w: 8.4, h: 0.6, fontSize: 22, bold: true, color: textColor
+      slide.addText(`Taqdimotchi: ${authorName}`, {
+        x: 1.2, y: 4.85, w: 7.6, h: 0.35, fontSize: 10.5, italic: true, color: subtextColor
+      });
+    }
+    // 2. CONCEPT / TA'RIF SLAYDI
+    else if (type === 'concept') {
+      slide.addText(card.title || "Asosiy Tushuncha", {
+        x: 0.8, y: 0.65, w: 8.4, h: 0.5, fontSize: 22, bold: true, color: textColor
       });
       slide.addShape(pptx.ShapeType.rect, {
-        x: 0.8, y: 1.5, w: 4.05, h: 5.0, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.12
+        x: 0.8, y: 1.25, w: 8.4, h: 1.85, fill: { color: cardBg }, line: { color: accent, width: 1.5 }, rectRadius: 0.12
       });
-      slide.addText(card.leftTitle || "📌 Joriy Holat", {
-        x: 1.1, y: 1.8, w: 3.45, h: 0.45, fontSize: 14, bold: true, color: accent
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 1.1, y: 1.45, w: 2.8, h: 0.35, fill: { color: bg }, line: { color: accent, width: 1 }, rectRadius: 0.06
+      });
+      slide.addText(card.badge || "FUNDAMENTAL QOIDA", {
+        x: 1.1, y: 1.45, w: 2.8, h: 0.35, fontSize: 9.5, bold: true, color: accent, align: 'center'
+      });
+      slide.addText(card.mainConcept || card.title, {
+        x: 1.1, y: 1.9, w: 7.8, h: 1.05, fontSize: 14.5, bold: true, color: textColor
+      });
+
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 0.8, y: 3.25, w: 4.05, h: 2.15, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.1
+      });
+      slide.addText("📌 Ilmiy Sharh:", {
+        x: 1.0, y: 3.4, w: 3.65, h: 0.35, fontSize: 12, bold: true, color: accent
+      });
+      slide.addText(card.explanation || "Mavzuga oid chuqur nazariy va amaliy ma'lumotlar.", {
+        x: 1.0, y: 3.8, w: 3.65, h: 1.45, fontSize: 11, color: subtextColor
+      });
+
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 5.15, y: 3.25, w: 4.05, h: 2.15, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.1
+      });
+      slide.addText("✓ Muhim Asoslar:", {
+        x: 5.35, y: 3.4, w: 3.65, h: 0.35, fontSize: 12, bold: true, color: accent2
+      });
+      const bulletsText = (card.bullets || []).map(b => `• ${b}`).join("\n\n");
+      slide.addText(bulletsText || "• Fundamental ta'limiy tamoyillar", {
+        x: 5.35, y: 3.8, w: 3.65, h: 1.45, fontSize: 11, color: subtextColor
+      });
+    }
+    // 3. GRID4 (2x2 KARTALAR)
+    else if (type === 'grid4') {
+      slide.addText(card.title || "Tarkibiy Qismlar va Tuzilma", {
+        x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: textColor
+      });
+      slide.addText(card.subtitle || "Asosiy elementlar tahlili", {
+        x: 0.8, y: 1.1, w: 8.4, h: 0.3, fontSize: 11, color: subtextColor
+      });
+      const items = (card.items || []).slice(0, 4);
+      const coords = [
+        { x: 0.8, y: 1.45 },
+        { x: 5.15, y: 1.45 },
+        { x: 0.8, y: 3.5 },
+        { x: 5.15, y: 3.5 }
+      ];
+      coords.forEach((pos, idx) => {
+        const item = items[idx] || { title: `Element ${idx + 1}`, desc: "Batafsil ma'lumot" };
+        slide.addShape(pptx.ShapeType.rect, {
+          x: pos.x, y: pos.y, w: 4.05, h: 1.9, fill: { color: cardBg }, line: { color: idx % 2 === 0 ? accent : accent2, width: 1 }, rectRadius: 0.1
+        });
+        slide.addText(item.title, {
+          x: pos.x + 0.25, y: pos.y + 0.2, w: 3.55, h: 0.4, fontSize: 13, bold: true, color: textColor
+        });
+        slide.addText(item.desc, {
+          x: pos.x + 0.25, y: pos.y + 0.65, w: 3.55, h: 1.1, fontSize: 10.5, color: subtextColor
+        });
+      });
+    }
+    // 4. SPLIT (QIYOSIY TAHLIL)
+    else if (type === 'split') {
+      slide.addText(card.title || "Qiyosiy va Funksional Tahlil", {
+        x: 0.8, y: 0.65, w: 8.4, h: 0.5, fontSize: 22, bold: true, color: textColor
+      });
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 0.8, y: 1.25, w: 4.05, h: 4.15, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.12
+      });
+      slide.addText(card.leftTitle || "📌 1-Yo'nalish", {
+        x: 1.05, y: 1.45, w: 3.55, h: 0.45, fontSize: 14, bold: true, color: accent
       });
       const leftText = (card.leftBullets || []).map(b => `• ${b}`).join("\n\n");
-      slide.addText(leftText, {
-        x: 1.1, y: 2.4, w: 3.45, h: 3.7, fontSize: 12, color: subtextColor
+      slide.addText(leftText || "• Tahliliy ma'lumotlar", {
+        x: 1.05, y: 2.0, w: 3.55, h: 3.25, fontSize: 11.5, color: subtextColor
       });
+
       slide.addShape(pptx.ShapeType.rect, {
-        x: 5.15, y: 1.5, w: 4.05, h: 5.0, fill: { color: cardBg }, line: { color: accent2, width: 1 }, rectRadius: 0.12
+        x: 5.15, y: 1.25, w: 4.05, h: 4.15, fill: { color: cardBg }, line: { color: accent2, width: 1 }, rectRadius: 0.12
       });
-      slide.addText(card.rightTitle || "💡 Yangi Yechim", {
-        x: 5.45, y: 1.8, w: 3.45, h: 0.45, fontSize: 14, bold: true, color: accent2
+      slide.addText(card.rightTitle || "💡 2-Yo'nalish", {
+        x: 5.4, y: 1.45, w: 3.55, h: 0.45, fontSize: 14, bold: true, color: accent2
       });
       const rightText = (card.rightBullets || []).map(b => `• ${b}`).join("\n\n");
-      slide.addText(rightText, {
-        x: 5.45, y: 2.4, w: 3.45, h: 3.7, fontSize: 12, color: subtextColor
+      slide.addText(rightText || "• Tahliliy ma'lumotlar", {
+        x: 5.4, y: 2.0, w: 3.55, h: 3.25, fontSize: 11.5, color: subtextColor
       });
-    } else if (card.type === 'pillars') {
-      slide.addText(card.title, {
-        x: 0.8, y: 0.7, w: 8.4, h: 0.5, fontSize: 22, bold: true, color: textColor
+    }
+    // 5. PILLARS (3 TA USTUN)
+    else if (type === 'pillars') {
+      slide.addText(card.title || "Asosiy Ustunlar va Tamoyillar", {
+        x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: textColor
       });
       slide.addText(card.subtitle || "", {
-        x: 0.8, y: 1.2, w: 8.4, h: 0.35, fontSize: 12, color: subtextColor
+        x: 0.8, y: 1.1, w: 8.4, h: 0.3, fontSize: 11, color: subtextColor
       });
-      (card.cards || []).forEach((c, idx) => {
+      const pillars = (card.cards || []).slice(0, 3);
+      pillars.forEach((c, idx) => {
         const xPos = 0.8 + (idx * 2.9);
         slide.addShape(pptx.ShapeType.rect, {
-          x: xPos, y: 1.6, w: 2.65, h: 4.9, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.12
+          x: xPos, y: 1.45, w: 2.65, h: 3.95, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.12
         });
-        slide.addText(c.num, { x: xPos + 0.3, y: 1.9, w: 2.05, h: 0.6, fontSize: 28, bold: true, color: accent });
-        slide.addText(c.title, { x: xPos + 0.3, y: 2.7, w: 2.05, h: 0.6, fontSize: 16, bold: true, color: textColor });
-        slide.addText(c.desc, { x: xPos + 0.3, y: 3.5, w: 2.05, h: 2.6, fontSize: 12, color: subtextColor });
+        slide.addText(c.num || `0${idx + 1}`, { x: xPos + 0.25, y: 1.65, w: 2.15, h: 0.5, fontSize: 26, bold: true, color: accent });
+        slide.addText(c.title, { x: xPos + 0.25, y: 2.25, w: 2.15, h: 0.55, fontSize: 14, bold: true, color: textColor });
+        slide.addText(c.desc, { x: xPos + 0.25, y: 2.85, w: 2.15, h: 2.4, fontSize: 11, color: subtextColor });
       });
-    } else if (card.type === 'deep_dive') {
-      slide.addText(card.title, {
-        x: 0.8, y: 0.7, w: 8.4, h: 0.6, fontSize: 22, bold: true, color: textColor
+    }
+    // 6. STATS / METRIKALAR
+    else if (type === 'stats' || type === 'deep_dive') {
+      slide.addText(card.title || "Asosiy Parametrlar va Statistik Faktlar", {
+        x: 0.8, y: 0.65, w: 8.4, h: 0.5, fontSize: 22, bold: true, color: textColor
       });
-      slide.addShape(pptx.ShapeType.rect, {
-        x: 0.8, y: 1.5, w: 3.2, h: 5.0, fill: { color: cardBg }, line: { color: accent, width: 1.5 }, rectRadius: 0.12
-      });
-      slide.addText(card.metricValue || "98.4%", { x: 1.0, y: 2.3, w: 2.8, h: 1.2, fontSize: 50, bold: true, color: accent, align: 'center' });
-      slide.addText(card.metricLabel || "Samaradorlik Ko'rsatkichi", { x: 1.0, y: 3.8, w: 2.8, h: 0.8, fontSize: 13, bold: true, color: textColor, align: 'center' });
-      slide.addShape(pptx.ShapeType.rect, {
-        x: 4.3, y: 1.5, w: 4.9, h: 5.0, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.12
-      });
-      slide.addText("🔍 Tahliliy Faktlar va Natijalar:", {
-        x: 4.6, y: 1.9, w: 4.3, h: 0.45, fontSize: 15, bold: true, color: textColor
-      });
-      const bulletsText = (card.bullets || []).map(b => `✓  ${b}`).join("\n\n");
-      slide.addText(bulletsText, {
-        x: 4.6, y: 2.6, w: 4.3, h: 3.5, fontSize: 12, color: subtextColor
-      });
-    } else if (card.type === 'roadmap') {
-      slide.addText(card.title, {
-        x: 0.8, y: 0.7, w: 8.4, h: 0.6, fontSize: 22, bold: true, color: textColor
-      });
-      (card.steps || []).forEach((st, idx) => {
-        const yPos = 1.6 + (idx * 1.65);
+      if (card.stats && Array.isArray(card.stats) && card.stats.length > 0) {
+        const statsList = card.stats.slice(0, 3);
+        statsList.forEach((st, idx) => {
+          const xPos = 0.8 + (idx * 2.9);
+          slide.addShape(pptx.ShapeType.rect, {
+            x: xPos, y: 1.35, w: 2.65, h: 4.05, fill: { color: cardBg }, line: { color: accent, width: 1.2 }, rectRadius: 0.12
+          });
+          slide.addText(st.value, { x: xPos + 0.2, y: 1.7, w: 2.25, h: 0.8, fontSize: 32, bold: true, color: accent, align: 'center' });
+          slide.addText(st.label, { x: xPos + 0.2, y: 2.6, w: 2.25, h: 0.55, fontSize: 13, bold: true, color: textColor, align: 'center' });
+          slide.addText(st.desc || "", { x: xPos + 0.2, y: 3.25, w: 2.25, h: 1.95, fontSize: 11, color: subtextColor, align: 'center' });
+        });
+      } else {
         slide.addShape(pptx.ShapeType.rect, {
-          x: 0.8, y: yPos, w: 8.4, h: 1.4, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.1
+          x: 0.8, y: 1.25, w: 3.2, h: 4.15, fill: { color: cardBg }, line: { color: accent, width: 1.5 }, rectRadius: 0.12
         });
-        slide.addText(st.step, {
-          x: 1.1, y: yPos + 0.3, w: 1.8, h: 0.4, fontSize: 11, bold: true, color: accent
+        slide.addText(card.metricValue || "98.5%", { x: 1.0, y: 2.0, w: 2.8, h: 1.0, fontSize: 44, bold: true, color: accent, align: 'center' });
+        slide.addText(card.metricLabel || "Samaradorlik Ko'rsatkichi", { x: 1.0, y: 3.2, w: 2.8, h: 0.7, fontSize: 13, bold: true, color: textColor, align: 'center' });
+
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 4.3, y: 1.25, w: 4.9, h: 4.15, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.12
+        });
+        slide.addText("🔍 Tahliliy Faktlar va Natijalar:", {
+          x: 4.55, y: 1.55, w: 4.4, h: 0.45, fontSize: 14, bold: true, color: textColor
+        });
+        const bulletsText = (card.bullets || []).map(b => `✓  ${b}`).join("\n\n");
+        slide.addText(bulletsText || "✓ Tizimli tahlil ma'lumotlari", {
+          x: 4.55, y: 2.15, w: 4.4, h: 3.0, fontSize: 11.5, color: subtextColor
+        });
+      }
+    }
+    // 7. TIMELINE / BOSQICHLAR
+    else if (type === 'timeline' || type === 'roadmap') {
+      slide.addText(card.title || "Jarayon Ketma-Ketligi va Bosqichlar", {
+        x: 0.8, y: 0.65, w: 8.4, h: 0.5, fontSize: 22, bold: true, color: textColor
+      });
+      const steps = (card.steps || []).slice(0, 3);
+      steps.forEach((st, idx) => {
+        const yPos = 1.35 + (idx * 1.3);
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0.8, y: yPos, w: 8.4, h: 1.15, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.1
+        });
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 1.05, y: yPos + 0.2, w: 1.8, h: 0.35, fill: { color: bg }, line: { color: accent, width: 1 }, rectRadius: 0.06
+        });
+        slide.addText(st.step || `${idx + 1}-BOSQICH`, {
+          x: 1.05, y: yPos + 0.2, w: 1.8, h: 0.35, fontSize: 10, bold: true, color: accent, align: 'center'
         });
         slide.addText(st.title, {
-          x: 3.1, y: yPos + 0.25, w: 5.8, h: 0.4, fontSize: 14, bold: true, color: textColor
+          x: 3.05, y: yPos + 0.2, w: 5.9, h: 0.35, fontSize: 13, bold: true, color: textColor
         });
-        slide.addText(st.text, {
-          x: 3.1, y: yPos + 0.7, w: 5.8, h: 0.55, fontSize: 11, color: subtextColor
+        slide.addText(st.desc || st.text || "", {
+          x: 3.05, y: yPos + 0.55, w: 5.9, h: 0.5, fontSize: 10.5, color: subtextColor
         });
       });
-    } else {
+    }
+    // 8. QUIZ SLIDE (INTERAKTIV BILIMNI SINASH)
+    else if (type === 'quiz_slide') {
+      slide.addText(card.title || "Interaktiv Bilimni Sinash", {
+        x: 0.8, y: 0.6, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: textColor
+      });
       slide.addShape(pptx.ShapeType.rect, {
-        x: 0.8, y: 0.9, w: 8.4, h: 5.6, fill: { color: cardBg }, line: { color: cardBorder, width: 1.5 }, rectRadius: 0.15
+        x: 0.8, y: 1.15, w: 8.4, h: 1.05, fill: { color: cardBg }, line: { color: accent, width: 1.5 }, rectRadius: 0.1
       });
-      slide.addText(card.title || "Xulosa", {
-        x: 1.2, y: 1.3, w: 7.6, h: 0.6, fontSize: 24, bold: true, color: accent
+      slide.addText(card.question || "Mavzuga oid muhim savol?", {
+        x: 1.05, y: 1.25, w: 7.9, h: 0.85, fontSize: 13.5, bold: true, color: textColor
+      });
+      const options = (card.options || []).slice(0, 4);
+      const optCoords = [
+        { x: 0.8, y: 2.35 },
+        { x: 5.15, y: 2.35 },
+        { x: 0.8, y: 3.25 },
+        { x: 5.15, y: 3.25 }
+      ];
+      optCoords.forEach((pos, idx) => {
+        slide.addShape(pptx.ShapeType.rect, {
+          x: pos.x, y: pos.y, w: 4.05, h: 0.78, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.08
+        });
+        slide.addText(options[idx] || `Variant ${idx + 1}`, {
+          x: pos.x + 0.2, y: pos.y + 0.15, w: 3.65, h: 0.5, fontSize: 11, color: textColor
+        });
+      });
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 0.8, y: 4.15, w: 8.4, h: 1.25, fill: { color: cardBg }, line: { color: accent2, width: 1.2 }, rectRadius: 0.1
+      });
+      slide.addText("🔑 O'qituvchi Kaliti va Ilmiy Sharh:", {
+        x: 1.05, y: 4.25, w: 7.9, h: 0.35, fontSize: 11, bold: true, color: accent2
+      });
+      slide.addText(card.answer || "To'g'ri javob tahlili", {
+        x: 1.05, y: 4.6, w: 7.9, h: 0.7, fontSize: 11, color: subtextColor
+      });
+    }
+    // 9. CONCLUSION (XULOSA VA ISTIQBOLLAR)
+    else {
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 0.8, y: 0.85, w: 8.4, h: 4.6, fill: { color: cardBg }, line: { color: cardBorder, width: 1.5 }, rectRadius: 0.15
+      });
+      slide.addText(card.title || "Xulosa va Istiqbollar", {
+        x: 1.2, y: 1.15, w: 7.6, h: 0.55, fontSize: 22, bold: true, color: accent
       });
       if (card.quote) {
         slide.addShape(pptx.ShapeType.rect, {
-          x: 1.2, y: 2.1, w: 7.6, h: 1.2, fill: { color: bg }, line: { color: accent2, width: 1 }, rectRadius: 0.1
+          x: 1.2, y: 1.85, w: 7.6, h: 1.0, fill: { color: bg }, line: { color: accent2, width: 1 }, rectRadius: 0.08
         });
-        slide.addText(card.quote, {
-          x: 1.4, y: 2.2, w: 7.2, h: 1.0, fontSize: 13, italic: true, color: textColor, align: 'center'
+        slide.addText(`"${card.quote}"`, {
+          x: 1.4, y: 1.95, w: 7.2, h: 0.8, fontSize: 12.5, italic: true, color: textColor, align: 'center'
         });
       }
-      const takeawaysText = (card.takeaways || []).map(t => `★  ${t}`).join("\n\n");
-      slide.addText(takeawaysText, {
-        x: 1.2, y: 3.6, w: 7.6, h: 2.4, fontSize: 13, color: subtextColor
+      const takeaways = (card.takeaways || []).map(t => `★  ${t}`).join("\n\n");
+      slide.addText(takeaways || "★ Mavzuning muhim ta'limiy xulosalari", {
+        x: 1.2, y: 3.0, w: 7.6, h: 2.2, fontSize: 12, color: subtextColor
       });
     }
   });

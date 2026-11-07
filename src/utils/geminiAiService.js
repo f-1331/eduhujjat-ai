@@ -217,77 +217,57 @@ export async function generateAIStudentReferenceWithGemini(studentName) {
 }
 
 /**
- * 6. GAMMA & GENSPARK UCHUN KARTALASHTIRILGAN SLAYDLARNI AI BILAN YARATISH
+ * 6. GAMMA & GENSPARK UCHUN HAQIQIY KOD VA AI BILAN TUZILGAN DINAMIK SLAYDLAR
+ * Har bir mavzu uchun mutlaqo yangi, takrorlanmas, turli layoutli (hero, concept, grid4, split, pillars, stats, timeline, quiz_slide, conclusion) taqdimot
  */
 export async function generateAIGammaCardsWithGemini(topic) {
   const prompt = 
-    `Mavzu: "${topic}"\n` +
-    `Vazifa: Ushbu mavzu bo'yicha Gamma.app va Genspark uslubida 6 ta zamonaviy, chuqur slayd kartochkalarini JSON formatida tayyorlab ber.\n` +
-    `QAT'IY QOIDA: Hech qanday LaTeX yoki dollar ($) belgisidan foydalanmang. Kasrlarni 7/12 kabi oddiy yozing.\n` +
-    `Faqat quyidagi JSON formatida javob qaytar (boshqa hech qanday so'z yozma):\n` +
-    `[\n` +
-    `  {\n` +
-    `    "type": "hero",\n` +
-    `    "badge": "GAMMA AI TAQDIMOT",\n` +
-    `    "title": "Slayd sarlavhasi",\n` +
-    `    "subtitle": "Qisqa ilmiy sharh",\n` +
-    `    "speakerNotes": "Ma'ruzachi nutqi matni"\n` +
-    `  },\n` +
-    `  {\n` +
-    `    "type": "split",\n` +
-    `    "title": "Qiyosiy Tahlil",\n` +
-    `    "leftTitle": "Oldingi holat",\n` +
-    `    "leftBullets": ["fakt 1", "fakt 2", "fakt 3"],\n` +
-    `    "rightTitle": "Yangi yutuqlar",\n` +
-    `    "rightBullets": ["fakt 1", "fakt 2", "fakt 3"],\n` +
-    `    "speakerNotes": "Ma'ruzachi nutqi"\n` +
-    `  },\n` +
-    `  {\n` +
-    `    "type": "pillars",\n` +
-    `    "title": "3 Asosiy Yo'nalish",\n` +
-    `    "subtitle": "Tizimli yondashuv",\n` +
-    `    "cards": [\n` +
-    `      {"num": "01", "title": "Yo'nalish 1", "desc": "Tahliliy izoh"},\n` +
-    `      {"num": "02", "title": "Yo'nalish 2", "desc": "Tahliliy izoh"},\n` +
-    `      {"num": "03", "title": "Yo'nalish 3", "desc": "Tahliliy izoh"}\n` +
-    `    ],\n` +
-    `    "speakerNotes": "Nutq matni"\n` +
-    `  },\n` +
-    `  {\n` +
-    `    "type": "deep_dive",\n` +
-    `    "title": "Chuqur Tahlil va Metrika",\n` +
-    `    "metricValue": "98.5%",\n` +
-    `    "metricLabel": "Samaradorlik",\n` +
-    `    "bullets": ["Muhim fakt 1", "Muhim fakt 2", "Muhim fakt 3"],\n` +
-    `    "speakerNotes": "Nutq matni"\n` +
-    `  },\n` +
-    `  {\n` +
-    `    "type": "roadmap",\n` +
-    `    "title": "Amaliy Bosqichlar",\n` +
-    `    "steps": [\n` +
-    `      {"step": "1-BOSQICH", "title": "Poydevor", "text": "Boshlang'ich tadqiqot"},\n` +
-    `      {"step": "2-BOSQICH", "title": "Ijro", "text": "Amaliyotga tatbiq etish"},\n` +
-    `      {"step": "3-BOSQICH", "title": "Natija", "text": "Baholash va monitoring"}\n` +
-    `    ],\n` +
-    `    "speakerNotes": "Nutq matni"\n` +
-    `  },\n` +
-    `  {\n` +
-    `    "type": "conclusion",\n` +
-    `    "title": "Xulosa va Istiqbol",\n` +
-    `    "quote": "Ilmiy xulosa iqtibosi",\n` +
-    `    "takeaways": ["Asosiy xulosa 1", "Asosiy xulosa 2", "Asosiy xulosa 3"],\n` +
-    `    "speakerNotes": "Yakuniy nutq"\n` +
-    `  }\n` +
-    `]`;
+    `Mavzu: "${topic}"\n\n` +
+    `Vazifa: Ushbu mavzuni to'liq, chuqur va professional yorituvchi 6 tadan 8 tagacha ZAMONAVIY, XILMA-XIL va BETAKROR slayd kartochkalarini tuzib ber.\n` +
+    `QAT'IY TALABLAR (Gamma.app va Genspark darajasida):\n` +
+    `1. BIR XIL SHABLON TAKRORLANMASIN! Har bir slayd mavzuning ichki mantiqiga mos xilma-xil layoutda bo'lsin.\n` +
+    `2. Matnlar shunchaki 1-2 so'z yoki umumiy gap emas, balki chuqur ilmiy terminlar, aniq raqamlar, formulalar va darslikka xos faktlar bilan to'ldirilsin.\n` +
+    `3. Hech qanday LaTeX yoki dollar ($) belgisidan foydalanmang! Kasrlarni 7/12, darajalarni x^2 yoki oddiy harflar bilan yozing.\n` +
+    `4. Quyidagi slayd turlaridan mavzuga eng moslarini tanlab, xilma-xil ketma-ketlikda foydalaning:\n` +
+    `   - "hero": Kirish titul slaydi (badge, title, subtitle, speakerNotes)\n` +
+    `   - "concept": Fundamental ta'rif yoki asosiy qonuniyat (title, badge, mainConcept, explanation, bullets: ["..."], speakerNotes)\n` +
+    `   - "grid4": 2x2 to'rtta tarkibiy qism/funktsiya (title, subtitle, items: [{title, desc}, {title, desc}, {title, desc}, {title, desc}], speakerNotes)\n` +
+    `   - "split": Qiyosiy yoki funksional tahlil (title, leftTitle, leftBullets: ["..."], rightTitle, rightBullets: ["..."], speakerNotes)\n` +
+    `   - "pillars": 3 ta ustun/yo'nalish (title, subtitle, cards: [{num: "01", title, desc}, {num: "02", title, desc}, {num: "03", title, desc}], speakerNotes)\n` +
+    `   - "stats": Raqamlar, parametrlar va statistik ma'lumotlar (title, stats: [{value, label, desc}, ...], speakerNotes)\n` +
+    `   - "timeline": Jarayon ketma-ketligi yoki bosqichlar (title, steps: [{step: "1-BOSQICH", title, desc}, ...], speakerNotes)\n` +
+    `   - "quiz_slide": Interaktiv nazorat/munozara savoli (title, question, options: ["A) ...", "B) ...", "C) ...", "D) ..."], answer, speakerNotes)\n` +
+    `   - "conclusion": Xulosa va amaliy saboqlar (title, quote, takeaways: ["...", "..."], speakerNotes)\n\n` +
+    `Faqat quyidagi JSON massiv formatida javob qaytar (boshqa hech qanday so'z yoki belgi yozma):\n` +
+    `[ { "type": "...", ... } ]`;
 
   try {
-    const raw = await callGemini(prompt, "Siz faqat valid JSON array qaytaruvchi AI taqdimot generatorsiz. Dollar va LaTeX belgilari ishlatilmasin.");
+    const raw = await callGemini(
+      prompt, 
+      "Siz dunyo darajasidagi AI taqdimot dizaynerisiz (Gamma va Genspark uslubida). Siz faqat toza va valid JSON array qaytarasiz. LaTeX va dollar belgisi taqiqlangan."
+    );
     const jsonMatch = raw.match(/\[\s*\{[\s\S]*\}\s*\]/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Har bir matnni LaTeX qoldiqlaridan tozalash
+        const sanitizeText = (val) => {
+          if (typeof val === 'string') return cleanLatexAndFormat(val);
+          if (Array.isArray(val)) return val.map(sanitizeText);
+          if (val && typeof val === 'object') {
+            const res = {};
+            for (const k of Object.keys(val)) {
+              res[k] = sanitizeText(val[k]);
+            }
+            return res;
+          }
+          return val;
+        };
+        return sanitizeText(parsed);
+      }
     }
   } catch(e) {
-    // fallback
+    // fallback quyida
   }
   return null;
 }
