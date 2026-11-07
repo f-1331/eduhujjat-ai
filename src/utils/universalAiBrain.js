@@ -84,7 +84,7 @@ export function generateAITestSuite(topic, count = 10) {
   }
 
   // B) FOTOSINTEZ VA O'SIMLIKLAR FIZIOLOGIYASI
-  if (/fotosintez|xlorofill|o'simlik|tilakoid|kalvin|biologiya/i.test(lower)) {
+  if (/fotosintez|xlorofill|tilakoid|kalvin|o'simliklar fiziologiyasi/i.test(lower)) {
     const pool = [
       {
         q: "Fotosintez jarayonining to'g'ri kimyoviy tenglamasi qaysi javobda ko'rsatilgan?",

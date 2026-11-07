@@ -3,6 +3,17 @@ import { Bot, webhookCallback, InlineKeyboard, Keyboard, InputFile } from 'gramm
 import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, HeadingLevel } from 'docx';
 import pptxgen from 'pptxgenjs';
+import { 
+  callGemini, 
+  generateAITestWithGemini, 
+  generateAILessonPlanWithGemini, 
+  generateAIOfficialOrderWithGemini, 
+  generateAIProtocolWithGemini, 
+  generateAIStudentReferenceWithGemini, 
+  generateAIGammaCardsWithGemini 
+} from '../src/utils/geminiAiService.js';
+import { generateRealAIGammaCards } from '../src/utils/aiSlideEngine.js';
+import { generateAITestSuite, generateAILessonPlan, generateAIOfficialOrder } from '../src/utils/universalAiBrain.js';
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '9001772632:AAEe8hXmKAhWwE7VHK1Vd8FMia6TcqYI0Mk';
 const WEBAPP_URL = process.env.WEBAPP_URL || 'https://eduhujjat.vercel.app';
@@ -11,29 +22,22 @@ const SUPER_OWNER_ID = 6707839718;
 
 const bot = new Bot(BOT_TOKEN);
 
-const db = {
-  prices: {
-    oneTime: 2000, twoTime: 4000, fiveTime: 8000,
-    hourly: 3000, twoHours: 5000, threeHours: 7000,
-    daily: 5000, weekly: 25000, monthly: 70000, unlimited: 290000
-  },
-  admins: new Set(['fayzbek1331']),
-  ownerChatId: SUPER_OWNER_ID,
-  users: new Map(),
-  userSessions: new Map(),
-  simulatedRoles: new Map()
-};
+bot.catch((err) => {
+  console.error("Vercel bot error:", err.message);
+});
 
-function resolveUserId(idInput) {
-  const str = String(idInput).trim();
-  if (str === '1' || str === String(SUPER_OWNER_ID)) return SUPER_OWNER_ID;
-  return parseInt(str, 10);
-}
-
-function getDisplayUserId(userId) {
-  if (userId === SUPER_OWNER_ID) return 1;
-  return userId;
-}
+bot.api.config.use(async (prev, method, payload, signal) => {
+  try {
+    return await prev(method, payload, signal);
+  } catch (err) {
+    if (payload && payload.parse_mode && (err.message?.includes('parse') || err.message?.includes('entity'))) {
+      const newPayload = { ...payload };
+      delete newPayload.parse_mode;
+      return await prev(method, newPayload, signal);
+    }
+    throw err;
+  }
+});
 
 function getAccessCodeForUser(userId) {
   if (userId === SUPER_OWNER_ID) return "1331";
@@ -41,181 +45,91 @@ function getAccessCodeForUser(userId) {
   return `EDU-${num}`;
 }
 
-function isRealSuperOwner(ctx) {
-  const userId = ctx.from?.id;
-  const username = ctx.from?.username?.toLowerCase();
-  return userId === SUPER_OWNER_ID || username === OWNER_USERNAME.toLowerCase();
-}
-
-function getEffectiveRole(ctx) {
-  const userId = ctx.from?.id;
-  if (isRealSuperOwner(ctx) && db.simulatedRoles.has(userId)) {
-    return db.simulatedRoles.get(userId);
-  }
-  if (isRealSuperOwner(ctx)) return 'OWNER';
-  const username = ctx.from?.username?.toLowerCase();
-  if (username && db.admins.has(username)) return 'ADMIN';
-  return 'USER';
-}
-
-function isUserActive(userId, username) {
-  if (userId === SUPER_OWNER_ID) {
-    const role = db.simulatedRoles.get(userId);
-    if (role === 'USER') {
-      const u = db.users.get(userId);
-      return u?.status === 'ACTIVE';
-    }
-    return true;
-  }
-  if (username && username.toLowerCase() === OWNER_USERNAME.toLowerCase()) return true;
-  if (username && db.admins.has(username.toLowerCase())) return true;
-  const user = db.users.get(userId);
-  if (!user || user.status !== 'ACTIVE') return false;
-  return true;
-}
-
-function getReplyKeyboardForRole(role, isRegisteredActive = false) {
-  if (role === 'OWNER') {
-    return new Keyboard()
-      .text("⚡ Tezkor Yoqish").text("🔑 Saytga Kirish Kodi").row()
-      .text("🤖 EduAI Yordamchi").text("👥 Foydalanuvchilar").row()
-      .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
-      .text("📊 Excel Jadvallar").text("🎨 Gamma AI Taqdimot").row()
-      .text("📜 Faxriy Yorliq").text("🖼 Slayd Yasash").row()
-      .text("💰 Narxlar").text("🛡 Adminlar").row()
-      .text("📢 Ommaviy Xabar").text("📥 Bazani Yuklash (Excel)").row()
-      .text("🎭 Rejimni Almashtirish").text("📊 Statistika").row()
-      .text("🌐 WebApp Ochish").text("🔄 Yangilash /start")
-      .resized()
-      .persistent();
-  }
-  if (isRegisteredActive) {
-    return new Keyboard()
-      .text("🔑 Saytga Kirish Kodi").text("🤖 EduAI Yordamchi").row()
-      .text("📑 Hujjat Fabrikasi").text("📄 Demo Ma'lumot").row()
-      .text("📊 Excel Jadvallar").text("🎨 Gamma AI Taqdimot").row()
-      .text("🌐 WebApp Ochish").text("🔄 Yangilash /start")
-      .resized()
-      .persistent();
-  }
-  return new Keyboard()
-    .text("🔑 Saytga Kirish Kodi").text("💳 Litsenziya Sotib Olish").row()
-    .text("💰 Narxlar va Tariflar").text("ℹ️ Bot Qoidalari").row()
-    .text("🌐 WebApp Ochish").text("🔄 Yangilash /start")
-    .resized()
-    .persistent();
-}
-
 bot.command('start', async (ctx) => {
-  const user = ctx.from;
-  const userId = user.id;
-  const isOwner = isRealSuperOwner(ctx);
+  const userId = ctx.from.id;
+  const isOwner = userId === SUPER_OWNER_ID;
+  const code = getAccessCodeForUser(userId);
 
-  if (!db.users.has(userId)) {
-    db.users.set(userId, {
-      id: isOwner ? 1 : userId,
-      realId: userId,
-      name: user.first_name,
-      username: user.username,
-      status: isOwner ? 'ACTIVE' : 'PENDING',
-      plan: isOwner ? 'unlimited' : 'none'
-    });
-  }
-
-  const role = getEffectiveRole(ctx);
-  const active = isUserActive(userId, user.username);
-  const kb = getReplyKeyboardForRole(role, active);
-
-  if (isOwner) {
-    return ctx.reply(
-      `👑 **ASSALOMU ALAYKUM SUPER OWNER @${OWNER_USERNAME}!**\n\n` +
-      `Sizning tizimdagi ID: \`1\` *(Telegram ID: ${userId})*\n` +
-      `🔑 **Saytga kirish master kodingiz:** \`1331\`\n` +
-      `🌐 **Web platforma:** ${WEBAPP_URL}`,
-      { parse_mode: 'Markdown', reply_markup: kb }
-    );
-  }
-
-  return ctx.reply(`🔒 **EduHujjat AI Tizimiga xush kelibsiz!**`, { reply_markup: kb });
-});
-
-// Inline Callbacks (Device approval & Gamma presets)
-bot.on('callback_query:data', async (ctx) => {
-  const data = ctx.callbackQuery.data;
-
-  if (data.startsWith('dev_allow_')) {
-    await ctx.answerCallbackQuery({ text: "✅ Yangi qurilmaga ruxsat berildi!" });
-    return ctx.editMessageText(
-      (ctx.callbackQuery.message?.text || '') +
-      `\n\n━━━━━━━━━━━━━━━━━━━━━━\n✅ **RUXSAT BERILDI!**\nAdmin yangi qurilmaga ruxsat berdi. Eski qurilma sessiyasi bekor qilindi.`,
-      { parse_mode: 'Markdown' }
-    );
-  }
-
-  if (data.startsWith('dev_deny_')) {
-    await ctx.answerCallbackQuery({ text: "❌ Kirish rad etildi!", show_alert: true });
-    return ctx.editMessageText(
-      (ctx.callbackQuery.message?.text || '') +
-      `\n\n━━━━━━━━━━━━━━━━━━━━━━\n❌ **RAD ETILDI!**\nAdmin yangi qurilmadan kirishni rad etdi.`,
-      { parse_mode: 'Markdown' }
-    );
-  }
-
-  if (data.startsWith('gamma_preset_')) {
-    await ctx.answerCallbackQuery({ text: "Gamma slayd yaratilmoqda..." });
-    return ctx.reply("🎨 **Gamma AI taqdimoti:** WebApp orqali to'liq tahrirlash va slayd namoyish qilish uchun pastdagi WebApp tugmasini bosing!");
-  }
+  return ctx.reply(
+    `🌟 **Assalomu alaykum! "EduHujjat AI" platformasiga xush kelibsiz!**\n\n` +
+    `🔑 **Sizning Saytga Kirish Kodingiz:** \`${code}\`\n\n` +
+    `🤖 **Google Gemini AI bilan to'liq jihozlangan imkoniyatlar:**\n` +
+    `• \`/ai <mavzu>\` — AI intellektual tahlili va testlar\n` +
+    `• \`/test <mavzu>\` — 15 talik test va javoblar kaliti\n` +
+    `• \`/dars <mavzu>\` — 45 daqiqalik namunaviy konspekt\n` +
+    `• \`/gamma <mavzu>\` — Gamma AI Obsidian Dark slaydlar\n\n` +
+    `👇 **Web platformada ochish uchun tugmani bosing:**`,
+    {
+      reply_markup: new InlineKeyboard()
+        .webApp("🚀 Telegram Mini App-da Ochish", WEBAPP_URL)
+        .row()
+        .url("🌐 To'liq Brauzerda Ochish", WEBAPP_URL)
+    }
+  );
 });
 
 bot.on('message:text', async (ctx) => {
   const text = ctx.message.text.trim();
   const userId = ctx.from.id;
-  const username = ctx.from.username;
-  const role = getEffectiveRole(ctx);
 
-  if (text === '🔑 Saytga Kirish Kodi' || text === '/code' || text === '/getcode') {
-    if (isUserActive(userId, username)) {
-      const code = getAccessCodeForUser(userId);
-      return ctx.reply(
-        `🔑 **SIZNING SAYTGA KIRISH KODINGIZ:**\n\n` +
-        `\`${code}\`\n\n` +
-        `🌐 **Sayt manzili:** ${WEBAPP_URL}`,
-        { 
-          parse_mode: 'Markdown',
-          reply_markup: new InlineKeyboard().webApp("🚀 WebApp-da Ochish", WEBAPP_URL).row().url("🌐 Brauzerda Ochish", WEBAPP_URL)
-        }
-      );
-    } else {
-      return ctx.reply(`🔒 **Sizda faol obuna mavjud emas!** Avval to'lov qiling va tasdiqlangandan so'ng kirish kodini olasiz.`);
-    }
-  }
-
-  if (text === '🎨 Gamma AI Taqdimot' || text.startsWith('/gamma')) {
+  if (text === '🔑 Saytga Kirish Kodi' || text === '/code' || text === '/kod') {
+    const code = getAccessCodeForUser(userId);
     return ctx.reply(
-      `🎨 **GAMMA & GENSPARK AI TAQDIMOT STUDIYASI:**\n\n` +
-      `Gamma.app uslubidagi kartochkali, to'q fonli va har bir slayd uchun chuqur faktlar bilan taqdimotlar!\n\n` +
-      `Mavzu yozish uchun:\n` +
-      `👉 \`/gamma <Mavzu yoki matn>\` deb yozing\n` +
-      `(Masalan: \`/gamma Amir Temur davlati\` yoki \`/gamma Fotosintez jarayoni\`)\n\n` +
-      `Yoki Web platformamizda jonli slayd ko'rish va tahrirlash uchun WebApp-ni oching:`,
-      { 
-        reply_markup: new InlineKeyboard().webApp("🚀 WebApp-da Gamma Slayd Ochish", WEBAPP_URL).row().url("🌐 Brauzerda Ochish", WEBAPP_URL), 
-        parse_mode: 'Markdown' 
+      `🔑 **SIZNING SAYTGA KIRISH KODINGIZ:**\n\n\`${code}\`\n\n🌐 **Sayt:** ${WEBAPP_URL}`,
+      {
+        reply_markup: new InlineKeyboard().webApp("🚀 WebApp-da Ochish", WEBAPP_URL)
       }
     );
   }
 
-  if (text === '🤖 EduAI Yordamchi' || text.startsWith('/ai')) {
-    return ctx.reply(`🤖 **EduAI Yordamchi faol!** Savolingizni \`/ai mavzu\` ko'rinishida yuboring.`);
-  }
+  // Real Gemini AI /ai va mavzular handleri
+  if (text.startsWith('/ai') || text === '🤖 EduAI Yordamchi' || !text.startsWith('/')) {
+    const prompt = text.replace(/^\/ai\s*/i, '').replace('🤖 EduAI Yordamchi', '').trim();
+    if (!prompt) {
+      return ctx.reply("🤖 Savol yoki mavzuni yozing:\nMasalan: `/ai 8-sinf biologiya qon 10talik test`");
+    }
 
-  if (text === '🌐 WebApp Ochish') {
-    return ctx.reply("Web platformaga kiring:", {
-      reply_markup: new InlineKeyboard().webApp("🚀 WebApp-da Ochish", WEBAPP_URL).row().url("🌐 Brauzerda Ochish", WEBAPP_URL)
-    });
-  }
+    const waitMsg = await ctx.reply("⏳ **EduAI (Google Gemini) o'ylamoqda...**");
+    try {
+      let aiResult = "";
+      const lower = prompt.toLowerCase();
 
-  return ctx.reply(`📄 Matn qabul qilindi! (${text.length} ta belgi)`);
+      if (lower.includes('test') || lower.includes('savol')) {
+        const countMatch = prompt.match(/(\d+)\s*talik/i);
+        const count = countMatch ? parseInt(countMatch[1], 10) : 10;
+        try {
+          aiResult = await generateAITestWithGemini(prompt, count);
+        } catch(e) {
+          aiResult = generateAITestSuite(prompt, count);
+        }
+      } else if (lower.includes('konspekt') || lower.includes('dars') || lower.includes('reja')) {
+        try {
+          aiResult = await generateAILessonPlanWithGemini(prompt);
+        } catch(e) {
+          aiResult = generateAILessonPlan(prompt);
+        }
+      } else {
+        try {
+          aiResult = await callGemini(
+            prompt,
+            "Siz O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi mezonlari bo'yicha eng yuqori toifali pedagogik maslahatchi va metodistsiz. Har qanday ta'limiy savolga professional, to'liq va aniq o'zbek tilida javob bering."
+          );
+        } catch(e) {
+          aiResult = `🤖 **EduAI Tahlili:** «${prompt}»`;
+        }
+      }
+
+      const inline = new InlineKeyboard()
+        .webApp("🚀 WebApp-da Ochish", WEBAPP_URL)
+        .url("🌐 Saytda Ko'rish", WEBAPP_URL);
+
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(aiResult, { reply_markup: inline });
+    } catch(err) {
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(`❌ EduAI xatosi: ${err.message}`);
+    }
+  }
 });
 
 export default webhookCallback(bot, 'http');
