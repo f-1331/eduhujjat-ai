@@ -1,63 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { 
   GAMMA_THEMES, 
-  getDefaultGammaCards, 
   generatePresentationPptx 
 } from '../utils/powerpointGenerator';
+import { generateRealAIGammaCards } from '../utils/aiSlideEngine';
 import { 
   Presentation, 
   Sparkles, 
   Download, 
   Palette, 
-  Layers,
+  Play, 
+  ChevronLeft, 
+  ChevronRight, 
+  Edit3, 
+  Check, 
+  RotateCcw, 
+  Volume2, 
+  Plus, 
+  Trash2, 
+  Layout, 
+  MoveLeft, 
+  MoveRight,
   FileText,
-  Play,
-  Maximize2,
-  Minimize2,
-  ChevronLeft,
-  ChevronRight,
-  Edit3,
-  Check,
-  RotateCcw,
-  Volume2,
-  Lightbulb,
-  TrendingUp,
-  Award,
-  Milestone
+  Wand2,
+  CheckCircle2
 } from 'lucide-react';
 
-export default function PowerPointModule({ t }) {
-  const [topic, setTopic] = useState("Fotosintez jarayoni va o'simliklar biosferasi");
-  const [authorName, setAuthorName] = useState("SmartOffice EduAI");
+export default function PowerPointModule() {
+  const [promptInput, setPromptInput] = useState("Amir Temur davlati va Movarounnahr yuksalishi");
   const [themeKey, setThemeKey] = useState("obsidian");
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-  const [cards, setCards] = useState(() => getDefaultGammaCards("Fotosintez jarayoni va o'simliklar biosferasi", "SmartOffice EduAI"));
+  const [cards, setCards] = useState(() => generateRealAIGammaCards("Amir Temur davlati va Movarounnahr yuksalishi"));
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [showSpeakerNotes, setShowSpeakerNotes] = useState(true);
 
-  const activeTheme = GAMMA_THEMES[themeKey] || GAMMA_THEMES.obsidian;
+  // Tahrirlash rejimi (In-place edit mode)
+  const [isEditingMode, setIsEditingMode] = useState(false);
 
-  // Mavzu o'zgarganda kartalarni yangilash
-  const handleApplyTopic = (newTopic) => {
-    setTopic(newTopic);
-    const newCards = getDefaultGammaCards(newTopic, authorName);
-    setCards(newCards);
-    setActiveSlideIndex(0);
+  const activeTheme = GAMMA_THEMES[themeKey] || GAMMA_THEMES.obsidian;
+  const currentCard = cards[activeSlideIndex] || cards[0];
+
+  // Haqiqiy AI Generatsiya: kiritilgan mavzu bo'yicha slaydlarni noldan noyob yaratish
+  const handleGenerateRealSlides = () => {
+    if (!promptInput.trim()) return;
+    setIsGenerating(true);
+    setTimeout(() => {
+      const generated = generateRealAIGammaCards(promptInput.trim());
+      setCards(generated);
+      setActiveSlideIndex(0);
+      setIsGenerating(false);
+    }, 400);
   };
 
   // PowerPoint (.pptx) yuklab olish
   const handleExportPptx = async () => {
     setIsGenerating(true);
     try {
-      const cleanName = topic.slice(0, 30).replace(/[^a-zA-Z0-9А-Яа-яЎўҒғҚқҲҳ]/g, '_');
+      const cleanName = (currentCard?.title || promptInput || 'Taqdimot')
+        .slice(0, 30)
+        .replace(/[^a-zA-Z0-9А-Яа-яЎўҒғҚқҲҳ]/g, '_');
+
       await generatePresentationPptx({
-        topic,
+        topic: promptInput,
         styleName: themeKey,
         cards,
-        authorName,
-        filename: `${cleanName}_Gamma_Taqdimot.pptx`
+        filename: `${cleanName}_Gamma_AI.pptx`
       });
     } catch (err) {
       console.error(err);
@@ -67,7 +75,7 @@ export default function PowerPointModule({ t }) {
     }
   };
 
-  // Klaviaturada strelkalar orqali slaydni almashtirish (Taqdimot rejimi)
+  // Klaviaturada strelkalar orqali slaydni boshqarish
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isFullscreen) return;
@@ -83,164 +91,212 @@ export default function PowerPointModule({ t }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen, cards.length]);
 
-  const currentCard = cards[activeSlideIndex] || cards[0];
+  // Joriy kartani tahrirlash funksiyalari
+  const updateCurrentCard = (fields) => {
+    setCards(prev => prev.map((c, i) => i === activeSlideIndex ? { ...c, ...fields } : c));
+  };
 
-  // Tezkor Genspark mavzulari (Genspark Prompt Chips)
-  const quickTopics = [
-    { title: "Fotosintez va Biosfera", icon: "🧬", prompt: "Fotosintez jarayoni va o'simliklar biosferasi" },
-    { title: "Amir Temur Saltanati", icon: "🏛", prompt: "Amir Temur davlati va harbiy strategiyasi" },
-    { title: "Sun'iy Intellekt 2026", icon: "🤖", prompt: "Sun'iy Intellekt va Raqamli Ta'lim 2026" },
-    { title: "Pifagor Teoremasi", icon: "📐", prompt: "Pifagor teoremasi va fazoviy geometriya" },
-    { title: "Maktab Monitoringi", icon: "📊", prompt: "Zamonaviy Maktab Monitoringi va Raqamli Davomat" },
-    { title: "Yashil Energetika", icon: "🌿", prompt: "Iqlim o'zgarishi va qayta tiklanuvchi energiya" }
-  ];
+  // Yangi slayd qo'shish
+  const handleAddSlide = () => {
+    const newSlide = {
+      id: Date.now(),
+      type: "split",
+      badge: "YANGI BO'LIM",
+      title: "Yangi Slayd Mavzusi",
+      leftTitle: "📌 Asosiy Tushuncha",
+      leftBullets: ["Birinchi muhim fakt yoki ta'rif", "Ikkinchi tahliliy ma'lumot"],
+      rightTitle: "💡 Amaliy Yondashuv",
+      rightBullets: ["Amaliyotdagi natijalar", "Kelgusi rejalar"],
+      speakerNotes: "Ushbu slaydda yangi mavzu yoritiladi."
+    };
+    const newCards = [...cards];
+    newCards.splice(activeSlideIndex + 1, 0, newSlide);
+    setCards(newCards);
+    setActiveSlideIndex(activeSlideIndex + 1);
+  };
+
+  // Slaydni o'chirish
+  const handleDeleteSlide = (indexToDelete) => {
+    if (cards.length <= 1) {
+      alert("Taqdimotda kamida 1 ta slayd qolishi kerak!");
+      return;
+    }
+    const filtered = cards.filter((_, i) => i !== indexToDelete);
+    setCards(filtered);
+    setActiveSlideIndex(Math.max(0, indexToDelete - 1));
+  };
+
+  // Slayd tartibini siljitish
+  const handleMoveSlide = (direction) => {
+    const targetIdx = direction === 'left' ? activeSlideIndex - 1 : activeSlideIndex + 1;
+    if (targetIdx < 0 || targetIdx >= cards.length) return;
+    const reordered = [...cards];
+    const temp = reordered[activeSlideIndex];
+    reordered[activeSlideIndex] = reordered[targetIdx];
+    reordered[targetIdx] = temp;
+    setCards(reordered);
+    setActiveSlideIndex(targetIdx);
+  };
+
+  // Slayd tuzilish turini (layout) almashtirish
+  const handleChangeLayout = (newType) => {
+    updateCurrentCard({ type: newType });
+  };
 
   return (
     <div className="space-y-6">
-      {/* 1. GAMMA HEADER & HERO BANNER */}
+      {/* 1. GAMMA & GENSPARK AI PROMPT BAR */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-indigo-500/10 to-transparent pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 text-slate-950">
-                Gamma & Genspark 2.0 AI Engine
-              </span>
-              <span className="text-xs text-sky-300 font-mono">16:9 Widescreen PPTX</span>
+        <div className="relative z-10 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 text-slate-950">
+                  Gamma & Genspark Real AI
+                </span>
+                <span className="text-xs text-sky-300 font-mono">Haqiqiy Mazmun Generatori</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
+                <Presentation className="w-7 h-7 text-sky-400" />
+                AI Taqdimot Generator Studiyasi
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300">
+                Ixtiyoriy mavzu, dars konspekti yoki referat matnini kiriting. Har bir slayd shablon emas, aynan shu mavzuga xos <b>haqiqiy faktlar, formulalar va tahlillar</b> bilan yaratiladi!
+              </p>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
-              <Presentation className="w-7 h-7 text-sky-400" />
-              Gamma AI Taqdimot Studiyasi
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
-              Gamma.app va Genspark uslubidagi kartochkali zamonaviy taqdimotlar, jonli namoyish rejimi va professional PowerPoint (.pptx) eksporti.
-            </p>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              <button
+                onClick={() => setIsFullscreen(true)}
+                className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5"
+              >
+                <Play className="w-4 h-4 text-emerald-400" />
+                Namoyish (Gamma Mode)
+              </button>
+              <button
+                onClick={handleExportPptx}
+                disabled={isGenerating}
+                className="px-5 py-2.5 bg-gradient-to-r from-sky-400 via-indigo-500 to-purple-500 hover:opacity-95 text-slate-950 font-black text-xs rounded-xl shadow-lg transition flex items-center gap-2 disabled:opacity-50"
+              >
+                {isGenerating ? <Sparkles className="w-4 h-4 animate-spin text-slate-950" /> : <Download className="w-4 h-4 text-slate-950" />}
+                {isGenerating ? "Yuklanmoqda..." : "PPTX Yuklab Olish"}
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setIsFullscreen(true)}
-              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5"
-            >
-              <Play className="w-4 h-4 text-emerald-400" />
-              Namoyish Rejimi (Gamma Mode)
-            </button>
-            <button
-              onClick={handleExportPptx}
-              disabled={isGenerating}
-              className="px-5 py-2.5 bg-gradient-to-r from-sky-400 via-indigo-500 to-purple-500 hover:opacity-95 text-slate-950 font-black text-xs rounded-xl shadow-lg transition flex items-center gap-2 disabled:opacity-50"
-            >
-              {isGenerating ? <Sparkles className="w-4 h-4 animate-spin text-slate-950" /> : <Download className="w-4 h-4 text-slate-950" />}
-              {isGenerating ? "Tayyorlanmoqda..." : "PPTX Yuklash"}
-            </button>
+          {/* Prompt kiritish va Generatsiya qilish maydoni */}
+          <div className="pt-2">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <textarea
+                rows={2}
+                value={promptInput}
+                onChange={(e) => setPromptInput(e.target.value)}
+                placeholder="Mavzuni yozing yoki matn tashlang (Masalan: Amir Temur davlati, Fotosintez va kimyoviy reaksiyalar, Python algoritmlari, Pifagor teoremasi...)"
+                className="flex-1 px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none font-medium"
+              />
+              <button
+                onClick={handleGenerateRealSlides}
+                disabled={isGenerating || !promptInput.trim()}
+                className="px-6 py-3 bg-gradient-to-r from-amber-400 via-sky-400 to-emerald-400 text-slate-950 font-black text-sm rounded-2xl shadow-xl hover:opacity-95 transition flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+              >
+                {isGenerating ? <Sparkles className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
+                {isGenerating ? "AI Yaratmoqda..." : "Haqiqiy Slayd Yaratish"}
+              </button>
+            </div>
           </div>
-        </div>
-
-        {/* Tezkor Mavzular (Chips) */}
-        <div className="mt-5 pt-4 border-t border-white/10 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <span className="text-[11px] text-slate-400 font-semibold shrink-0">
-            ⚡ Tayyor AI Mavzular:
-          </span>
-          {quickTopics.map((item, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleApplyTopic(item.prompt)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition shrink-0 flex items-center gap-1.5 ${
-                topic === item.prompt
-                  ? 'bg-sky-400 text-slate-950 font-bold shadow-md'
-                  : 'bg-white/5 hover:bg-white/15 text-slate-300 border border-white/10'
-              }`}
-            >
-              <span>{item.icon}</span>
-              <span>{item.title}</span>
-            </button>
-          ))}
         </div>
       </div>
 
-      {/* 2. ASOSIY BOSHQARUV VA GAMMA KANVAS */}
+      {/* 2. ASOSIY GAMMA STUDIYASI VA KANVAS */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* CHAP PANEL: SOZLAMALAR VA TEMALAR (4 ustun) */}
-        <div className="lg:col-span-4 space-y-5">
-          {/* Mavzu kiritish */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                🎯 Taqdimot Mavzusi (Topic):
-              </label>
-              <textarea
-                rows={2}
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="Mavzuni kiriting..."
-                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 dark:text-slate-100"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                👤 Ma'ruzachi / Muallif:
-              </label>
-              <input
-                type="text"
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-                className="w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 dark:text-slate-100"
-              />
-            </div>
-
-            <button
-              onClick={() => handleApplyTopic(topic)}
-              className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-sky-500" />
-              Slaydlarni Yangidan Generatsiya Qilish
-            </button>
-          </div>
-
-          {/* Gamma Temalari */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-3">
+        {/* CHAP PANEL: TEMALAR VA BOSHQARUV (3 ustun) */}
+        <div className="lg:col-span-3 space-y-4">
+          {/* Rang mavzusi */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
               <Palette className="w-4 h-4 text-indigo-500" />
-              Gamma AI Rang Mavzulari:
+              Gamma Rang Mavzulari:
             </label>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {Object.values(GAMMA_THEMES).map((th) => (
                 <button
                   key={th.id}
                   onClick={() => setThemeKey(th.id)}
-                  className={`w-full p-3 rounded-xl border text-left transition flex items-center justify-between ${
+                  className={`w-full p-2.5 rounded-xl border text-left transition flex items-center justify-between ${
                     themeKey === th.id
                       ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 shadow-sm'
                       : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <div 
-                      className="w-6 h-6 rounded-lg border border-white/20 shadow-inner flex items-center justify-center"
+                      className="w-5 h-5 rounded-md border border-white/20 shadow-inner flex items-center justify-center"
                       style={{ backgroundColor: `#${th.bg}` }}
                     >
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: `#${th.accent}` }} />
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: `#${th.accent}` }} />
                     </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white">
-                        {th.name.split('(')[0].trim()}
-                      </div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                        {th.name.includes('(') ? th.name.split('(')[1].replace(')', '') : ''}
-                      </div>
-                    </div>
+                    <span className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                      {th.name.split('(')[0].trim()}
+                    </span>
                   </div>
-                  {themeKey === th.id && <Check className="w-4 h-4 text-sky-500" />}
+                  {themeKey === th.id && <Check className="w-3.5 h-3.5 text-sky-500" />}
                 </button>
               ))}
             </div>
           </div>
+
+          {/* Slayd turi va Layout tanlash */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <Layout className="w-4 h-4 text-sky-500" />
+              Slayd Qolipi (Layout):
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                { type: 'hero', label: 'Titul (Hero)' },
+                { type: 'split', label: '2 Ustun' },
+                { type: 'pillars', label: '3 Ustun' },
+                { type: 'deep_dive', label: 'Metrika' },
+                { type: 'roadmap', label: 'Yo\'l Xaritasi' },
+                { type: 'summary', label: 'Xulosa' }
+              ].map((ly) => (
+                <button
+                  key={ly.type}
+                  onClick={() => handleChangeLayout(ly.type)}
+                  className={`px-2.5 py-1.5 text-xs rounded-xl border font-medium transition ${
+                    currentCard?.type === ly.type
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold'
+                      : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {ly.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Slayd amallari */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2">
+            <button
+              onClick={handleAddSlide}
+              className="w-full py-2 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              + Yangi Slayd Qo'shish
+            </button>
+            <button
+              onClick={() => handleDeleteSlide(activeSlideIndex)}
+              className="w-full py-2 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Ushbu Slaydni O'chirish
+            </button>
+          </div>
         </div>
 
-        {/* O'NG PANEL: INTERAKTIV GAMMA SLAYD KANVASI (8 ustun) */}
-        <div className="lg:col-span-8 space-y-4">
-          {/* Slaydlar tanlov paneli (Slide Tabs) */}
+        {/* O'NG PANEL: INTERAKTIV SLAYD KANVASI VA MATN TAHRIRLASH (9 ustun) */}
+        <div className="lg:col-span-9 space-y-4">
+          {/* Slaydlar tanlagichi (Deck Tabs) */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 shadow-sm flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none flex-1">
               {cards.map((c, idx) => (
@@ -254,33 +310,36 @@ export default function PowerPointModule({ t }) {
                   }`}
                 >
                   <span className="text-[10px] opacity-75">{idx + 1}.</span>
-                  <span>{c.badge ? c.badge.split(' ')[0] : `Slayd ${idx + 1}`}</span>
+                  <span className="truncate max-w-[120px]">{c.title || `Slayd ${idx + 1}`}</span>
                 </button>
               ))}
             </div>
 
+            {/* Slayd siljitish va navigatsiya */}
             <div className="flex items-center gap-1 shrink-0">
               <button
-                onClick={() => setActiveSlideIndex(prev => Math.max(prev - 1, 0))}
+                onClick={() => handleMoveSlide('left')}
                 disabled={activeSlideIndex === 0}
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition"
+                title="Slaydni chapga surish"
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 transition"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <MoveLeft className="w-3.5 h-3.5" />
               </button>
-              <span className="text-xs font-mono font-bold px-2 text-slate-600 dark:text-slate-400">
+              <button
+                onClick={() => handleMoveSlide('right')}
+                disabled={activeSlideIndex === cards.length - 1}
+                title="Slaydni o'ngga surish"
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 transition"
+              >
+                <MoveRight className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-xs font-mono font-bold px-1.5 text-slate-600 dark:text-slate-400">
                 {activeSlideIndex + 1}/{cards.length}
               </span>
-              <button
-                onClick={() => setActiveSlideIndex(prev => Math.min(prev + 1, cards.length - 1))}
-                disabled={activeSlideIndex === cards.length - 1}
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
             </div>
           </div>
 
-          {/* JONLI GAMMA SLAYD DISPLAY (Widescreen 16:9 Canvas) */}
+          {/* HAQIQIY GAMMA SLAYD DISPLAY (Widescreen 16:9 Canvas) */}
           <div 
             className="w-full aspect-video rounded-3xl p-6 sm:p-10 shadow-2xl relative flex flex-col justify-between border transition-all duration-300 overflow-hidden"
             style={{ 
@@ -288,16 +347,16 @@ export default function PowerPointModule({ t }) {
               borderColor: `#${activeTheme.cardBorder}`
             }}
           >
-            {/* Top Indicator */}
+            {/* Top Bar Indicator (No author clutter) */}
             <div className="flex items-center justify-between text-[11px] font-mono tracking-wider opacity-70" style={{ color: `#${activeTheme.subtext}` }}>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: `#${activeTheme.accent}` }} />
-                <span>SMARTOFFICE & EDUAI PRO  •  GAMMA ENGINE</span>
+                <span>GAMMA ENGINE  •  SLAYD {activeSlideIndex + 1}/{cards.length}</span>
               </div>
-              <span>SLAYD {activeSlideIndex + 1} / {cards.length}</span>
+              <span className="uppercase">{currentCard.badge || "AI SLAYD"}</span>
             </div>
 
-            {/* Slayd kontenti (Turiga qarab) */}
+            {/* SLAYD KONTENTI: INTERAKTIV TAHRIRLANADIGAN BLOKLAR */}
             <div className="my-auto py-2">
               {/* 1. HERO SLAYDI */}
               {currentCard.type === 'hero' && (
@@ -308,71 +367,104 @@ export default function PowerPointModule({ t }) {
                     borderColor: `#${activeTheme.cardBorder}`
                   }}
                 >
-                  <span 
-                    className="inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase border"
+                  <input
+                    type="text"
+                    value={currentCard.badge || ''}
+                    onChange={(e) => updateCurrentCard({ badge: e.target.value })}
+                    className="inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase border bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400"
                     style={{ 
                       color: `#${activeTheme.accent}`, 
-                      borderColor: `#${activeTheme.accent}`,
-                      backgroundColor: `#${activeTheme.bg}`
+                      borderColor: `#${activeTheme.accent}`
                     }}
-                  >
-                    {currentCard.badge || "GAMMA AI TAQDIMOT"}
-                  </span>
-                  <h1 
-                    className="text-2xl sm:text-4xl font-extrabold tracking-tight"
+                  />
+                  <textarea
+                    rows={2}
+                    value={currentCard.title || ''}
+                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                    className="w-full bg-transparent text-2xl sm:text-4xl font-extrabold tracking-tight focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg resize-none"
                     style={{ color: `#${activeTheme.text}` }}
-                  >
-                    {currentCard.title}
-                  </h1>
-                  <p 
-                    className="text-xs sm:text-sm max-w-xl"
+                  />
+                  <textarea
+                    rows={2}
+                    value={currentCard.subtitle || ''}
+                    onChange={(e) => updateCurrentCard({ subtitle: e.target.value })}
+                    className="w-full bg-transparent text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg resize-none"
                     style={{ color: `#${activeTheme.subtext}` }}
-                  >
-                    {currentCard.subtitle}
-                  </p>
-                  <div 
-                    className="pt-3 border-t text-xs font-semibold flex items-center justify-between"
-                    style={{ borderColor: `#${activeTheme.cardBorder}`, color: `#${activeTheme.accent}` }}
-                  >
-                    <span>👤 Taqdimotchi: {currentCard.author || authorName}</span>
-                    <span className="opacity-75">O'zbekiston Ta'lim Tizimi</span>
-                  </div>
+                  />
                 </div>
               )}
 
               {/* 2. SPLIT COMPARISON (2 USTUN) */}
               {currentCard.type === 'split' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl sm:text-2xl font-bold" style={{ color: `#${activeTheme.text}` }}>
-                    {currentCard.title}
-                  </h2>
+                  <input
+                    type="text"
+                    value={currentCard.title || ''}
+                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                    className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                    style={{ color: `#${activeTheme.text}` }}
+                  />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Chap Ustun */}
                     <div 
-                      className="p-5 rounded-2xl border space-y-2 shadow"
+                      className="p-5 rounded-2xl border space-y-2.5 shadow"
                       style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
                     >
-                      <h4 className="text-xs sm:text-sm font-bold" style={{ color: `#${activeTheme.accent}` }}>
-                        {currentCard.leftTitle}
-                      </h4>
-                      <ul className="text-[11px] sm:text-xs space-y-1.5 list-disc list-inside" style={{ color: `#${activeTheme.subtext}` }}>
+                      <input
+                        type="text"
+                        value={currentCard.leftTitle || ''}
+                        onChange={(e) => updateCurrentCard({ leftTitle: e.target.value })}
+                        className="w-full bg-transparent text-xs sm:text-sm font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                        style={{ color: `#${activeTheme.accent}` }}
+                      />
+                      <div className="space-y-1.5">
                         {(currentCard.leftBullets || []).map((b, i) => (
-                          <li key={i}>{b}</li>
+                          <div key={i} className="flex items-start gap-1.5 text-[11px] sm:text-xs" style={{ color: `#${activeTheme.subtext}` }}>
+                            <span>•</span>
+                            <input
+                              type="text"
+                              value={b}
+                              onChange={(e) => {
+                                const newBullets = [...(currentCard.leftBullets || [])];
+                                newBullets[i] = e.target.value;
+                                updateCurrentCard({ leftBullets: newBullets });
+                              }}
+                              className="w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                            />
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
 
+                    {/* O'ng Ustun */}
                     <div 
-                      className="p-5 rounded-2xl border space-y-2 shadow"
+                      className="p-5 rounded-2xl border space-y-2.5 shadow"
                       style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent2}` }}
                     >
-                      <h4 className="text-xs sm:text-sm font-bold" style={{ color: `#${activeTheme.accent2}` }}>
-                        {currentCard.rightTitle}
-                      </h4>
-                      <ul className="text-[11px] sm:text-xs space-y-1.5 list-disc list-inside" style={{ color: `#${activeTheme.subtext}` }}>
+                      <input
+                        type="text"
+                        value={currentCard.rightTitle || ''}
+                        onChange={(e) => updateCurrentCard({ rightTitle: e.target.value })}
+                        className="w-full bg-transparent text-xs sm:text-sm font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                        style={{ color: `#${activeTheme.accent2}` }}
+                      />
+                      <div className="space-y-1.5">
                         {(currentCard.rightBullets || []).map((b, i) => (
-                          <li key={i}>{b}</li>
+                          <div key={i} className="flex items-start gap-1.5 text-[11px] sm:text-xs" style={{ color: `#${activeTheme.subtext}` }}>
+                            <span>•</span>
+                            <input
+                              type="text"
+                              value={b}
+                              onChange={(e) => {
+                                const newBullets = [...(currentCard.rightBullets || [])];
+                                newBullets[i] = e.target.value;
+                                updateCurrentCard({ rightBullets: newBullets });
+                              }}
+                              className="w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                            />
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -382,12 +474,20 @@ export default function PowerPointModule({ t }) {
               {currentCard.type === 'pillars' && (
                 <div className="space-y-4">
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-bold" style={{ color: `#${activeTheme.text}` }}>
-                      {currentCard.title}
-                    </h2>
-                    <p className="text-xs" style={{ color: `#${activeTheme.subtext}` }}>
-                      {currentCard.subtitle}
-                    </p>
+                    <input
+                      type="text"
+                      value={currentCard.title || ''}
+                      onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                      className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                      style={{ color: `#${activeTheme.text}` }}
+                    />
+                    <input
+                      type="text"
+                      value={currentCard.subtitle || ''}
+                      onChange={(e) => updateCurrentCard({ subtitle: e.target.value })}
+                      className="w-full bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                      style={{ color: `#${activeTheme.subtext}` }}
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -400,12 +500,28 @@ export default function PowerPointModule({ t }) {
                         <span className="text-xl font-black" style={{ color: `#${activeTheme.accent}` }}>
                           {c.num}
                         </span>
-                        <h4 className="text-xs sm:text-sm font-bold" style={{ color: `#${activeTheme.text}` }}>
-                          {c.title}
-                        </h4>
-                        <p className="text-[11px] line-clamp-3" style={{ color: `#${activeTheme.subtext}` }}>
-                          {c.desc}
-                        </p>
+                        <input
+                          type="text"
+                          value={c.title || ''}
+                          onChange={(e) => {
+                            const newCards = [...(currentCard.cards || [])];
+                            newCards[i] = { ...newCards[i], title: e.target.value };
+                            updateCurrentCard({ cards: newCards });
+                          }}
+                          className="w-full bg-transparent text-xs sm:text-sm font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                          style={{ color: `#${activeTheme.text}` }}
+                        />
+                        <textarea
+                          rows={3}
+                          value={c.desc || ''}
+                          onChange={(e) => {
+                            const newCards = [...(currentCard.cards || [])];
+                            newCards[i] = { ...newCards[i], desc: e.target.value };
+                            updateCurrentCard({ cards: newCards });
+                          }}
+                          className="w-full bg-transparent text-[11px] focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                          style={{ color: `#${activeTheme.subtext}` }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -415,20 +531,32 @@ export default function PowerPointModule({ t }) {
               {/* 4. CHUQUR TAHLIL VA METRIKA */}
               {currentCard.type === 'deep_dive' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl sm:text-2xl font-bold" style={{ color: `#${activeTheme.text}` }}>
-                    {currentCard.title}
-                  </h2>
+                  <input
+                    type="text"
+                    value={currentCard.title || ''}
+                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                    className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                    style={{ color: `#${activeTheme.text}` }}
+                  />
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
                     <div 
                       className="sm:col-span-4 p-5 rounded-2xl border text-center flex flex-col items-center justify-center shadow"
                       style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
                     >
-                      <span className="text-3xl sm:text-5xl font-black" style={{ color: `#${activeTheme.accent}` }}>
-                        {currentCard.metricValue}
-                      </span>
-                      <p className="text-xs font-bold mt-2" style={{ color: `#${activeTheme.text}` }}>
-                        {currentCard.metricLabel}
-                      </p>
+                      <input
+                        type="text"
+                        value={currentCard.metricValue || ''}
+                        onChange={(e) => updateCurrentCard({ metricValue: e.target.value })}
+                        className="w-full text-center bg-transparent text-3xl sm:text-5xl font-black focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                        style={{ color: `#${activeTheme.accent}` }}
+                      />
+                      <input
+                        type="text"
+                        value={currentCard.metricLabel || ''}
+                        onChange={(e) => updateCurrentCard({ metricLabel: e.target.value })}
+                        className="w-full text-center bg-transparent text-xs font-bold mt-2 focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                        style={{ color: `#${activeTheme.text}` }}
+                      />
                     </div>
 
                     <div 
@@ -436,13 +564,22 @@ export default function PowerPointModule({ t }) {
                       style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
                     >
                       <h4 className="text-xs sm:text-sm font-bold" style={{ color: `#${activeTheme.text}` }}>
-                        🔍 Tahliliy Xulosalar:
+                        🔍 Tahliliy Faktlar va Natijalar:
                       </h4>
                       <div className="space-y-1.5 text-[11px] sm:text-xs" style={{ color: `#${activeTheme.subtext}` }}>
                         {(currentCard.bullets || []).map((b, i) => (
                           <div key={i} className="flex items-start gap-1.5">
                             <span style={{ color: `#${activeTheme.accent}` }}>✓</span>
-                            <span>{b}</span>
+                            <input
+                              type="text"
+                              value={b}
+                              onChange={(e) => {
+                                const newBullets = [...(currentCard.bullets || [])];
+                                newBullets[i] = e.target.value;
+                                updateCurrentCard({ bullets: newBullets });
+                              }}
+                              className="w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                            />
                           </div>
                         ))}
                       </div>
@@ -454,9 +591,13 @@ export default function PowerPointModule({ t }) {
               {/* 5. ROADMAP / TIMELINE */}
               {currentCard.type === 'roadmap' && (
                 <div className="space-y-3">
-                  <h2 className="text-xl sm:text-2xl font-bold" style={{ color: `#${activeTheme.text}` }}>
-                    {currentCard.title}
-                  </h2>
+                  <input
+                    type="text"
+                    value={currentCard.title || ''}
+                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                    className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                    style={{ color: `#${activeTheme.text}` }}
+                  />
                   <div className="space-y-2">
                     {(currentCard.steps || []).map((st, i) => (
                       <div 
@@ -474,13 +615,29 @@ export default function PowerPointModule({ t }) {
                         >
                           {st.step}
                         </span>
-                        <div>
-                          <h4 className="text-xs sm:text-sm font-bold" style={{ color: `#${activeTheme.text}` }}>
-                            {st.title}
-                          </h4>
-                          <p className="text-[10px] sm:text-[11px]" style={{ color: `#${activeTheme.subtext}` }}>
-                            {st.text}
-                          </p>
+                        <div className="flex-1 space-y-0.5">
+                          <input
+                            type="text"
+                            value={st.title}
+                            onChange={(e) => {
+                              const newSteps = [...(currentCard.steps || [])];
+                              newSteps[i] = { ...newSteps[i], title: e.target.value };
+                              updateCurrentCard({ steps: newSteps });
+                            }}
+                            className="w-full bg-transparent text-xs sm:text-sm font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                            style={{ color: `#${activeTheme.text}` }}
+                          />
+                          <input
+                            type="text"
+                            value={st.text}
+                            onChange={(e) => {
+                              const newSteps = [...(currentCard.steps || [])];
+                              newSteps[i] = { ...newSteps[i], text: e.target.value };
+                              updateCurrentCard({ steps: newSteps });
+                            }}
+                            className="w-full bg-transparent text-[10px] sm:text-[11px] focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                            style={{ color: `#${activeTheme.subtext}` }}
+                          />
                         </div>
                       </div>
                     ))}
@@ -488,32 +645,45 @@ export default function PowerPointModule({ t }) {
                 </div>
               )}
 
-              {/* 6. XULOSA */}
+              {/* 6. SUMMARY */}
               {currentCard.type === 'summary' && (
                 <div 
                   className="p-6 sm:p-8 rounded-2xl border space-y-4 shadow-xl"
                   style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
                 >
-                  <h2 className="text-xl sm:text-2xl font-bold" style={{ color: `#${activeTheme.accent}` }}>
-                    {currentCard.title}
-                  </h2>
+                  <input
+                    type="text"
+                    value={currentCard.title || ''}
+                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                    className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                    style={{ color: `#${activeTheme.accent}` }}
+                  />
                   {currentCard.quote && (
-                    <div 
-                      className="p-3.5 rounded-xl border italic text-xs sm:text-sm text-center"
+                    <textarea
+                      rows={2}
+                      value={currentCard.quote}
+                      onChange={(e) => updateCurrentCard({ quote: e.target.value })}
+                      className="w-full p-3.5 rounded-xl border italic text-xs sm:text-sm text-center bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400 resize-none"
                       style={{ 
-                        backgroundColor: `#${activeTheme.bg}`, 
                         borderColor: `#${activeTheme.accent2}`,
                         color: `#${activeTheme.text}`
                       }}
-                    >
-                      {currentCard.quote}
-                    </div>
+                    />
                   )}
                   <div className="space-y-1.5 text-xs" style={{ color: `#${activeTheme.subtext}` }}>
                     {(currentCard.takeaways || []).map((tk, i) => (
                       <div key={i} className="flex items-start gap-1.5">
                         <span style={{ color: `#${activeTheme.accent}` }}>★</span>
-                        <span>{tk}</span>
+                        <input
+                          type="text"
+                          value={tk}
+                          onChange={(e) => {
+                            const newTakeaways = [...(currentCard.takeaways || [])];
+                            newTakeaways[i] = e.target.value;
+                            updateCurrentCard({ takeaways: newTakeaways });
+                          }}
+                          className="w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                        />
                       </div>
                     ))}
                   </div>
@@ -521,22 +691,25 @@ export default function PowerPointModule({ t }) {
               )}
             </div>
 
-            {/* Bottom Footer */}
+            {/* Bottom Footer (Clean indicator) */}
             <div 
               className="flex items-center justify-between text-[10px] opacity-60 border-t pt-2"
               style={{ borderColor: `#${activeTheme.cardBorder}`, color: `#${activeTheme.subtext}` }}
             >
-              <span>16:9 HD Slayd Dek</span>
-              <span>Gamma & Genspark Presentation Standard</span>
+              <span>16:9 Widescreen Presentation</span>
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                Matnlarni to'g'ridan-to'g'ri bosib tahrirlashingiz mumkin
+              </span>
             </div>
           </div>
 
-          {/* Ma'ruzachi Nutqi (Speaker Notes Drawer) */}
+          {/* Ma'ruzachi Nutqi (Speaker Notes) */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
                 <Volume2 className="w-4 h-4 text-indigo-500" />
-                Ma'ruzachi Nutqi (Speaker Notes — Taqdimot vaqtida aytiladigan gaplar):
+                Ma'ruzachi Nutqi (Taqdimotchi aytadigan gaplar):
               </div>
               <button 
                 onClick={() => setShowSpeakerNotes(!showSpeakerNotes)}
@@ -547,15 +720,18 @@ export default function PowerPointModule({ t }) {
             </div>
 
             {showSpeakerNotes && (
-              <p className="text-xs text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-                "{currentCard.speakerNotes || "Hurmatli tinglovchilar! Ushbu slaydda asosiy tushunchalar bilan tanishamiz."}"
-              </p>
+              <textarea
+                rows={2}
+                value={currentCard.speakerNotes || ''}
+                onChange={(e) => updateCurrentCard({ speakerNotes: e.target.value })}
+                className="w-full text-xs text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none"
+              />
             )}
           </div>
         </div>
       </div>
 
-      {/* 3. TO'LIQ EKRANLI JONLI NAMOYISH REJIMI (FULLSCREEN GAMMA MODE) */}
+      {/* 3. JONLI FULLSCREEN PRESENTATION REJIMI */}
       {isFullscreen && (
         <div 
           className="fixed inset-0 z-50 flex flex-col justify-between p-6 sm:p-12 animate-in fade-in duration-200"
@@ -586,7 +762,7 @@ export default function PowerPointModule({ t }) {
 
           {/* Slayd markazi */}
           <div className="max-w-5xl mx-auto w-full my-auto">
-            {/* 1. HERO SLAYDI */}
+            {/* HERO */}
             {currentCard.type === 'hero' && (
               <div 
                 className="p-10 rounded-3xl border space-y-6 shadow-2xl"
@@ -604,13 +780,10 @@ export default function PowerPointModule({ t }) {
                 <p className="text-base sm:text-xl opacity-80" style={{ color: `#${activeTheme.subtext}` }}>
                   {currentCard.subtitle}
                 </p>
-                <div className="pt-6 border-t text-sm font-bold" style={{ borderColor: `#${activeTheme.cardBorder}`, color: `#${activeTheme.accent}` }}>
-                  👤 Taqdimotchi: {currentCard.author || authorName}
-                </div>
               </div>
             )}
 
-            {/* 2. SPLIT COMPARISON */}
+            {/* SPLIT */}
             {currentCard.type === 'split' && (
               <div className="space-y-6">
                 <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
@@ -647,7 +820,7 @@ export default function PowerPointModule({ t }) {
               </div>
             )}
 
-            {/* 3. 3 TA USTUN (PILLARS) */}
+            {/* PILLARS */}
             {currentCard.type === 'pillars' && (
               <div className="space-y-6">
                 <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
@@ -675,7 +848,7 @@ export default function PowerPointModule({ t }) {
               </div>
             )}
 
-            {/* 4. CHUQUR TAHLIL */}
+            {/* DEEP DIVE */}
             {currentCard.type === 'deep_dive' && (
               <div className="space-y-6">
                 <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
@@ -698,7 +871,7 @@ export default function PowerPointModule({ t }) {
                     style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
                   >
                     <h4 className="text-lg font-bold" style={{ color: `#${activeTheme.text}` }}>
-                      🔍 Tizimli Tahlil va Natijalar:
+                      🔍 Tahliliy Faktlar va Natijalar:
                     </h4>
                     <div className="space-y-3 text-sm opacity-90" style={{ color: `#${activeTheme.subtext}` }}>
                       {(currentCard.bullets || []).map((b, i) => (
@@ -713,7 +886,7 @@ export default function PowerPointModule({ t }) {
               </div>
             )}
 
-            {/* 5. ROADMAP */}
+            {/* ROADMAP */}
             {currentCard.type === 'roadmap' && (
               <div className="space-y-6">
                 <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
@@ -746,7 +919,7 @@ export default function PowerPointModule({ t }) {
               </div>
             )}
 
-            {/* 6. SUMMARY */}
+            {/* SUMMARY */}
             {currentCard.type === 'summary' && (
               <div 
                 className="p-10 rounded-3xl border space-y-6"

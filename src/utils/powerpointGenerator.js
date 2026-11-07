@@ -1,4 +1,5 @@
 import pptxgen from 'pptxgenjs';
+import { generateRealAIGammaCards } from './aiSlideEngine';
 
 // GAMMA & GENSPARK ULTRA-MODERN TEMALARI
 export const GAMMA_THEMES = {
@@ -59,102 +60,9 @@ export const GAMMA_THEMES = {
   }
 };
 
-// GAMMA USLUBIDA TAYYOR 6 TALIK KARTALAR SHABLONI
-export function getDefaultGammaCards(topic = "Fotosintez jarayoni va o'simliklar biosferasi", authorName = "SmartOffice EduAI") {
-  return [
-    {
-      id: 1,
-      badge: "KIRISH VA SARLAVHA",
-      type: "hero",
-      title: topic,
-      subtitle: `Zamonaviy ta'lim va interaktiv ilmiy tahlil taqdimoti`,
-      author: authorName,
-      speakerNotes: `Assalomu alaykum! Bugungi taqdimotimiz "${topic}" mavzusiga bag'ishlanadi. Ushbu ma'ruzada biz nazariy tamoyillar, asosiy qonuniyatlar va amaliy ahamiyatni Gamma uslubidagi vizual kartochkalar orqali ko'rib chiqamiz.`
-    },
-    {
-      id: 2,
-      badge: "KONTEKST VA MUAMMO",
-      type: "split",
-      title: "Mavzuning Dolzarbligi va Asosiy Qiyinchiliklar",
-      leftTitle: "📌 Hozirgi Holat va Kontekst",
-      leftBullets: [
-        "Mavzuni an'anaviy yondashuvda tushuntirish samarasizligi",
-        "Nazariy bilimlarning amaliyot bilan yetarli bog'lanmaganligi",
-        "Axborot oqimi tezlashgan davrda tizimli tahlilga bo'lgan yuqori ehtiyoj"
-      ],
-      rightTitle: "💡 Yangi Yechim va Imkoniyatlar",
-      rightBullets: [
-        "Interaktiv raqamli modellar va visual grafiklar joriy etish",
-        "Har bir jarayonni bosqichma-bosqich mantiqiy bloklarga ajratish",
-        "O'quvchilar va tinglovchilar faolligini 2 barobarga oshirish"
-      ],
-      speakerNotes: `Ushbu slaydda mavzuning nima sababdan muhimligi va uning zamonaviy ta'limdagi yechimlarini solishtiramiz.`
-    },
-    {
-      id: 3,
-      badge: "3 TA ASOSIY USTUN (GENSPARK GRID)",
-      type: "pillars",
-      title: "Asosiy Ilmiy va Amaliy Tamoyillar",
-      subtitle: "3 ta mustahkam tayanch orqali to'liq tushunish",
-      cards: [
-        {
-          num: "01",
-          title: "Nazariy Baza",
-          desc: "Fundametal qoidalar, ta'riflar va tabiiy qonuniyatlarning o'zaro bog'liqligi."
-        },
-        {
-          num: "02",
-          title: "Amaliy Jarayon",
-          desc: "Laboratoriya tajribalari, real misollar va sinov natijalarining tahlili."
-        },
-        {
-          num: "03",
-          title: "Natija va Xulosa",
-          desc: "Samaradorlik ko'rsatkichlari, yangi xulosalar va kelgusi istiqbollar."
-        }
-      ],
-      speakerNotes: `Genspark uslubidagi ushbu 3 ta ustun mavzuni qismlarga bo'lib, har bir nuqtaga e'tibor qaratishga yordam beradi.`
-    },
-    {
-      id: 4,
-      badge: "CHUQUR TAHLIL VA METRIKA",
-      type: "deep_dive",
-      title: "Asosiy Ko'rsatkichlar va Ta'sir Doirasi",
-      metricValue: "98.4%",
-      metricLabel: "O'zlashtirish va Samaradorlik Ko'rsatkichi",
-      bullets: [
-        "Tizimli dars va vizual materiallar tufayli diqqatni jamlash davomiyligi oshadi",
-        "Murakkab formulalar va qoidalarni eslab qolish darajasi 3 barobarga ortadi",
-        "Mustaqil fikrlash va ilmiy tahlil qilish ko'nikmasi shakllanadi"
-      ],
-      speakerNotes: `Metrikalar orqali o'quv jarayonidagi samaradorlik va amaliy natijalarni ko'rsatamiz.`
-    },
-    {
-      id: 5,
-      badge: "YO'L XARITASI VA QADAMLAR",
-      type: "roadmap",
-      title: "Amalga Oshirish Bosqichlari (Timeline)",
-      steps: [
-        { step: "1-QADAM", title: "O'rganish & Rejalashtirish", text: "Birlamchi ma'lumotlarni to'plash va maqsadlarni belgilash." },
-        { step: "2-QADAM", title: "Sinov & Tajriba", text: "Amaliy mashg'ulotlar va tahliliy tekshiruvlarni o'tkazish." },
-        { step: "3-QADAM", title: "Yakunlash & Baholash", text: "Natijalarni umumlashtirish va keyingi rivojlanish rejasi." }
-      ],
-      speakerNotes: `Mavzuni bosqichma-bosqich o'rganish va hayotga tatbiq etish yo'l xaritasi.`
-    },
-    {
-      id: 6,
-      badge: "XULOSA VA CHAQIRIQ",
-      type: "summary",
-      title: "Xulosa va Asosiy Qoidalar",
-      quote: `"Ta'limda eng buyuk muvaffaqiyat — murakkab narsalarni sodda, go'zal va tushunarli qilib ko'rsata olishdir."`,
-      takeaways: [
-        "Har bir nazariya amaliyot va mustahkam misollar bilan tasdiqlanishi shart",
-        "Zamonaviy texnologiyalar o'qitish sifatini yangi bosqichga olib chiqadi",
-        "E'tiboringiz va faol ishtirokingiz uchun katta rahmat!"
-      ],
-      speakerNotes: `Xulosa qismida tinglovchilarga minnatdorchilik bildiramiz va asosiy xulosani ta'kidlaymiz.`
-    }
-  ];
+// GAMMA USLUBIDA REAL AI KARTALAR GENERATSIYASI
+export function getDefaultGammaCards(topic = "Fotosintez jarayoni va o'simliklar biosferasi") {
+  return generateRealAIGammaCards(topic);
 }
 
 // POWERPOINT (.PPTX) GENERATSIYA FUNKSIYASI
@@ -217,14 +125,8 @@ export async function generatePresentationPptx(config = {}) {
 
       // Subtitle
       slide.addText(card.subtitle || `Zamonaviy ta'lim va tahliliy taqdimot`, {
-        x: 1.2, y: 4.1, w: 7.6, h: 0.8,
-        fontSize: 15, color: style.subtext, fontFace: 'Arial'
-      });
-
-      // Muallif Pilli
-      slide.addText(`👤 Taqdimotchi: ${card.author || authorName}  •  O'zbekiston Ta'lim Tizimi`, {
-        x: 1.2, y: 5.3, w: 7.6, h: 0.5,
-        fontSize: 12, color: style.accent, fontFace: 'Arial', bold: true
+        x: 1.2, y: 4.1, w: 7.6, h: 1.2,
+        fontSize: 16, color: style.subtext, fontFace: 'Arial'
       });
     }
 

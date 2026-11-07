@@ -191,18 +191,17 @@ bot.on('message:text', async (ctx) => {
   }
 
   if (text === '🎨 Gamma AI Taqdimot' || text.startsWith('/gamma')) {
-    const gammaKb = new InlineKeyboard()
-      .text("🧬 Fotosintez", "gamma_preset_fotosintez")
-      .text("🏛 Amir Temur", "gamma_preset_temur").row()
-      .text("🤖 Sun'iy Intellekt", "gamma_preset_ai")
-      .text("📐 Pifagor Teoremasi", "gamma_preset_pifagor").row()
-      .url("🌐 WebAppda Gamma Slayd Ochish", `${WEBAPP_URL}`);
-
     return ctx.reply(
       `🎨 **GAMMA & GENSPARK AI TAQDIMOT STUDIYASI:**\n\n` +
-      `Zamonaviy kartochkali, to'q fonli va interaktiv taqdimotlar!\n` +
-      `Mavzu yozish uchun: \`/gamma Mavzu nomi\` yuboring yoki quyidagi tayyor mavzuni tanlang:`,
-      { reply_markup: gammaKb, parse_mode: 'Markdown' }
+      `Gamma.app uslubidagi kartochkali, to'q fonli va har bir slayd uchun chuqur faktlar bilan taqdimotlar!\n\n` +
+      `Mavzu yozish uchun:\n` +
+      `👉 \`/gamma <Mavzu yoki matn>\` deb yozing\n` +
+      `(Masalan: \`/gamma Amir Temur davlati\` yoki \`/gamma Fotosintez jarayoni\`)\n\n` +
+      `Yoki Web platformamizda jonli slayd ko'rish va tahrirlash uchun WebApp-ni oching:`,
+      { 
+        reply_markup: new InlineKeyboard().webApp("🚀 WebApp-da Gamma Slayd Ochish", WEBAPP_URL).row().url("🌐 Brauzerda Ochish", WEBAPP_URL), 
+        parse_mode: 'Markdown' 
+      }
     );
   }
 
