@@ -2347,6 +2347,179 @@ bot.on('callback_query:data', async (ctx) => {
 });
 
 // 10. MATN BUYRUQLARI VA KLAVIATURA BOSILGANDA
+// =========================================================================
+// UNIVERSAL INTELLIGENT AI ENGINE (ODAM NIMA HOHLAYOTGANINI ANIQ TUSHUNISH)
+// =========================================================================
+async function processIntelligentMessage(ctx, userPrompt) {
+  const userId = ctx.from.id;
+  const raw = userPrompt.trim();
+  if (!raw) return;
+
+  db.userSessions.set(userId, raw);
+  const lower = raw.toLowerCase();
+
+  // 1. SLAYD / TAQDIMOT ISTAGI
+  if (/\b(?:slayd|taqdimot|prezentatsiya|powerpoint|pptx)\b/i.test(lower) && /\b(?:tuz|yarat|qilib ber|kerak|yasash|tayyorla|qil)\b/i.test(lower)) {
+    const cleanTopic = raw.replace(/\b(?:slayd|taqdimot|prezentatsiya|powerpoint|pptx|tuzib ber|tuz|yarat|qilib ber|kerak|yasash|tayyorla|qil|menga|iltimos)\b/gi, '').trim();
+    return startSlideWizard(ctx, cleanTopic || raw);
+  }
+
+  // 2. TEST SO'ROVI (MASALAN: 8-sinf biologiya qon 10talik test)
+  const isTestRequest = /\b(?:test|savollar varianti|nazorat testi)\b/i.test(lower) && 
+    (/\b(?:tuz|yarat|ber|kerak|yoz|variant|talik|dts|savol|sinf)\b/i.test(lower) || /\d+\s*talik/i.test(lower));
+
+  if (isTestRequest) {
+    const countMatch = raw.match(/(\d+)\s*(?:ta|talik|savol)/i);
+    const count = countMatch ? Math.min(parseInt(countMatch[1], 10), 30) : 10;
+    const cleanTopic = raw.replace(/\b(?:test|testlar|tuzib ber|tuz|yarat|ber|kerak|yoz|nazorat|varianti|variant|\d+\s*talik|\d+\s*ta|menga|iltimos)\b/gi, '').trim();
+    const finalTopic = cleanTopic || raw;
+
+    const waitMsg = await ctx.reply(`🎲 **"${finalTopic}" bo'yicha ${count} talik nazorat testi va kalitlar tuzilmoqda...**\n⏳ *(DTS standartlari va tasodifiy A,B,C,D variantlar bilan)*`);
+    try {
+      let testResult = "";
+      try {
+        testResult = await generateAITestWithGemini(finalTopic, count);
+      } catch (err) {
+        testResult = generateAITestSuite(finalTopic, count);
+      }
+
+      const kb = new InlineKeyboard()
+        .text("📥 Testni Word (.docx) yuklash", "ai_gen_test")
+        .text("🎨 Slayd (.pptx) qilish", "ai_gen_gamma")
+        .row()
+        .text("📝 Dars konspekti (.docx)", "ai_gen_lesson")
+        .webApp("🚀 WebApp-da Ochish", WEBAPP_URL);
+
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(testResult, { reply_markup: kb });
+    } catch(err) {
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(`❌ Test tuzishda xatolik: ${err.message}`);
+    }
+  }
+
+  // 3. KONSPEKT / DARS ISHLANMASI
+  const isLessonRequest = /\b(?:konspekt|dars ishlanma|dars ishlanmasi|dars reja|45 daqiqa)\b/i.test(lower);
+  if (isLessonRequest) {
+    const cleanTopic = raw.replace(/\b(?:konspekt|dars ishlanmasi|dars ishlanma|dars rejasi|dars reja|45 daqiqalik|45 daqiqa|tuzib ber|tuz|yarat|yoz|kerak|menga|iltimos)\b/gi, '').trim();
+    const finalTopic = cleanTopic || raw;
+
+    const waitMsg = await ctx.reply(`📝 **"${finalTopic}" bo'yicha 45 daqiqalik dars ishlanmasi (konspekt) tayyorlanmoqda...**\n⏳ *(6 bosqichli xronometraj bilan)*`);
+    try {
+      let lessonResult = "";
+      try {
+        lessonResult = await generateAILessonPlanWithGemini(finalTopic);
+      } catch (err) {
+        lessonResult = generateAILessonPlan(finalTopic);
+      }
+
+      const kb = new InlineKeyboard()
+        .text("📥 Konspektni Word (.docx) yuklash", "ai_gen_lesson")
+        .text("🎨 Slayd (.pptx) qilish", "ai_gen_gamma")
+        .row()
+        .text("🎲 15 Talik Test (.docx)", "ai_gen_test")
+        .webApp("🚀 WebApp-da Ochish", WEBAPP_URL);
+
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(lessonResult, { reply_markup: kb });
+    } catch(err) {
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(`❌ Konspekt tayyorlashda xatolik: ${err.message}`);
+    }
+  }
+
+  // 4. BUYRUQ LOYIHASI
+  if (/\b(?:buyruq|qaror)\b/i.test(lower) && /\b(?:tuz|yoz|loyihasi|maktab|direktor|ber)\b/i.test(lower)) {
+    const waitMsg = await ctx.reply("📋 **Rasmiy maktab buyrug'i loyihasi tayyorlanmoqda...**");
+    try {
+      let orderResult = "";
+      try {
+        orderResult = await generateAIOfficialOrderWithGemini(raw);
+      } catch(e) {
+        orderResult = generateAIOfficialOrder(raw);
+      }
+      const kb = new InlineKeyboard()
+        .text("📥 Buyruqni Word (.docx) yuklash", "ai_gen_order")
+        .webApp("🚀 WebApp", WEBAPP_URL);
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(orderResult, { reply_markup: kb });
+    } catch(err) {
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(`❌ Buyruq tuzishda xatolik: ${err.message}`);
+    }
+  }
+
+  // 5. O'QUVCHI TAVSIFNOMASI
+  if (/\b(?:tavsifnoma|xarakteristika)\b/i.test(lower)) {
+    const waitMsg = await ctx.reply("🔍 **O'quvchi uchun rasmiy pedagogik tavsifnoma yozilmoqda...**");
+    try {
+      let refResult = "";
+      try {
+        refResult = await generateAIStudentReferenceWithGemini(raw);
+      } catch(e) {
+        refResult = generateAIStudentReference(raw, "10-A");
+      }
+      const kb = new InlineKeyboard()
+        .text("📥 Tavsifnomani Word (.docx) yuklash", "ai_gen_tavsif")
+        .webApp("🚀 WebApp", WEBAPP_URL);
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(refResult, { reply_markup: kb });
+    } catch(err) {
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(`❌ Tavsifnoma yozishda xatolik: ${err.message}`);
+    }
+  }
+
+  // 6. BAYONNOMA / PROTOKOL
+  if (/\b(?:bayonnoma|protokol)\b/i.test(lower)) {
+    const waitMsg = await ctx.reply("📜 **Pedagogik kengash bayonnomasi tayyorlanmoqda...**");
+    try {
+      let protoResult = "";
+      try {
+        protoResult = await generateAIProtocolWithGemini(raw);
+      } catch(e) {
+        protoResult = generateAIPedagogicalProtocol(raw);
+      }
+      const kb = new InlineKeyboard()
+        .text("📥 Bayonnomani Word (.docx) yuklash", "ai_gen_proto")
+        .webApp("🚀 WebApp", WEBAPP_URL);
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(protoResult, { reply_markup: kb });
+    } catch(err) {
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(`❌ Bayonnoma tuzishda xatolik: ${err.message}`);
+    }
+  }
+
+  // 7. UNIVERSAL CHAT / PEDAGOGIK MASLAHAT VA ILMIY SAVOL-JAVOB
+  const waitMsg = await ctx.reply("⏳ **EduAI (Google Gemini) o'ylamoqda va javob tayyorlamoqda...**");
+  try {
+    const answer = await callGemini(
+      raw,
+      "Siz O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi mezonlari bo'yicha eng yuqori toifali pedagogik ekspert, metodist va universal maslahatchisiz. Foydalanuvchining har qanday ta'limiy, metodik yoki fanga oid savoliga aniq, ilmiy asoslangan, tushunarli va chiroyli o'zbek tilida to'liq javob bering. Hech qanday LaTeX yoki dollar ($) belgisidan foydalanmang."
+    );
+
+    const actionKb = new InlineKeyboard()
+      .text("🎨 Slayd (.pptx) qilish", "ai_gen_gamma")
+      .text("📝 Dars konspekti (.docx)", "ai_gen_lesson")
+      .row()
+      .text("🎲 10 Talik Test (.docx)", "ai_gen_test")
+      .webApp("🚀 WebApp-da Ko'rish", WEBAPP_URL);
+
+    try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    return ctx.reply(answer, { reply_markup: actionKb });
+  } catch(err) {
+    try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    return ctx.reply(`🤖 **EduAI Tahlili:**\n\n«${raw}» mavzusi bo'yicha materiallar tayyorlash uchun quyidagi tugmalardan birini tanlang:`, {
+      reply_markup: new InlineKeyboard()
+        .text("🎨 Slayd (.pptx)", "ai_gen_gamma")
+        .text("📝 Dars konspekti (.docx)", "ai_gen_lesson")
+        .row()
+        .text("🎲 Test (.docx)", "ai_gen_test")
+    });
+  }
+}
+
 bot.on('message:text', async (ctx) => {
   const text = ctx.message.text.trim();
   const userId = ctx.from.id;
@@ -2544,89 +2717,19 @@ bot.on('message:text', async (ctx) => {
   // C) EDUAI YORDAMCHI (BOTDA AI BILAN ISHLASH)
   // =========================================================================
   if (text === '🤖 EduAI Yordamchi' || text.startsWith('/ai')) {
-    const aiPrompt = text.replace('/ai', '').replace('🤖 EduAI Yordamchi', '').trim();
+    const aiPrompt = text.replace(/^\/ai\s*/i, '').replace('🤖 EduAI Yordamchi', '').trim();
     if (!aiPrompt) {
       return ctx.reply(
         `🤖 **EduAI Universal Pedagogik Yordamchi:**\n\n` +
-        `Mavzu yoki buyrug'ingizni yozing:\n\n` +
-        `• \`/ai 9-sinf fizika Nyuton qonunlari 10 talik test\`\n` +
-        `• \`/ai Ona tili darsi uchun 45 daqiqalik konspekt rejasi\`\n` +
-        `• \`/ai A'lochi o'quvchiga tavsifnoma yozib ber\`\n` +
-        `• \`/ai Fotosintez jarayoni bo'yicha slayd matnlari\``,
+        `Istalgan savolingiz yoki buyrug'ingizni yozing:\n\n` +
+        `• \`8-sinf biologiya qon 10talik test\`\n` +
+        `• \`Ona tili darsi uchun 45 daqiqalik konspekt rejasi\`\n` +
+        `• \`Fotosintez jarayoni nima va qanday sodir bo'ladi?\`\n` +
+        `• \`Amir Temur saltanati bo'yicha slayd tayyorlab ber\``,
         { parse_mode: 'Markdown' }
       );
     }
-
-    const waitAi = await ctx.reply("⏳ **EduAI (Google Gemini) o'ylamoqda va chuqur ta'limiy javob tayyorlamoqda...**");
-
-    try {
-      let aiResult = "";
-      const lower = aiPrompt.toLowerCase();
-
-      if (lower.includes('test') || lower.includes('savol')) {
-        const countMatch = aiPrompt.match(/(\d+)\s*talik/i);
-        const count = countMatch ? parseInt(countMatch[1], 10) : 10;
-        try {
-          aiResult = await generateAITestWithGemini(aiPrompt, count);
-        } catch(e) {
-          aiResult = generateAITestSuite(aiPrompt, count);
-        }
-      } else if (lower.includes('konspekt') || lower.includes('dars') || lower.includes('reja')) {
-        try {
-          aiResult = await generateAILessonPlanWithGemini(aiPrompt);
-        } catch(e) {
-          aiResult = generateAILessonPlan(aiPrompt);
-        }
-      } else if (lower.includes('buyruq') || lower.includes('qaror')) {
-        try {
-          aiResult = await generateAIOfficialOrderWithGemini(aiPrompt);
-        } catch(e) {
-          aiResult = generateAIOfficialOrder(aiPrompt);
-        }
-      } else if (lower.includes('bayonnoma') || lower.includes('protokol')) {
-        try {
-          aiResult = await generateAIProtocolWithGemini(aiPrompt);
-        } catch(e) {
-          aiResult = generateAIPedagogicalProtocol(aiPrompt);
-        }
-      } else if (lower.includes('xarakteristika') || lower.includes('tavsifnoma')) {
-        try {
-          aiResult = await generateAIStudentReferenceWithGemini(aiPrompt);
-        } catch(e) {
-          aiResult = generateAIStudentReference(aiPrompt, "10-A");
-        }
-      } else {
-        try {
-          aiResult = await callGemini(
-            aiPrompt,
-            "Siz O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi mezonlari bo'yicha eng yuqori toifali pedagogik maslahatchi va metodistsiz. Har qanday ta'limiy, metodik savollarga to'liq, ilmiy va tushunarli o'zbek tilida javob bering."
-          );
-        } catch(e) {
-          aiResult = `🤖 **EduAI Tahlili:** «${aiPrompt}» mavzusi bo'yicha materiallar tayyorlandi.`;
-        }
-      }
-
-      db.userSessions.set(userId, aiPrompt);
-
-      const aiActionKb = new InlineKeyboard()
-        .text("🎨 Gamma AI Slayd (.pptx)", "ai_gen_gamma")
-        .text("📝 45 Daqiqa Konspekt (.docx)", "ai_gen_lesson")
-        .row()
-        .text("🎲 15 Talik Test (.docx)", "ai_gen_test")
-        .text("📋 Maktab Buyrug'i (.docx)", "ai_gen_order")
-        .row()
-        .text("🔍 O'quvchi Tavsifnomasi (.docx)", "ai_gen_tavsif")
-        .text("📜 Kengash Bayonnomasi (.docx)", "ai_gen_proto")
-        .row()
-        .webApp("🚀 WebApp-da To'liq Ko'rish", WEBAPP_URL);
-
-      try { await ctx.api.deleteMessage(ctx.chat.id, waitAi.message_id); } catch(e){}
-      await ctx.reply(aiResult, { reply_markup: aiActionKb });
-    } catch(err) {
-      try { await ctx.api.deleteMessage(ctx.chat.id, waitAi.message_id); } catch(e){}
-      await ctx.reply(`❌ EduAI xatosi: ${err.message}`);
-    }
-    return;
+    return processIntelligentMessage(ctx, aiPrompt);
   }
 
   // =========================================================================
@@ -2859,32 +2962,8 @@ bot.on('message:text', async (ctx) => {
       { reply_markup: getActionInlineKeyboard() }
     );
   } else {
-    // Ta'limiy mavzu yoki pedagogik so'rov (EduAI)
-    const topic = text.trim();
-    const eduAiInline = new InlineKeyboard()
-      .text("🎨 Gamma AI Slayd (.pptx)", "ai_gen_gamma")
-      .text("📝 45 Daqiqa Konspekt (.docx)", "ai_gen_lesson")
-      .row()
-      .text("🎲 15 Talik Test & Kalitlar (.docx)", "ai_gen_test")
-      .text("📋 Maktab Buyrug'i (.docx)", "ai_gen_order")
-      .row()
-      .text("🔍 O'quvchi Tavsifnomasi (.docx)", "ai_gen_tavsif")
-      .row()
-      .webApp("🚀 WebApp-da To'liq Ko'rish", WEBAPP_URL)
-      .url("🌐 Saytda Ochish", WEBAPP_URL);
-
-    return ctx.reply(
-      `🤖 **EduAI Intellektual Ta'limiy Tahlili:**\n\n` +
-      `📌 **Qabul qilingan mavzu / vazifa:**\n«${topic.slice(0, 100)}»\n\n` +
-      `✨ EduAI sizning mavzungizni to'liq tahlil qildi va quyidagi professional hujjatlarni 1 soniyada yaratishga tayyor:\n\n` +
-      `• 🎨 **Gamma AI Slayd** — 16:9 Obsidian Dark zamonaviy kartochkali slaydlar\n` +
-      `• 📝 **45 Daqiqalik Dars** — DTS standartidagi 6 bosqichli dars konspekti\n` +
-      `• 🎲 **15 Talik Test** — A, B, C, D variantlar va javoblar kaliti\n` +
-      `• 📋 **Maktab Buyrug'i** — Rasmiy maktab direktori buyrug'i\n` +
-      `• 🔍 **Tavsifnoma** — O'quvchi uchun rasmiy pedagogik xarakteristika\n\n` +
-      `👇 **Kerakli format tugmasini bosing:**`,
-      { parse_mode: 'Markdown', reply_markup: eduAiInline }
-    );
+    // Foydalanuvchi yozgan istalgan ta'limiy xabar / savol / buyruqni AI orqali to'g'ridan-to'g'ri tushunish
+    return processIntelligentMessage(ctx, text.trim());
   }
 });
 
