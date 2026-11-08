@@ -168,8 +168,6 @@ const memoryDb = loadDatabase();
 const initialUsersMap = new Map();
 for (const [k, v] of Object.entries(memoryDb.users || {})) {
   initialUsersMap.set(String(k), v);
-  const n = parseInt(k, 10);
-  if (!isNaN(n)) initialUsersMap.set(n, v);
 }
 
 const db = {
@@ -561,25 +559,38 @@ function getEffectiveRole(ctx) {
 function getUser(userId) {
   if (!userId) return null;
   const strId = String(userId);
-  const numId = parseInt(userId, 10);
-  return db.users.get(strId) || (!isNaN(numId) ? db.users.get(numId) : null) || null;
+  const resolved = resolveUserId(userId);
+  return db.users.get(String(resolved)) || db.users.get(strId) || null;
 }
 
 function setUser(userId, userData) {
   if (!userId) return;
-  const strId = String(userId);
-  const numId = parseInt(userId, 10);
+  const resolved = resolveUserId(userId);
+  const strId = String(resolved);
   db.users.set(strId, userData);
-  if (!isNaN(numId)) {
-    db.users.set(numId, userData);
+  // Agar boshqa formatdagi dublikat bo'lsa tozalash
+  const numId = parseInt(userId, 10);
+  if (!isNaN(numId) && db.users.has(numId) && typeof numId === 'number') {
+    db.users.delete(numId);
   }
 }
 
 function hasUser(userId) {
   if (!userId) return false;
   const strId = String(userId);
-  const numId = parseInt(userId, 10);
-  return db.users.has(strId) || (!isNaN(numId) && db.users.has(numId));
+  const resolved = resolveUserId(userId);
+  return db.users.has(String(resolved)) || db.users.has(strId);
+}
+
+function getAllUniqueUsers() {
+  const map = new Map();
+  for (const [k, u] of db.users.entries()) {
+    const canonicalKey = String(u.realId || u.id || k);
+    if (!map.has(canonicalKey)) {
+      map.set(canonicalKey, u);
+    }
+  }
+  return Array.from(map.values());
 }
 
 function isUserActive(userId, username) {
@@ -1045,7 +1056,7 @@ function generateGenderExcelBuffer(students) {
 
 function generateUsersExcelBuffer() {
   const wb = XLSX.utils.book_new();
-  const userList = Array.from(db.users.values());
+  const userList = getAllUniqueUsers();
   const header = ["№", "ID", "Real Telegram ID", "F.I.Sh / Nomi", "Username", "Holati", "Tarif", "Muddati", "Ro'yxatdan o'tgan"];
   const rows = userList.map((u, i) => [
     i + 1,
@@ -3353,7 +3364,8 @@ bot.on('message:text', async (ctx) => {
   if (text.startsWith('/broadcast ') && role === 'OWNER') {
     const broadcastText = text.replace('/broadcast ', '').trim();
     let sentCount = 0;
-    for (const uId of db.users.keys()) {
+    const uniqueUserIds = Array.from(new Set(getAllUniqueUsers().map(u => u.realId || u.id)));
+    for (const uId of uniqueUserIds) {
       try {
         await bot.api.sendMessage(uId, `📢 **DIQQAT E'LON!**\n\n${broadcastText}`, { parse_mode: 'Markdown' });
         sentCount++;
@@ -3364,7 +3376,7 @@ bot.on('message:text', async (ctx) => {
 
   if (text === '👥 Foydalanuvchilar') {
     if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'INSPECTOR') return ctx.reply("❌ Ruxsat yo'q!");
-    const usersList = Array.from(db.users.values());
+    const usersList = getAllUniqueUsers();
     let msg = `👥 **FOYDALANUVCHILAR RO'YXATI (${usersList.length} ta):**\n\n`;
     usersList.slice(0, 15).forEach((u, i) => {
       const statusIcon = u.status === 'ACTIVE' ? '✅' : (u.status === 'BLOCKED' ? '❌' : '⏳');
@@ -3400,12 +3412,13 @@ bot.on('message:text', async (ctx) => {
   }
 
   if (text === '📊 Statistika' || text === '📊 Tizim Statistikasi') {
+    const allUsers = getAllUniqueUsers();
     return ctx.reply(
       `📊 **EDUKATSIYA TIZIMI STATISTIKASI:**\n\n` +
       `• Super Owner ID: \`1\` (@${OWNER_USERNAME})\n` +
-      `• Jami foydalanuvchilar: ${db.users.size}\n` +
-      `• Faol hisoblar: ${Array.from(db.users.values()).filter(u => u.status === 'ACTIVE').length}\n` +
-      `• Kutishdagilar (Pending): ${Array.from(db.users.values()).filter(u => u.status === 'PENDING').length}\n` +
+      `• Jami foydalanuvchilar: ${allUsers.length}\n` +
+      `• Faol hisoblar: ${allUsers.filter(u => u.status === 'ACTIVE').length}\n` +
+      `• Kutishdagilar (Pending): ${allUsers.filter(u => u.status === 'PENDING').length}\n` +
       `• Adminlar soni: ${db.admins.size}\n` +
       `• Doimiy Baza: \`data/database.json\` (Faol)\n` +
       `• WebApp: ${WEBAPP_URL}`,
