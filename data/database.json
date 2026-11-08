@@ -1,0 +1,45 @@
+{
+  "prices": {
+    "oneTime": 2000,
+    "twoTime": 4000,
+    "fiveTime": 8000,
+    "hourly": 3000,
+    "twoHours": 5000,
+    "threeHours": 7000,
+    "daily": 5000,
+    "weekly": 25000,
+    "monthly": 70000,
+    "unlimited": 290000
+  },
+  "admins": [
+    "fayzbek1331"
+  ],
+  "ownerChatId": 6707839718,
+  "users": {
+    "6707839718": {
+      "id": 1,
+      "realId": 6707839718,
+      "name": "Fayzbek (Super Owner)",
+      "username": "fayzbek1331",
+      "status": "ACTIVE",
+      "plan": "unlimited",
+      "expiresAt": "Cheksiz VIP",
+      "remainingUses": 999999,
+      "registeredAt": "2026-11-07T17:34:34.953Z"
+    },
+    "9017407025": {
+      "id": 9017407025,
+      "realId": 9017407025,
+      "name": "Tony Stark",
+      "username": "",
+      "status": "ACTIVE",
+      "plan": "1time",
+      "expiresAt": "10 ta hujjat",
+      "remainingUses": 10,
+      "registeredAt": "2026-11-08T07:33:00.983Z"
+    }
+  },
+  "simulatedRoles": {},
+  "deviceAuthorizations": {},
+  "deviceBindings": {}
+}

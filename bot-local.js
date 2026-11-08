@@ -409,6 +409,7 @@ async function executePresentationGeneration(ctx, topic, options = {}) {
         `🖼 Rasmlar: **${includeImages ? 'Mavzuga oid HD rasmlar' : 'Minimalist'}**\n` +
         `✨ 16:9 Widescreen, zamonaviy kartochkali va professional dizayn.`
     });
+    consumeUserUse(ctx.from?.id);
     if (waitMsg) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     }
@@ -497,6 +498,21 @@ function isUserActive(userId, username) {
     return false;
   }
   return true;
+}
+
+function consumeUserUse(userId) {
+  if (!userId || userId === SUPER_OWNER_ID) return null;
+  const user = db.users.get(userId);
+  if (user && typeof user.remainingUses === 'number') {
+    user.remainingUses = Math.max(0, user.remainingUses - 1);
+    if (user.remainingUses <= 0) {
+      user.status = 'PENDING';
+      user.expiresAt = '0 ta (Tugagan)';
+    }
+    saveDatabase();
+    return user.remainingUses;
+  }
+  return null;
 }
 
 function isSpamming(userId) {
@@ -1344,6 +1360,18 @@ bot.on('callback_query:data', async (ctx) => {
   // =========================================================================
   // SLIDE WIZARD CALLBACK HANDLERS (INTERFAOL TAQDIMOT BOSQICHLARI)
   // =========================================================================
+  if (data.startsWith('sw_') || data === 'sw_quick') {
+    if (!isUserActive(userId, ctx.from?.username)) {
+      await ctx.answerCallbackQuery({ text: "Obunangiz faol emas! Avval tarifni faollashtiring.", show_alert: true });
+      return ctx.reply(
+        `🔒 **Taqdimot yaratish uchun hisobingizni faollashtiring.**\n\n` +
+        `Sizning Telegram ID: \`${userId}\`\n\n` +
+        `Quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
+  }
+
   if (data.startsWith('sw_auth_')) {
     const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'lim va zamonaviy metodika" };
     let chosenAuthor = "SmartOffice EduAI";
@@ -1591,6 +1619,15 @@ bot.on('callback_query:data', async (ctx) => {
 
   // GAMMA AI TAYYOR PRESET MAVZULAR
   if (data.startsWith('gamma_preset_')) {
+    if (!isUserActive(userId, ctx.from?.username)) {
+      await ctx.answerCallbackQuery({ text: "Obunangiz faol emas! Avval tarifni faollashtiring.", show_alert: true });
+      return ctx.reply(
+        `🔒 **Taqdimot yaratish uchun hisobingizni faollashtiring.**\n\n` +
+        `Sizning Telegram ID: \`${userId}\`\n\n` +
+        `Quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
     const topicKey = data.replace('gamma_preset_', '');
     const presetTopics = {
       fotosintez: "Fotosintez jarayoni va o'simliklar biosferasi",
@@ -1606,6 +1643,15 @@ bot.on('callback_query:data', async (ctx) => {
 
   // EDUAI DINAMIK MAVZU BO'YICHA FAYL GENERATSIYASI
   if (data.startsWith('ai_gen_')) {
+    if (!isUserActive(userId, ctx.from?.username)) {
+      await ctx.answerCallbackQuery({ text: "Obunangiz faol emas! Avval tarifni faollashtiring.", show_alert: true });
+      return ctx.reply(
+        `🔒 **Hujjatlarni yuklash uchun hisobingizni faollashtiring.**\n\n` +
+        `Sizning Telegram ID: \`${userId}\`\n\n` +
+        `Quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
     const action = data.replace('ai_gen_', '');
     const currentText = db.userSessions.get(userId) || "Ta'lim va zamonaviy pedagogika";
     const topic = currentText.split(/\r?\n/)[0].slice(0, 80) || "Ta'lim va zamonaviy pedagogika";
@@ -1623,6 +1669,7 @@ bot.on('callback_query:data', async (ctx) => {
         await ctx.replyWithDocument(new InputFile(buffer, `Dars_Konspekti_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
           caption: `📝 **45 Daqiqalik dars ishlanmasi (konspekt) tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Maqsadlar, 6 bosqichli xronometraj, blits-savollar va uyga vazifa bilan.`
         });
+        consumeUserUse(userId);
         try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       } catch(err) {
         await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
@@ -1638,6 +1685,7 @@ bot.on('callback_query:data', async (ctx) => {
         await ctx.replyWithDocument(new InputFile(buffer, `Test_va_Kalitlar_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
           caption: `🎲 **15 Talik nazorat testlari va javoblar kaliti tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Variantlar (A, B, C, D) va oxirida o'qituvchi uchun javoblar kaliti.`
         });
+        consumeUserUse(userId);
         try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       } catch(err) {
         await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
@@ -1653,6 +1701,7 @@ bot.on('callback_query:data', async (ctx) => {
         await ctx.replyWithDocument(new InputFile(buffer, `Maktab_Buyrugi_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
           caption: `📋 **Rasmiy maktab direktori buyrug'i tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Vazirlik me'yorlari va huquqiy asoslari bilan.`
         });
+        consumeUserUse(userId);
         try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       } catch(err) {
         await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
@@ -1669,6 +1718,7 @@ bot.on('callback_query:data', async (ctx) => {
         await ctx.replyWithDocument(new InputFile(buffer, `Bayonnoma_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
           caption: `📜 **Pedagogik kengash bayonnomasi tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Kun tartibi, muzokaralar va rasmiy qaror qismi bilan.`
         });
+        consumeUserUse(userId);
         try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       } catch(err) {
         await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
@@ -1684,6 +1734,7 @@ bot.on('callback_query:data', async (ctx) => {
         await ctx.replyWithDocument(new InputFile(buffer, `Tavsifnoma_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
           caption: `🔍 **Pedagogik tavsifnoma (xarakteristika) tayyor!** (.docx)\n\n📌 O'quvchi: **${topic}**\n✨ A'lochi va faol o'quvchi uchun rasmiy xarakteristika.`
         });
+        consumeUserUse(userId);
         try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       } catch(err) {
         await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
@@ -1941,6 +1992,17 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   // MATNDAN REAL FAYL GENERATSIYASI
+  if (data.startsWith('act_export_')) {
+    if (!isUserActive(userId, ctx.from?.username)) {
+      await ctx.answerCallbackQuery({ text: "Obunangiz faol emas! Avval tarifni faollashtiring.", show_alert: true });
+      return ctx.reply(
+        `🔒 **Hujjatlarni yuklash uchun hisobingizni faollashtiring.**\n\n` +
+        `Sizning Telegram ID: \`${userId}\``,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
+  }
+
   const currentText = db.userSessions.get(userId);
   if (!currentText) {
     return ctx.answerCallbackQuery({ text: "Avval matn yoki fayl yuboring!", show_alert: true });
@@ -1955,6 +2017,7 @@ bot.on('callback_query:data', async (ctx) => {
     await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_Tartiblangan_Jadval.xlsx"), {
       caption: `📊 **Excel jadval tayyor!** (${students.length} nafar o'quvchi ma'lumotlari bilan)`
     });
+    consumeUserUse(userId);
     try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     return;
   }
@@ -1966,6 +2029,7 @@ bot.on('callback_query:data', async (ctx) => {
     await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_Qizlar_va_Ogillar_Jadvali.xlsx"), {
       caption: `🔀 **Qizlar va o'g'il bolalar alohida jadvallarga ajratildi!**`
     });
+    consumeUserUse(userId);
     try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     return;
   }
@@ -1977,6 +2041,7 @@ bot.on('callback_query:data', async (ctx) => {
     await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_Rasmiy_Royxat.docx"), {
       caption: `📝 **Word hujjat tayyor!** (GOST standarti bo'yicha jadvalli formatda)`
     });
+    consumeUserUse(userId);
     try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     return;
   }
@@ -1988,6 +2053,7 @@ bot.on('callback_query:data', async (ctx) => {
     await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_Taqdimot.pptx"), {
       caption: `🖼 **PowerPoint taqdimot tayyor!** (Zamonaviy slaydlar bilan)`
     });
+    consumeUserUse(userId);
     try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     return;
   }
@@ -1999,6 +2065,7 @@ bot.on('callback_query:data', async (ctx) => {
     await ctx.replyWithDocument(new InputFile(buffer, "EduHujjat_15_Test_va_Kalitlar.docx"), {
       caption: `❓ **15 talik test tayyor!** (Variantlar va to'g'ri javoblar kaliti bilan)`
     });
+    consumeUserUse(userId);
     try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     return;
   }
@@ -2039,6 +2106,18 @@ bot.on('callback_query:data', async (ctx) => {
 // =========================================================================
 async function processIntelligentMessage(ctx, userPrompt) {
   const userId = ctx.from.id;
+  const username = ctx.from?.username;
+
+  // XAVFSIZLIK VA PAYWALL TEKSHIRUVI:
+  if (!isUserActive(userId, username)) {
+    return ctx.reply(
+      `🔒 **Hisobingiz hali tasdiqlanmagan.**\n\n` +
+      `Sizning Telegram ID: \`${userId}\`\n\n` +
+      `EduAI imkoniyatlaridan foydalanish uchun quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
+      { reply_markup: getTariffInlineKeyboard(userId) }
+    );
+  }
+
   const raw = userPrompt.trim();
   if (!raw) return;
 
@@ -2219,6 +2298,15 @@ bot.on('message:text', async (ctx) => {
   // SLIDE WIZARD TEXT INPUT (Mavzu yoki muallif ismi kiritilganda)
   // =========================================================================
   if (slideWizardState.has(userId)) {
+    if (!isUserActive(userId, username)) {
+      slideWizardState.delete(userId);
+      return ctx.reply(
+        `🔒 **Taqdimot yaratish uchun hisobingizni faollashtiring.**\n\n` +
+        `Sizning Telegram ID: \`${userId}\`\n\n` +
+        `Quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
     const sw = slideWizardState.get(userId);
     if (sw.step === 'awaiting_topic') {
       sw.topic = text.trim();
@@ -2248,6 +2336,14 @@ bot.on('message:text', async (ctx) => {
   // /slayd BUYRUG'I VA MENYU TUGMALARI
   // =========================================================================
   if (text.startsWith('/slayd') || text.startsWith('/slide') || text.startsWith('/taqdimot') || text === '📊 Gamma AI Taqdimot' || text === '💻 Slayd Yasash') {
+    if (!isUserActive(userId, username)) {
+      return ctx.reply(
+        `🔒 **Gamma AI Taqdimot yaratish uchun hisobingizni faollashtiring.**\n\n` +
+        `Sizning Telegram ID: \`${userId}\`\n\n` +
+        `Quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
     const rawTopic = text.replace(/^\/(?:slayd|slide|taqdimot)\s*/i, '').trim();
     const topic = rawTopic && rawTopic !== '📊 Gamma AI Taqdimot' && rawTopic !== '💻 Slayd Yasash' 
       ? rawTopic 
@@ -2414,6 +2510,14 @@ bot.on('message:text', async (ctx) => {
   // C) EDUAI YORDAMCHI (BOTDA AI BILAN ISHLASH)
   // =========================================================================
   if (text === '🤖 EduAI Yordamchi' || text.startsWith('/ai')) {
+    if (!isUserActive(userId, username)) {
+      return ctx.reply(
+        `🔒 **EduAI Universal Yordamchidan foydalanish uchun hisobingizni faollashtiring.**\n\n` +
+        `Sizning Telegram ID: \`${userId}\`\n\n` +
+        `Quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
     const aiPrompt = text.replace(/^\/ai\s*/i, '').replace('🤖 EduAI Yordamchi', '').trim();
     if (!aiPrompt) {
       return ctx.reply(
@@ -2433,7 +2537,15 @@ bot.on('message:text', async (ctx) => {
   // D) KLAVIATURA BOSHQARUV TUGMALARI
   // =========================================================================
   if (text === '📜 Faxriy Yorliq') {
+    if (!isUserActive(userId, username)) {
+      return ctx.reply(
+        `🔒 **Hujjat yaratish uchun hisobingizni faollashtiring.**\n\n` +
+        `Sizning Telegram ID: \`${userId}\``,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
     const buf = await generateOfficialOrderWordBuffer("Faxriy Yorliq va Sertifikat");
+    consumeUserUse(userId);
     return ctx.replyWithDocument(new InputFile(buf, "Faxriy_Yorliq_EduHujjat.docx"), {
       caption: "🏆 **QR-kodli namunaviy Faxriy Yorliq hujjati tayyor!** (.docx)"
     });
@@ -2635,12 +2747,6 @@ bot.on('message:text', async (ctx) => {
   // F) RUXSAT BERILGAN FOYDALANUVCHI MATN YUBORGANDA (INTELLIGENT AI ROUTER)
   // =========================================================================
   db.userSessions.set(userId, text);
-
-  const currentUserObj = db.users.get(userId);
-  if (currentUserObj && typeof currentUserObj.remainingUses === 'number') {
-    currentUserObj.remainingUses -= 1;
-    saveDatabase();
-  }
 
   const rawLines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const students = parseStudentsFromText(text);
