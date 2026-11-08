@@ -802,5 +802,8 @@ export async function generatePresentationPptx(config = {}) {
     renderSlideArchitecture(slide, pres, card, style, index, slideDeck.length, topicImageBase64, authorName, topic);
   });
 
+  if (config.outputType === 'nodebuffer' || (typeof window === 'undefined' && !config.filename)) {
+    return await pres.write({ outputType: 'nodebuffer' });
+  }
   return await pres.writeFile({ fileName: filename });
 }

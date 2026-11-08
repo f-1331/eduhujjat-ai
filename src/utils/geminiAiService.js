@@ -1,17 +1,26 @@
 // src/utils/geminiAiService.js - Haqiqiy Google Gemini AI Integratsiyasi
 // O'zbekiston davlat ta'lim standartlari (DTS) bo'yicha cheksiz, professional pedagogik materiallar
 
+import fs from 'fs';
+
 const CANDIDATE_MODELS = [
-  'gemini-flash-lite-latest',
-  'gemini-flash-latest',
-  'gemini-3.5-flash',
   'gemini-3.5-flash-lite',
-  'gemini-3-flash-preview',
-  'gemini-3.8-flash'
+  'gemini-3.5-flash',
+  'gemini-flash-latest',
+  'gemini-flash-lite-latest',
+  'gemini-3.6-flash'
 ];
 
 function getApiKey() {
-  return process.env.GEMINI_API_KEY || 'AIzaSyCS5LxcuT1IMh26xWdpNixD77OF6ggUHuQ';
+  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+  try {
+    if (typeof process !== 'undefined' && fs.existsSync && fs.existsSync('.env')) {
+      const content = fs.readFileSync('.env', 'utf8');
+      const match = content.match(/GEMINI_API_KEY\s*=\s*([^\r\n]+)/);
+      if (match) return match[1].trim();
+    }
+  } catch (e) {}
+  return '';
 }
 
 /**
@@ -109,7 +118,8 @@ export async function callGemini(prompt, systemInstruction = "") {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(25000)
       });
 
       if (!response.ok) {
@@ -132,95 +142,114 @@ export async function callGemini(prompt, systemInstruction = "") {
 /**
  * 1. HAQIQIY SUN'IY INTELLEKT TEST GENERATORI (10 yoki 15 TALIK)
  */
+/**
+ * 1. CHEGARADAN CHIQUVCHI MUKAMMAL TEST GENERATORI (10 yoki 15 TALIK)
+ * Bloom taksonomiyasi bo'yicha 3 darajali, to'liq ilmiy isboti bilan
+ */
 export async function generateAITestWithGemini(topic, count = 10) {
   const systemInstruction = 
-    "Siz O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi uchun eng tajribali ekspert-metodist va fan o'qituvchisisiz. " +
-    "Siz faqat aniq faktlar, to'g'ri ilmiy terminologiya va Davlat Ta'lim Standartlari (DTS) asosida mukammal testlar tuzasiz. " +
-    "Savollar takrorlanmasin, javob variantlari (A, B, C, D) bir tekis tasodifiy taqsimlansin (faqat A bo'lib qolmasin). " +
-    "Matematik formulalar va kasrlarni aslo LaTeX yoki dollar belgisi ($...$) bilan yozmang, oddiy 7/12, 3 butun 2/5 ko'rinishida yozing! " +
-    "Test oxirida aniq javoblar kalitini va qisqa ilmiy tushuntirishlarni keltiring.";
+    "Siz O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi hamda Milliy Baholash Markazining bosh ekspert-metodisti va xalqaro olimpiada hakamisiz. " +
+    "Siz tuzadigan testlar qolipdan chiqqan, yuksak ilmiy saviyadagi, mantiqiy va chuqur o'ylantiradigan durdona testlar bo'lishi shart. " +
+    "Savollar 3 ta tafakkur darajasiga ajratilsin: 1) Bilish va tushunish, 2) Amaliy qo'llash va hisoblash, 3) Yuqori tahlil va muammoli sintez (Olimpiada darajasi). " +
+    "Javob variantlari (A, B, C, D) jiddiy, professional tuzilsin. Hech qachon 'barchasi to'g'ri' yoki jo'n variantlar bo'lmasin. " +
+    "Matematik formulalar va kasrlarni oddiy tushunarli matn formatida yozing (masalan: 7/12, x^2, H2SO4), dollar ($) yoki LaTeX ishlatmang! " +
+    "Test oxirida har bir savolning to'g'ri javobi nima uchun aynan shu ekani darslik va ilmiy qonuniyatlar bilan to'liq asoslab berilsin.";
 
   const prompt = 
     `Mavzu: "${topic}"\n` +
-    `Vazifa: Ushbu mavzu bo'yicha roppa-rosa ${count} ta 4 variantli (A, B, C, D) nazorat test savoli tuzib ber.\n` +
-    `Talablar:\n` +
-    `1. Sarlavha: 🎲 NAZORAT TESTLARI (${count} TALIK)\n` +
-    `2. Har bir savol raqamlangan bo'lsin: 1., 2., ... ${count}.\n` +
-    `3. Variantlar: A), B), C), D).\n` +
-    `4. Oxirida "🔑 JAVOBLAR KALITI VA IZOHLAR:" bo'limida har bir savolning to'g'ri javobi va 1 qatorlik sababi yozilsin.\n` +
-    `5. Kasrlar va formulalar oddiy klaviatura belgilarida bo'lsin: 7/12, 3 butun 2/5. Dollar ($) yoki LaTeX ishlatilmasin!\n` +
-    `6. Javob sof, ravon o'zbek adabiy tilida bo'lsin.`;
+    `Vazifa: Ushbu mavzu bo'yicha roppa-rosa ${count} ta yuqori darajadagi, qolipdan chiqqan 4 variantli (A, B, C, D) nazorat test savoli tuzib ber.\n\n` +
+    `TUZILISH VA TALABLAR:\n` +
+    `📌 Sarlavha: 🎲 CHUQURLASHTIRILGAN NAZORAT TESTLARI (${count} TALIK)\n` +
+    `Mavzu: "${topic}" | DTS va Xalqaro Standartlar Asosida\n\n` +
+    `🟢 I DARAJA: BAZAVIY BILIM VA KONSEPTUAL TUSHUNISH (1-4-savollar)\n` +
+    `🟡 II DARAJA: AMALIY QO'LLASH VA TAHLIL (5-8-savollar)\n` +
+    `🔴 III DARAJA: YUQORI MANTIQ VA CHUQUR SINTEZ (9-${count}-savollar - Olimpiada darajasi)\n\n` +
+    `Har bir savol aniq raqamlangan bo'lsin: 1., 2., ... ${count}.\n` +
+    `Variantlar: A), B), C), D).\n\n` +
+    `Oxirida qat'iy ravishda:\n` +
+    `🔑 JAVOBLAR KALITI VA ILMIY ISBOTLAR:\n` +
+    `Har bir to'g'ri javob uchun 1-2 jumlalik ilmiy dalil, qonuniyat yoki darslik sahifasiga oid asos yozilsin.\n` +
+    `Sof, ravon, mukammal o'zbek adabiy tilida bo'lsin.`;
 
   return await callGemini(prompt, systemInstruction);
 }
 
 /**
- * 2. HAQIQIY 45 DAQIQALIK INTEGRATSIYALASHGAN DARS ISHLANMASI (KONSPEKT)
+ * 2. 45 DAQIQALIK INTEGRATSIYALASHGAN INNOVATSION DARS ISHLANMASI (KONSPEKT)
+ * Vazirlikning eng yangi 2026-yilgi zamonaviy pedagogik mezonlari asosida
  */
 export async function generateAILessonPlanWithGemini(topic) {
   const systemInstruction = 
-    "Siz O'zbekistonning ilg'or amaliyotchi o'qituvchisisiz. 45 daqiqalik dars ishlanmalarini yangi pedagogik texnologiyalar (FSMU, Aqliy hujum, Klaster, Sinkveyn) asosida to'liq xronometraj bilan yozasiz. " +
-    "Matematik ifodalar va kasrlarni oddiy tushunarli formatda yozing (masalan 7/12, 3 butun 2/5), aslo dollar yoki LaTeX ishlatmang!";
+    "Siz O'zbekistonning eng ilg'or xalqaro toifadagi ustoz-metodistisiz. Dars ishlanmalaringiz shunchaki qog'oz emas, balki jonli dars jarayonini har bir daqiqasigacha to'liq modellashtiruvchi professional san'at asaridir. " +
+    "Darsda zamonaviy interaktiv metodlar (FSMU, Aqliy hujum, Klaster, Sinkveyn, B/BX/B), o'qituvchining jonli nutqi, o'quvchilar reaksiyasi, doska rejasi va aniq baholash rubrikasi bo'lishi shart.";
 
   const prompt = 
     `Mavzu: "${topic}"\n` +
-    `Vazifa: Ushbu mavzu bo'yicha umumiy o'rta ta'lim maktabi uchun to'liq 45 daqiqalik namunaviy dars ishlanmasi (konspekt) rejasini tuzib ber.\n` +
-    `Tuzilma:\n` +
-    `• Dars mavzusi, sinfi, dars turi, jihozlar, metodlar;\n` +
-    `• I. Dars maqsadlari (Ta'limiy, Tarbiyaviy, Rivojlantiruvchi);\n` +
-    `• II. 6 bosqichli xronometraj:\n` +
-    `  1. Tashkiliy qism (3 daqiqa);\n` +
-    `  2. O'tilgan mavzuni so'rash va blits-savollar (7 daqiqa);\n` +
-    `  3. Yangi mavzu bayoni — 3 ta aniq reja va doska yozuvi (20 daqiqa);\n` +
-    `  4. Yangi mavzuni mustahkamlash va amaliy mashqlar (10 daqiqa);\n` +
-    `  5. Darsni yakunlash va baholash mezonlari (3 daqiqa);\n` +
-    `  6. Uyga vazifa va ko'rsatmalar (2 daqiqa).`;
+    `Vazifa: Ushbu mavzu bo'yicha namunaviy, mukammal va har bir daqiqasi hisoblangan 45 daqiqalik dars ishlanmasi (texnologik xarita va konspekt) tayyorlab ber.\n\n` +
+    `QAT'IY STRUKTURA:\n` +
+    `1. METADATA: Fan nomi, sinfi, darsning turi (Yangi bilim beruvchi / Amaliy / Noan'anaviy), shakli, qo'llaniladigan zamonaviy metodlar, jihozlar va AKT vositalari;\n` +
+    `2. KOMPETENSIYAVIY MAQSADLAR: Tayanch kompetensiyalar (Axborot bilan ishlash, o'zini rivojlantirish) va Fanga oid xususiy kompetensiyalar;\n` +
+    `3. 45 DAQIQALIK DARS BOSQICHLARI (Daqiqama-daqiqa xronometraj bilan):\n` +
+    `   • 1-bosqich: Tashkiliy qism (3 min) — Salomlashish, davomat, psixologik ijobiy muhit;\n` +
+    `   • 2-bosqich: O'tilgan mavzuni mustahkamlash (7 min) — 5 ta blits-savol, o'qituvchi va o'quvchi dialogi;\n` +
+    `   • 3-bosqich: Yangi mavzu bayoni (20 min) — 3 ta reja punkti, chuqur ilmiy asos, o'qituvchining jonli nutqi, taqdimot va DOSKA REJASI (Doskaga nimalar yozilishi);\n` +
+    `   • 4-bosqich: Yangi mavzuni mustahkamlash va amaliy faoliyat (10 min) — Kichik guruhlarda ishlash, FSMU yoki krossvord tahlili;\n` +
+    `   • 5-bosqich: Darsni yakunlash va baholash (3 min) — Kriteriyali baholash (5, 4, 3 ball rubrikasi);\n` +
+    `   • 6-bosqich: Tabaqalashtirilgan uyga vazifa (2 min) — A (standart), B (mantiqiy-ijodiy), C (tadqiqot/loyiha);\n` +
+    `4. O'QITUVCHINING SHAXSIY METODIK XULOSASI.`;
 
   return await callGemini(prompt, systemInstruction);
 }
 
 /**
- * 3. RASMIY MAKTAB DIREKTORI BUYRUG'I
+ * 3. YUQORI YURIDIK MAQOMDAGI RASMIY MAKTAB BUYRUG'I
  */
 export async function generateAIOfficialOrderWithGemini(topic) {
   const systemInstruction = 
-    "Siz O'zbekiston ta'lim tizimidagi yurist va devonxona rahbarisiz. Rasmiy buyruqlarni O'zbekiston Respublikasining 'Ta'lim to'g'risida'gi Qonuni va vazirlik me'yorlariga binoan yozasiz.";
+    "Siz O'zbekiston Respublikasi Maktabgacha va maktab ta'limi vazirligi tizimidagi bosh yurist va devonxona mudirisiz. " +
+    "Siz yozgan har bir buyruq 'Ta'lim to'g'risida'gi Qonun, yangi tahrirdagi Mehnat Kodeksi va Vazirlar Mahkamasi qarorlariga 100% huquqiy mos, qat'iy va rasmiy davlat tilida bo'lishi shart.";
 
   const prompt = 
     `Mavzu: "${topic}"\n` +
-    `Vazifa: Ushbu masala bo'yicha maktab direktori nomidan to'liq yuridik asoslangan rasmiy maktab buyrug'i loyihasini tayyorlab ber.\n` +
-    `Tuzilma: Maktab rekvizitlari, buyruq raqami va sanasi, preambula (qonuniy asos), BUYURAMAN qismida 4 ta aniq topshiriq va mas'ul shaxslar, imzo o'rni.`;
+    `Vazifa: Ushbu masala yuzasidan ta'lim muassasasi rahbari (direktor) nomidan to'liq yuridik kuchga ega rasmiy buyruq loyihasini tayyorlab ber.\n\n` +
+    `TUZILMA:\n` +
+    `• Rasmiy sarlavha, muassasa nomi, sana va buyruq raqami;\n` +
+    `• Preambula (Qonuniy asoslar, me'yoriy hujjatlar va buyruqning maqsadi);\n` +
+    `• 'BUYURAMAN:' qismida 5 ta aniq, ijro etuvchi shaxslari va muddatlari belgilangan qat'iy bandlar;\n` +
+    `• Nazorat mas'ullari va ijro intizomi;\n` +
+    `• Imzo, muhr o'rni va kelishuv rekvizitlari.`;
 
   return await callGemini(prompt, systemInstruction);
 }
 
 /**
- * 4. PEDAGOGIK KENGASH BAYONNOMASI (PROTOKOL)
+ * 4. PEDAGOGIK KENGASHNING RASMIY BAYONNOMASI (PROTOKOL)
  */
 export async function generateAIProtocolWithGemini(topic) {
-  const systemInstruction = "Siz maktab pedagogik kengashi kotibisiz. Rasmiy bayonnomalarni davlat ish yuritish standarti bo'yicha tuzasiz.";
+  const systemInstruction = "Siz O'zbekiston umumta'lim maktabi pedagogik kengashi bosh kotibisiz. Rasmiy bayonnomalarni davlat ish yuritish standarti bo'yicha mukammal tuzasiz.";
   const prompt = 
     `Mavzu: "${topic}"\n` +
-    `Vazifa: Pedagogik kengashning to'liq rasmiy bayonnomasini yozib ber. (Kun tartibi, Eshitildi ma'ruzasi, Muzokaralarda qatnashuvchilar fikri, Qat'iy qaror qismi, Imzolar).`;
+    `Vazifa: Ushbu masala bo'yicha Pedagogik kengashning to'liq rasmiy bayonnomasini yozib ber.\n` +
+    `Tuzilma: Qatnashuvchilar soni, rais va kotib, Kun tartibi, Eshitildi (ma'ruza tezislari), So'zga chiqdilar (3 nafar pedagog fikri), QAROR QILINDI (4 ta ijroiy band), Ovoz berish natijalari, Imzolar.`;
 
   return await callGemini(prompt, systemInstruction);
 }
 
 /**
- * 5. O'QUVCHIGA RASMIY TAVSIFNOMA (XARAKTERISTIKA)
+ * 5. O'QUVCHIGA PEDAGOGIK-PSIXOLOGIK RASMIY TAVSIFNOMA (XARAKTERISTIKA)
  */
 export async function generateAIStudentReferenceWithGemini(studentName) {
-  const systemInstruction = "Siz tajribali sinf rahbari va psixologsiz. O'quvchilarga chuqur pedagogik tavsifnomalar yozasiz.";
+  const systemInstruction = "Siz oliy toifali maktab amaliyotchi psixologi va tajribali sinf rahbarsiz. O'quvchilarga xolis, chuqur, shaxsiy fazilatlari va intellektual salohiyatini ochib beruvchi mukammal tavsifnoma yozasiz.";
   const prompt = 
     `O'quvchi: "${studentName}"\n` +
-    `Vazifa: Mazkur o'quvchi uchun fan olimpiadasida qatnashish, stipendiya yoki boshqa rasmiy idoraga taqdim etish uchun ijobiy va to'liq pedagogik tavsifnoma (xarakteristika) yozib ber.`;
+    `Vazifa: Mazkur o'quvchi uchun nufuzli olimpiada, oliygohga tavsiya, stipendiya yoki rasmiy tashkilotga taqdim etish uchun chuqur pedagogik-psixologik tavsifnoma tayyorlab ber.\n` +
+    `Tuzilma: O'quvchining akademik o'zlashtirishi, ijtimoiy faolligi, yetakchilik va xarakter xususiyatlari, qiziqishlari va maktab jamoasining rasmiy tavsiyasi.`;
 
   return await callGemini(prompt, systemInstruction);
 }
 
 /**
- * 6. GAMMA & GENSPARK UCHUN HAQIQIY KOD VA AI BILAN TUZILGAN DINAMIK SLAYDLAR
- * Har bir mavzu uchun mutlaqo yangi, takrorlanmas, 15+ xil layoutli va moslashtirilgan taqdimot
+ * 6. GAMMA & GENSPARK DARAJASIDAGI CHUQUR VA BETAKROR SLAYD KARTOCHKALARI
  */
 export async function generateAIGammaCardsWithGemini(topic, options = {}) {
   const {
