@@ -359,23 +359,27 @@ export function resolveSlideArchitecture(card, index, totalSlides) {
   if (type === 'flow' || type === 'flow_diagram') return 'flow_diagram';
   if (type === 'swot' || type === 'swot_analysis') return 'swot_analysis';
   if (type === 'quote' || type === 'citation') return 'citation_quote';
+  if (type === 'problem_solution' || type === 'problem') return 'problem_solution';
+  if (type === 'concept' || type === 'spotlight') return 'concept_spotlight';
   if (type === 'summary' || type === 'conclusion') return 'summary_takeaways';
 
-  // Modular distribution across 12 distinct architectural families
-  const familyIndex = index % 12;
+  // Modular distribution across 13 distinct architectural families
+  const familyIndex = (index - 1) % 13;
   switch (familyIndex) {
+    case 0: return 'concept_spotlight';
     case 1: return 'bento_3';
     case 2: return 'split_image';
     case 3: return 'pillars_3';
     case 4: return 'grid4';
     case 5: return 'stats_kpi';
     case 6: return 'timeline_steps';
-    case 7: return 'split_versus';
-    case 8: return 'pros_cons';
-    case 9: return 'flow_diagram';
-    case 10: return 'swot_analysis';
+    case 7: return 'pros_cons';
+    case 8: return 'flow_diagram';
+    case 9: return 'swot_analysis';
+    case 10: return 'problem_solution';
     case 11: return 'citation_quote';
-    default: return 'concept_card';
+    case 12: return 'split_versus';
+    default: return 'concept_spotlight';
   }
 }
 
@@ -404,12 +408,64 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
     slide.addText(card.subtitle || "Zamonaviy ta'lim va tahliliy taqdimot", {
       x: 1.2, y: 3.45, w: 7.6, h: 1.0, fontSize: 14.5, color: style.subtext, fontFace: 'Arial'
     });
-    // Foydalanuvchi / Taqdimotchi ismi aks etadigan maxsus blok
+    // Foydalanuvchi / Taqdimotchi ismi aks etadigan maxsus blok (Pastda katta, yorqin va aniq)
     slide.addShape(pres.ShapeType.roundRect, {
-      x: 1.2, y: 4.55, w: 5.2, h: 0.45, fill: { color: style.bg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.08
+      x: 1.2, y: 4.45, w: 7.6, h: 0.58, fill: { color: style.bg }, line: { color: style.accent, width: 1.5 }, rectRadius: 0.1
     });
-    slide.addText(`👤 Taqdimotchi: ${authorName}  |  ⚡ 100+ Dynamic Layouts Verified`, {
-      x: 1.35, y: 4.55, w: 4.9, h: 0.45, fontSize: 10, color: style.subtext, valign: 'middle', fontFace: 'Arial'
+    slide.addText(`👤 TAQDIMOTCHI / MUALLIF: ${authorName.toUpperCase()}  |  🏛️ EDUHUJJAT AI`, {
+      x: 1.4, y: 4.45, w: 7.2, h: 0.58, fontSize: 11.5, bold: true, color: style.accent, valign: 'middle', fontFace: 'Arial'
+    });
+    return;
+  }
+
+  // 1B. GENSPARK CONCEPT SPOTLIGHT ARCHITECTURE
+  if (arch === 'concept_spotlight') {
+    slide.addText(card.title || "Asosiy Ilmiy Tushuncha va Mezonlar", {
+      x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
+    });
+    // Yuqori katta e'tibor bloki
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 0.8, y: 1.2, w: 8.4, h: 1.35, fill: { color: style.cardBg }, line: { color: style.accent, width: 1.5 }, rectRadius: 0.1
+    });
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 0.8, y: 1.2, w: 8.4, h: 0.08, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.04
+    });
+    slide.addText(card.badge || "ASOSIY QONUNIYAT VA ILMIY TA'RIF", {
+      x: 1.05, y: 1.32, w: 7.9, h: 0.3, fontSize: 10, bold: true, color: style.accent, fontFace: 'Arial'
+    });
+    slide.addText(card.mainConcept || card.explanation || "Mavzuning eng fundamental tayanch g'oyasi va darslik mezonlari.", {
+      x: 1.05, y: 1.65, w: 7.9, h: 0.8, fontSize: 12.5, color: style.text, fontFace: 'Arial'
+    });
+
+    // Pastdagi 3 ta tahliliy ustun
+    const insights = (card.bullets || card.cards || [
+      "Ilmiy-nazariy asoslar va qoidalar",
+      "Amaliy tadbiq va hayotiy misollar",
+      "Darslik mezonlari va xulosalar"
+    ]).slice(0, 3);
+
+    insights.forEach((ins, idx) => {
+      const xPos = 0.8 + (idx * 2.9);
+      const col = idx === 1 ? style.accent2 : style.accent;
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: xPos, y: 2.7, w: 2.65, h: 2.45, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.1
+      });
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: xPos, y: 2.7, w: 2.65, h: 0.06, fill: { color: col }, line: { color: col, width: 0 }, rectRadius: 0.03
+      });
+      slide.addShape(pres.ShapeType.ellipse, {
+        x: xPos + 0.15, y: 2.85, w: 0.38, h: 0.38, fill: { color: style.bg }, line: { color: col, width: 1.2 }
+      });
+      slide.addText(`0${idx + 1}`, {
+        x: xPos + 0.15, y: 2.85, w: 0.38, h: 0.38, fontSize: 9.5, bold: true, color: col, align: 'center', valign: 'middle', fontFace: 'Arial'
+      });
+      slide.addText(typeof ins === 'string' ? ins : (ins.title || `Mezon ${idx + 1}`), {
+        x: xPos + 0.6, y: 2.85, w: 1.9, h: 0.4, fontSize: 11.5, bold: true, color: style.text, fontFace: 'Arial'
+      });
+      const desc = typeof ins === 'object' ? (ins.desc || ins.text || "") : "Ushbu yo'nalish bo'yicha batafsil darslik mezonlari va tahliliy dalillar.";
+      slide.addText(desc, {
+        x: xPos + 0.2, y: 3.35, w: 2.25, h: 1.65, fontSize: 10, color: style.subtext, fontFace: 'Arial'
+      });
     });
     return;
   }
@@ -867,7 +923,44 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
     return;
   }
 
-  // 10. SUMMARY & TAKEAWAYS (Yakuniy Xulosa & Natijalar)
+  // 14. PROBLEM VS SOLUTION ARCHITECTURE (Pitch Uslubidagi Muammo & Yechim)
+  if (arch === 'problem_solution') {
+    slide.addText(card.title || "Dolzarb Muammo va Innovatsion Yechim", {
+      x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
+    });
+    // Chap: Muammo
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 0.8, y: 1.25, w: 4.0, h: 3.9, fill: { color: style.cardBg }, line: { color: "EF4444", width: 1.5 }, rectRadius: 0.12
+    });
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 0.8, y: 1.25, w: 4.0, h: 0.08, fill: { color: "EF4444" }, line: { color: "EF4444", width: 0 }, rectRadius: 0.04
+    });
+    slide.addText("🔴 DOLZARB MUAMMO VA KAMCHILIKLAR", {
+      x: 1.05, y: 1.45, w: 3.5, h: 0.4, fontSize: 13, bold: true, color: "EF4444", fontFace: 'Arial'
+    });
+    const probBullets = (card.problems || card.leftBullets || ["Mavjud tizimdagi samarasizlik va qiyinchiliklar", "Resurslar va vaqt yetishmasligi muammosi", "Eski an'anaviy yondashuvlarning o'zini oqlamasligi"]).map(p => `✕  ${p}`).join("\n\n");
+    slide.addText(probBullets, {
+      x: 1.05, y: 2.0, w: 3.5, h: 2.9, fontSize: 11, color: style.text, fontFace: 'Arial'
+    });
+
+    // O'ng: Yechim
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 5.2, y: 1.25, w: 4.0, h: 3.9, fill: { color: style.cardBg }, line: { color: "10B981", width: 1.5 }, rectRadius: 0.12
+    });
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 5.2, y: 1.25, w: 4.0, h: 0.08, fill: { color: "10B981" }, line: { color: "10B981", width: 0 }, rectRadius: 0.04
+    });
+    slide.addText("🟢 INNOVATSION ILMIY YECHIM", {
+      x: 5.45, y: 1.45, w: 3.5, h: 0.4, fontSize: 13, bold: true, color: "10B981", fontFace: 'Arial'
+    });
+    const solBullets = (card.solutions || card.rightBullets || ["Zamonaviy raqamli va pedagogik texnologiyalar integratsiyasi", "Tizimli avtomatlashtirilgan monitoring va tahlil", "Vaqtni tejash va 100% kafolatlangan yuqori natija"]).map(s => `✓  ${s}`).join("\n\n");
+    slide.addText(solBullets, {
+      x: 5.45, y: 2.0, w: 3.5, h: 2.9, fontSize: 11, color: style.text, fontFace: 'Arial'
+    });
+    return;
+  }
+
+  // 15. SUMMARY & TAKEAWAYS (Yakuniy Xulosa & Natijalar)
   slide.addShape(pres.ShapeType.roundRect, {
     x: 0.8, y: 0.85, w: 8.4, h: 4.4, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1.5 }, rectRadius: 0.15
   });
@@ -910,9 +1003,44 @@ export async function generatePresentationPptx(config = {}) {
     themeKey = keys[Math.floor(Math.random() * keys.length)];
   }
   const style = GAMMA_THEMES[themeKey] || GAMMA_THEMES.obsidian;
-  const slideDeck = cards && cards.length ? cards : getDefaultGammaCards(topic, authorName);
+  let slideDeck = cards && cards.length ? [...cards] : getDefaultGammaCards(topic, authorName);
 
-  // Topic rasmini yuklab olish
+  // 1 dan 30 gacha bo'lgan barcha betlarni qo'llab-quvvatlash
+  if (config.slideCount) {
+    const targetCount = Math.min(30, Math.max(1, parseInt(config.slideCount, 10) || slideDeck.length));
+    if (slideDeck.length < targetCount) {
+      const summaryCard = slideDeck[slideDeck.length - 1];
+      const baseCards = slideDeck.slice(0, slideDeck.length - 1);
+      const subtopics = [
+        "Ilmiy-Nazariy Asoslar va Mezonlar", "Laboratoriya va Amaliy Tajribalar", "Fanlararo Integratsiya va Qiyoslash",
+        "Tarixiy Rivojlanish va Kashfiyotlar", "Zamonaviy Texnologiyalar O'rni", "Xalqaro Mezonlar va DTS Talablari",
+        "Ekologik va Ijtimoiy Ta'siri", "Interaktiv Metodlar va Misollar", "Formula va Qonuniyatlar Tahlili",
+        "Statistik Ko'rsatkichlar Dinamikasi", "Muammolar va Ularning Ilmiy Yechimlari", "Innovatsion Yondashuvlar",
+        "Kelajak Istiqbollari va Xulosalar", "O'quvchilar Uchun Savol-Javoblar", "Metodik Tavsiyalar va Qo'llanma"
+      ];
+      while (baseCards.length < targetCount - 1) {
+        const i = baseCards.length;
+        const subTitle = subtopics[i % subtopics.length];
+        baseCards.push({
+          title: `${topic}: ${subTitle}`,
+          badge: `BO'LIM 0${i + 1}`,
+          mainConcept: `${topic} mavzusida ${subTitle.toLowerCase()} eng muhim tayanch o'rinlardan biridir.`,
+          explanation: `Ushbu slayd doirasida mavzuning chuqurlashtirilgan ilmiy asoslari, aniq raqamlar va amaliy tahlillari beriladi.`,
+          bullets: [
+            `Mavzuga oid fundamental mezonlar va ta'riflar`,
+            `Darslik dasturidagi asosiy qonuniyatlar`,
+            `Amaliyotda qo'llash va kutiladigan ilmiy natija`
+          ]
+        });
+      }
+      slideDeck = [...baseCards, summaryCard];
+    } else if (slideDeck.length > targetCount) {
+      const summaryCard = slideDeck[slideDeck.length - 1];
+      slideDeck = [...slideDeck.slice(0, targetCount - 1), summaryCard];
+    }
+  }
+
+  // Topic rasmini yuklab olish (Rasm uslubi va miqdorini inobatga olgan holda)
   let topicImageBase64 = null;
   if (includeImages) {
     const imgUrl = getTopicImageUrl(topic);
@@ -922,9 +1050,17 @@ export async function generatePresentationPptx(config = {}) {
   const pres = new pptxgen();
   pres.layout = 'LAYOUT_16x9';
 
+  const transitionTypes = ['fade', 'push', 'wipe', 'split', 'reveal', 'cover'];
+
   slideDeck.forEach((card, index) => {
     const slide = pres.addSlide();
     slide.background = { color: style.bg };
+
+    // PPTX Perexod (Transition Animatsiyasi)
+    slide.transition = {
+      type: index === 0 ? 'fade' : transitionTypes[index % transitionTypes.length],
+      duration: 0.8
+    };
 
     // 100+ XIL DINAMIK FON GRAFIKASI (HECH QACHON BIR XIL BO'LMAYDI)
     applyDynamicBackgroundPattern(slide, pres, style, index, slideDeck.length);
@@ -944,6 +1080,23 @@ export async function generatePresentationPptx(config = {}) {
 
     // 100+ XIL SLAYD ARXITEKTURASI RENDERINGI
     renderSlideArchitecture(slide, pres, card, style, index, slideDeck.length, topicImageBase64, authorName, topic);
+
+    // Pastki Elegant Footer (1-slayddan keyingi barcha varaqlarda)
+    if (index > 0) {
+      slide.addShape(pres.ShapeType.line, {
+        x: 0.8, y: 5.32, w: 8.4, h: 0,
+        line: { color: style.cardBorder, width: 0.5, dashType: 'solid' }
+      });
+      slide.addText(`📌 ${topic.slice(0, 36)}`, {
+        x: 0.8, y: 5.35, w: 3.8, h: 0.22, fontSize: 8.5, color: style.subtext, fontFace: 'Arial'
+      });
+      slide.addText(`👤 ${authorName}`, {
+        x: 4.6, y: 5.35, w: 3.0, h: 0.22, fontSize: 8.5, color: style.subtext, align: 'center', fontFace: 'Arial'
+      });
+      slide.addText(`${index + 1} / ${slideDeck.length}`, {
+        x: 7.8, y: 5.35, w: 1.4, h: 0.22, fontSize: 8.5, color: style.subtext, align: 'right', fontFace: 'Arial'
+      });
+    }
   });
 
   if (config.outputType === 'nodebuffer' || (typeof window === 'undefined' && !config.filename)) {

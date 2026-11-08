@@ -256,7 +256,9 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
     authorName = "SmartOffice EduAI",
     detailLevel = "medium", // 'short' | 'medium' | 'detailed'
     slideCount = null,
-    includeImages = true
+    includeImages = true,
+    imageStyle = "realistic", // 'realistic' | 'ai3d' | 'vector' | 'infographic' | 'abstract'
+    imageDensity = "medium"   // 'high' | 'medium' | 'low'
   } = (typeof options === 'string' ? { authorName: options } : options);
 
   const slideCountNum = parseInt(slideCount, 10);
@@ -272,13 +274,16 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
     detailGuideline = "MA'LUMOT HAJMI: TO'LIQ VA KENGAYTIRILGAN (Chuqur ilmiy ma'lumotlar, aniq raqamlar, kengaytirilgan tushuntirishlar va har bir slayd uchun ma'ruzachining batafsil nutqi (speakerNotes) bilan to'liq ma'ruza konspekti darajasida).";
   }
 
+  const imageGuideline = `RASMLAR USLUBI: ${imageStyle} (Zichligi: ${imageDensity}). Vizual slaydlarda "imageKeyword" parametrini ingliz tilida professional fotolar uchun aniq kalit so'z bilan yozing.`;
+
   const prompt = 
     `Mavzu: "${topic}"\n` +
     `Taqdimotchi / Muallif: "${authorName}"\n` +
     `${countGuideline}\n` +
-    `${detailGuideline}\n\n` +
+    `${detailGuideline}\n` +
+    `${imageGuideline}\n\n` +
     `Vazifa: Ushbu mavzuni to'liq, chuqur va professional yorituvchi ZAMONAVIY, XILMA-XIL va BETAKROR slayd kartochkalarini tuzib ber.\n` +
-    `QAT'IY TALABLAR (Gamma.app va Genspark darajasida):\n` +
+    `QAT'IY TALABLAR (Gamma.app, Tome, Pitch va Genspark darajasida):\n` +
     `1. BIR XIL SHABLON TAKRORLANMASIN! Har bir slayd mavzuning ichki mantiqiga mos xilma-xil layout va elementlar joylashuviga ega bo'lsin.\n` +
     `2. Matnlar mavzuning haqiqiy ilmiy terminlari, aniq raqamlari, misollari va darslikka xos faktlar bilan boyitilsin.\n` +
     `3. 1-slayd "hero" bo'lib, uning muallif qismida "${authorName}" ko'rsatilsin.\n` +
@@ -296,9 +301,10 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
     `   - "pros_cons": Afzalliklar va kamchiliklar/xatarlar (title, prosTitle, pros: ["..."], consTitle, cons: ["..."], speakerNotes)\n` +
     `   - "flow_diagram": 4 ta qadamli gorizontal ketma-ket sxema (title, flowSteps: [{step: "01", title, desc}, ...], speakerNotes)\n` +
     `   - "swot_analysis": SWOT strategik matritsa (title, swotS: ["..."], swotW: ["..."], swotO: ["..."], swotT: ["..."], speakerNotes)\n` +
+    `   - "problem_solution": Dolzarb muammo va ilmiy innovatsion yechim (title, problems: ["..."], solutions: ["..."], speakerNotes)\n` +
     `   - "citation_quote": Katta ta'sirchan ilmiy iqtibos (quote, author, speakerNotes)\n` +
     `   - "quiz_slide": Interaktiv nazorat/munozara savoli (title, question, options: ["A) ...", "B) ...", "C) ...", "D) ..."], answer, speakerNotes)\n` +
-    `   - "conclusion": Xulosa va amaliy saboqlar (title, quote, takeaways: ["...", "..."], speakerNotes)\n\n` +
+    `   - "conclusion": Xulosa va amaliy saboqlar (title, quote, takeaways: ["...", "..."], speakerNotes)\n\n` + +
     `Faqat quyidagi JSON massiv formatida javob qaytar (boshqa hech qanday so'z yoki belgi yozma):\n` +
     `[ { "type": "...", ... } ]`;
 
