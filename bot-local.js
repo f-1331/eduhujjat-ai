@@ -156,7 +156,8 @@ function loadDatabase() {
       users: mergedUsers,
       simulatedRoles: parsed.simulatedRoles || {},
       deviceAuthorizations: parsed.deviceAuthorizations || {},
-      deviceBindings: parsed.deviceBindings || {}
+      deviceBindings: parsed.deviceBindings || {},
+      activityLogs: Array.isArray(parsed.activityLogs) ? parsed.activityLogs : []
     };
   } catch (err) {
     console.error("DB o'qishda xatolik:", err);
@@ -179,6 +180,7 @@ const db = {
   simulatedRoles: new Map(Object.entries(memoryDb.simulatedRoles).map(([k, v]) => [parseInt(k, 10), v])),
   deviceAuthorizations: memoryDb.deviceAuthorizations || {},
   deviceBindings: memoryDb.deviceBindings || {},
+  activityLogs: memoryDb.activityLogs || [],
   rateLimits: new Map()
 };
 
@@ -481,7 +483,7 @@ async function executePresentationGeneration(ctx, topic, options = {}) {
         `🖼 Rasm turi: **${styleLabels[imageStyle] || imageStyle}**\n` +
         `✨ 16:9 Widescreen, 15+ xil zamonaviy arxitektura va perexod animatsiyalari bilan.`
     });
-    consumeUserUse(ctx.from?.id);
+    consumeUserUse(ctx.from?.id, 'presentation', topic);
     if (waitMsg) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     }
@@ -508,7 +510,8 @@ function saveDatabase() {
       users: usersObj,
       simulatedRoles: simulatedRolesObj,
       deviceAuthorizations: db.deviceAuthorizations || {},
-      deviceBindings: db.deviceBindings || {}
+      deviceBindings: db.deviceBindings || {},
+      activityLogs: (db.activityLogs || []).slice(-5000)
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(serialized, null, 2), 'utf-8');
   } catch (err) {
@@ -593,6 +596,331 @@ function getAllUniqueUsers() {
   return Array.from(map.values());
 }
 
+// 3.1 FAOLLIK (ACTIVITY) VA VAQT MONITORINGI YORDAMCHILARI
+function parseDurationToMs(str) {
+  if (!str) return 0;
+  const s = String(str).trim().toLowerCase();
+  if (s === '0' || s === 'nol' || s === 'zero') return 0;
+
+  const moMatch = s.match(/^(\d+)\s*(?:mo|oy|month|months)$/i);
+  if (moMatch) return parseInt(moMatch[1], 10) * 30 * 86400 * 1000;
+
+  const minExplicit = s.match(/^(\d+)\s*(?:min|daqiqa|daq)$/i);
+  if (minExplicit) return parseInt(minExplicit[1], 10) * 60 * 1000;
+
+  const wMatch = s.match(/^(\d+)\s*(?:w|hafta|week|weeks)$/i);
+  if (wMatch) return parseInt(wMatch[1], 10) * 7 * 86400 * 1000;
+
+  const dMatch = s.match(/^(\d+)\s*(?:d|kun|day|days)$/i);
+  if (dMatch) return parseInt(dMatch[1], 10) * 86400 * 1000;
+
+  const hMatch = s.match(/^(\d+)\s*(?:h|soat|hour|hours)$/i);
+  if (hMatch) return parseInt(hMatch[1], 10) * 3600 * 1000;
+
+  const mMatch = s.match(/^(\d+)\s*m$/i);
+  if (mMatch) {
+    const val = parseInt(mMatch[1], 10);
+    // 1m, 2m, 3m = oylar; 4m va undan kattasi = daqiqalar (masalan: 10m, 30m)
+    if (val <= 3) {
+      return val * 30 * 86400 * 1000;
+    } else {
+      return val * 60 * 1000;
+    }
+  }
+
+  const numOnly = parseInt(s, 10);
+  if (!isNaN(numOnly)) {
+    return numOnly * 3600 * 1000;
+  }
+  return 0;
+}
+
+function formatRemainingTime(user) {
+  if (!user) return "Noma'lum";
+  if (user.plan === 'unlimited' || user.expiresAt === 'Cheksiz VIP' || (typeof user.remainingUses === 'number' && user.remainingUses >= 99999)) {
+    return "👑 Cheksiz VIP (Abadiy)";
+  }
+  if (typeof user.remainingUses === 'number' && user.remainingUses !== null && user.remainingUses < 99999) {
+    if (user.remainingUses <= 0) return "❌ 0 ta (Tugagan)";
+    return `⚡ ${user.remainingUses} ta hujjat`;
+  }
+  if (user.expireTimestamp) {
+    const diff = user.expireTimestamp - Date.now();
+    if (diff <= 0) {
+      return "⏳ Muddati tugagan (0)";
+    }
+    const days = Math.floor(diff / (86400 * 1000));
+    const hours = Math.floor((diff % (86400 * 1000)) / (3600 * 1000));
+    const minutes = Math.floor((diff % (3600 * 1000)) / (60 * 1000));
+
+    const parts = [];
+    if (days > 0) parts.push(`${days} kun`);
+    if (hours > 0) parts.push(`${hours} soat`);
+    if (minutes > 0 || parts.length === 0) parts.push(`${minutes} daqiqa`);
+    return `⏱ ${parts.join(' ')}`;
+  }
+  return user.expiresAt || "Belgilanmagan";
+}
+
+function logUserActivity(userId, type = 'document', topic = '') {
+  if (!userId) return null;
+  const user = getUser(userId);
+  const now = Date.now();
+  const typeMap = {
+    presentation: "🎨 Slayd Taqdimot",
+    test: "📝 Nazorat Testi",
+    lesson_plan: "📑 Dars Ishlanmasi",
+    referat: "📖 Referat / Insho",
+    official_order: "🏛 Rasmiy Buyruq",
+    bayonnoma: "📋 Kengash Bayonnomasi",
+    tavsifnoma: "👤 Tavsifnoma",
+    excel: "📊 Excel Jadval",
+    chat: "🤖 AI Yordamchi",
+    document: "📄 Hujjat"
+  };
+  const typeLabel = typeMap[type] || "📄 Hujjat";
+  const entry = {
+    id: `act_${now}_${Math.floor(Math.random() * 1000)}`,
+    userId: Number(user?.realId || userId),
+    userName: user?.name || (user?.username ? `@${user.username}` : `Foydalanuvchi ${userId}`),
+    type,
+    typeLabel,
+    topic: String(topic || '').slice(0, 100),
+    timestamp: now
+  };
+  if (!Array.isArray(db.activityLogs)) {
+    db.activityLogs = [];
+  }
+  db.activityLogs.push(entry);
+  if (db.activityLogs.length > 5000) {
+    db.activityLogs = db.activityLogs.slice(-5000);
+  }
+  if (user) {
+    user.totalCreated = (user.totalCreated || 0) + 1;
+  }
+  saveDatabase();
+  return entry;
+}
+
+function getActivityStats(targetUserId = null) {
+  const now = Date.now();
+  const ONE_DAY = 24 * 3600 * 1000;
+  const ONE_WEEK = 7 * ONE_DAY;
+  const ONE_MONTH = 30 * ONE_DAY;
+
+  const logs = Array.isArray(db.activityLogs) ? db.activityLogs : [];
+  const targetIdNum = targetUserId ? resolveUserId(targetUserId) : null;
+
+  const filteredLogs = targetIdNum 
+    ? logs.filter(l => Number(l.userId) === Number(targetIdNum))
+    : logs;
+
+  const stats = {
+    day: { total: 0, byType: {} },
+    week: { total: 0, byType: {} },
+    month: { total: 0, byType: {} },
+    allTime: { total: filteredLogs.length, byType: {} },
+    userBreakdown: new Map()
+  };
+
+  for (const log of filteredLogs) {
+    const age = now - log.timestamp;
+    const t = log.type || 'document';
+
+    stats.allTime.byType[t] = (stats.allTime.byType[t] || 0) + 1;
+
+    if (age <= ONE_MONTH) {
+      stats.month.total++;
+      stats.month.byType[t] = (stats.month.byType[t] || 0) + 1;
+    }
+    if (age <= ONE_WEEK) {
+      stats.week.total++;
+      stats.week.byType[t] = (stats.week.byType[t] || 0) + 1;
+    }
+    if (age <= ONE_DAY) {
+      stats.day.total++;
+      stats.day.byType[t] = (stats.day.byType[t] || 0) + 1;
+    }
+
+    if (!stats.userBreakdown.has(log.userId)) {
+      stats.userBreakdown.set(log.userId, {
+        userId: log.userId,
+        userName: log.userName || `Foydalanuvchi ${log.userId}`,
+        day: 0,
+        week: 0,
+        month: 0,
+        allTime: 0
+      });
+    }
+    const ub = stats.userBreakdown.get(log.userId);
+    ub.allTime++;
+    if (age <= ONE_MONTH) ub.month++;
+    if (age <= ONE_WEEK) ub.week++;
+    if (age <= ONE_DAY) ub.day++;
+  }
+
+  return stats;
+}
+
+function formatActivityReport(targetUserId = null) {
+  const stats = getActivityStats(targetUserId);
+  const typeIcons = {
+    presentation: "🎨 Slayd",
+    test: "📝 Test",
+    lesson_plan: "📑 Dars rejasi",
+    referat: "📖 Referat",
+    official_order: "🏛 Buyruq",
+    bayonnoma: "📋 Bayonnoma",
+    tavsifnoma: "👤 Tavsifnoma",
+    excel: "📊 Excel",
+    chat: "🤖 AI Savol-Javob",
+    document: "📄 Hujjat"
+  };
+
+  function formatTypeDetails(byType) {
+    const entries = Object.entries(byType);
+    if (entries.length === 0) return "   *(hech qanday fayl yaratilmagan)*";
+    return entries.map(([k, v]) => `   • ${typeIcons[k] || k}: **${v} ta**`).join('\n');
+  }
+
+  if (targetUserId) {
+    const user = getUser(targetUserId);
+    const targetId = resolveUserId(targetUserId);
+    const displayId = getDisplayUserId(targetId);
+    const name = user?.name || `Foydalanuvchi ${displayId}`;
+    const handle = user?.username ? `@${user.username}` : `ID: ${targetId}`;
+    const remTime = formatRemainingTime(user);
+
+    return (
+      `📈 **FOYDALANUVCHI FAOLLIK MONITORINGI:**\n\n` +
+      `👤 **Foydalanuvchi:** ${name} (${handle})\n` +
+      `🆔 **ID:** \`${displayId}\` *(Telegram ID: ${targetId})*\n` +
+      `📊 **Holat:** ${user?.status === 'ACTIVE' ? '✅ Faol' : (user?.status === 'BLOCKED' ? '❌ Bloklangan' : '⏳ Kutmoqda')}\n` +
+      `💳 **Tarif:** **${user?.plan || 'none'}**\n` +
+      `⏱ **Qolgan vaqt / limit:** **${remTime}**\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `⏱ **SO'NGGI 1 KUNDA (24 SOAT):** **${stats.day.total} ta** yaratilgan\n` +
+      `${formatTypeDetails(stats.day.byType)}\n\n` +
+      `📅 **SO'NGGI 1 HAFTADA (7 KUN):** **${stats.week.total} ta** yaratilgan\n` +
+      `${formatTypeDetails(stats.week.byType)}\n\n` +
+      `🗓 **SO'NGGI 1 OYDA (30 KUN):** **${stats.month.total} ta** yaratilgan\n` +
+      `${formatTypeDetails(stats.month.byType)}\n\n` +
+      `🏆 **Jami barcha vaqt:** **${stats.allTime.total} ta** hujjat`
+    );
+  }
+
+  // System-wide
+  const topUsers = Array.from(stats.userBreakdown.values())
+    .sort((a, b) => b.day - a.day || b.week - a.week || b.month - a.month)
+    .slice(0, 10);
+
+  let topUsersText = '';
+  if (topUsers.length === 0) {
+    topUsersText = "*(Hali hech kim fayl yaratmagan)*";
+  } else {
+    topUsersText = topUsers.map((u, i) => 
+      `${i + 1}. **${u.userName}** (ID: \`${getDisplayUserId(u.userId)}\`):\n` +
+      `   • 1 kunda: **${u.day} ta** | 1 haftada: **${u.week} ta** | 1 oyda: **${u.month} ta** (Jami: ${u.allTime})\n` +
+      `   👉 Boshqarish: \`/user ${getDisplayUserId(u.userId)}\``
+    ).join('\n\n');
+  }
+
+  return (
+    `📈 **TIZIM FAOLLIK VA FOYDALANISH TAHLILI:**\n\n` +
+    `⏱ **SO'NGGI 1 KUNDA (24 SOAT):** **${stats.day.total} ta** hujjat\n` +
+    `${formatTypeDetails(stats.day.byType)}\n\n` +
+    `📅 **SO'NGGI 1 HAFTADA (7 KUN):** **${stats.week.total} ta** hujjat\n` +
+    `${formatTypeDetails(stats.week.byType)}\n\n` +
+    `🗓 **SO'NGGI 1 OYDA (30 KUN):** **${stats.month.total} ta** hujjat\n` +
+    `${formatTypeDetails(stats.month.byType)}\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `👥 **ENG FAOL FOYDALANUVCHILAR RO'YXATI:**\n\n` +
+    `${topUsersText}\n\n` +
+    `💡 *Istalgan foydalanuvchini ko'rish va boshqarish: \`/user [ID]\`*`
+  );
+}
+
+function cutUserTime(targetUserId, ms) {
+  const targetId = resolveUserId(targetUserId);
+  const user = getUser(targetId);
+  if (!user) return { success: false, message: "Foydalanuvchi topilmadi" };
+
+  const now = Date.now();
+  if (user.expireTimestamp) {
+    user.expireTimestamp -= ms;
+    if (user.expireTimestamp <= now) {
+      user.expireTimestamp = now - 1000;
+      user.status = 'PENDING';
+      user.expiresAt = 'Muddati tugagan (0)';
+    } else {
+      user.expiresAt = formatRemainingTime(user);
+    }
+  } else if (user.plan && user.plan.endsWith('h')) {
+    const hours = parseInt(user.plan, 10) || 1;
+    const remaining = Math.max(0, hours * 3600 * 1000 - ms);
+    user.expireTimestamp = now + remaining;
+    if (remaining <= 0) {
+      user.status = 'PENDING';
+      user.expiresAt = 'Muddati tugagan (0)';
+    } else {
+      user.expiresAt = formatRemainingTime(user);
+    }
+  } else if (user.plan && user.plan.endsWith('d')) {
+    const days = parseInt(user.plan, 10) || 1;
+    const remaining = Math.max(0, days * 86400 * 1000 - ms);
+    user.expireTimestamp = now + remaining;
+    if (remaining <= 0) {
+      user.status = 'PENDING';
+      user.expiresAt = 'Muddati tugagan (0)';
+    } else {
+      user.expiresAt = formatRemainingTime(user);
+    }
+  } else if (user.plan === 'unlimited') {
+    return { success: false, message: "Foydalanuvchi Cheksiz VIP. Uni to'xtatish uchun /zero buyrug'ini ishlating." };
+  } else {
+    return { success: false, message: "Foydalanuvchida vaqtli obuna belgilanmagan." };
+  }
+
+  setUser(targetId, user);
+  saveDatabase();
+  return { success: true, user, remainingTime: formatRemainingTime(user) };
+}
+
+function addUserTime(targetUserId, ms) {
+  const targetId = resolveUserId(targetUserId);
+  const user = getUser(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
+  const now = Date.now();
+
+  const currentExpire = (user.expireTimestamp && user.expireTimestamp > now) 
+    ? user.expireTimestamp 
+    : now;
+
+  user.expireTimestamp = currentExpire + ms;
+  user.status = 'ACTIVE';
+  user.remainingUses = null;
+  user.plan = 'custom_time';
+  user.expiresAt = formatRemainingTime(user);
+
+  setUser(targetId, user);
+  saveDatabase();
+  return { success: true, user, remainingTime: formatRemainingTime(user) };
+}
+
+function setUserZero(targetUserId) {
+  const targetId = resolveUserId(targetUserId);
+  const user = getUser(targetId);
+  if (!user) return { success: false, message: "Foydalanuvchi topilmadi" };
+
+  user.status = 'PENDING';
+  user.remainingUses = 0;
+  user.expireTimestamp = Date.now() - 1000;
+  user.expiresAt = '0 (Muzlatilgan)';
+
+  setUser(targetId, user);
+  saveDatabase();
+  return { success: true, user };
+}
+
 function isUserActive(userId, username) {
   if (userId === SUPER_OWNER_ID) {
     const role = db.simulatedRoles.get(userId);
@@ -611,13 +939,23 @@ function isUserActive(userId, username) {
 
   if (typeof user.remainingUses === 'number' && user.remainingUses <= 0) {
     user.status = 'PENDING';
+    user.expiresAt = '0 ta (Tugagan)';
     saveDatabase();
     return false;
   }
+
+  if (user.expireTimestamp && Date.now() >= user.expireTimestamp) {
+    user.status = 'PENDING';
+    user.expiresAt = 'Muddati tugagan (0)';
+    saveDatabase();
+    return false;
+  }
+
   return true;
 }
 
-function consumeUserUse(userId) {
+function consumeUserUse(userId, type = 'document', topic = '') {
+  logUserActivity(userId, type, topic);
   if (!userId || userId === SUPER_OWNER_ID) return null;
   const user = getUser(userId);
   if (user && typeof user.remainingUses === 'number') {
@@ -1468,13 +1806,14 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
     return new Keyboard()
       .text("⚡ Tezkor Yoqish").text("🔑 Saytga Kirish Kodi").row()
       .text("🤖 EduAI Yordamchi").text("👥 Foydalanuvchilar").row()
+      .text("📈 Faollik Tahlili").text("📊 Statistika").row()
       .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
       .text("📊 Excel Jadvallar").text("🎨 Gamma AI Taqdimot").row()
       .text("📜 Faxriy Yorliq").text("🖼 Slayd Yasash").row()
       .text("💰 Narxlar").text("🛡 Adminlar").row()
       .text("📢 Ommaviy Xabar").text("📥 Bazani Yuklash (Excel)").row()
-      .text("🎭 Rejimni Almashtirish").text("📊 Statistika").row()
-      .text("🌐 WebApp Ochish").text("🔄 Yangilash /start")
+      .text("🎭 Rejimni Almashtirish").text("🌐 WebApp Ochish").row()
+      .text("🔄 Yangilash /start")
       .resized()
       .persistent();
   }
@@ -1483,11 +1822,11 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
     return new Keyboard()
       .text("⚡ Tezkor Yoqish").text("🔑 Saytga Kirish Kodi").row()
       .text("🤖 EduAI Yordamchi").text("👥 Foydalanuvchilar").row()
+      .text("📈 Faollik Tahlili").text("📊 Statistika").row()
       .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
       .text("📊 Excel Jadvallar").text("🎨 Gamma AI Taqdimot").row()
-      .text("💰 Narxlar").text("📊 Statistika").row()
-      .text("🎭 Rejimni Qaytarish (Owner)").text("🌐 WebApp Ochish").row()
-      .text("🔄 Yangilash /start")
+      .text("💰 Narxlar").text("🌐 WebApp Ochish").row()
+      .text("🎭 Rejimni Qaytarish (Owner)").text("🔄 Yangilash /start")
       .resized()
       .persistent();
   }
@@ -1495,8 +1834,8 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
   if (role === 'INSPECTOR') {
     return new Keyboard()
       .text("🔍 Nazorat / Tekshirish").text("🔑 Saytga Kirish Kodi").row()
-      .text("📊 Statistika").text("👥 Foydalanuvchilar").row()
-      .text("📥 Bazani Yuklash (Excel)").text("🎭 Rejimni Qaytarish (Owner)").row()
+      .text("📈 Faollik Tahlili").text("📊 Statistika").row()
+      .text("👥 Foydalanuvchilar").text("📥 Bazani Yuklash (Excel)").row()
       .text("🌐 WebApp Ochish").text("🔄 Yangilash /start")
       .resized()
       .persistent();
@@ -1576,7 +1915,7 @@ async function handleDynamicExcelCreation(ctx, topic) {
     await ctx.replyWithDocument(new InputFile(buffer, safeFilename), {
       caption: `📊 **"${tableData.title || topic}" jadvali tayyor!** (.xlsx)\n\n📌 Varaq: **${tableData.sheetName || 'Jadval'}**\n✨ Ustunlar: **${tableData.headers?.length || 5} ta** | Qatorlar: **${tableData.rows?.length || 10} ta**\n📐 To'liq formulalar va avtomatik hisob-kitoblar bilan.`
     });
-    consumeUserUse(userId);
+    consumeUserUse(userId, 'excel', tableData.title || topic);
     try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
   } catch(err) {
     try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
@@ -1601,6 +1940,25 @@ function getOwnerActionKeyboard(targetUserId) {
     .text(`⚡ 1 Martalik`, `act_${targetUserId}_1time`)
     .row()
     .text(`❌ Rad etish / Bloklash`, `block_${targetUserId}`);
+}
+
+function getUserManageKeyboard(targetUserId) {
+  const targetId = resolveUserId(targetUserId);
+  return new InlineKeyboard()
+    .text("➖ 1 Soat kamaytirish", `manage_cut_1h_${targetId}`)
+    .text("➕ 1 Soat qo'shish", `manage_add_1h_${targetId}`)
+    .row()
+    .text("➖ 1 Kun kamaytirish", `manage_cut_1d_${targetId}`)
+    .text("➕ 1 Kun qo'shish", `manage_add_1d_${targetId}`)
+    .row()
+    .text("➖ 1 ta limit ayirish", `manage_cut_1use_${targetId}`)
+    .text("➕ 5 ta limit qo'shish", `manage_add_5use_${targetId}`)
+    .row()
+    .text("🚫 Vaqtni 0 qilish (Muzlatish)", `manage_zero_${targetId}`)
+    .text("👑 Cheksiz VIP berish", `manage_vip_${targetId}`)
+    .row()
+    .text("🔄 Yangilash", `manage_refresh_${targetId}`)
+    .text("📋 Barcha tariflar", `manage_tariffs_${targetId}`);
 }
 
 function getRoleSwitchKeyboard() {
@@ -2199,7 +2557,7 @@ bot.on('callback_query:data', async (ctx) => {
         await ctx.replyWithDocument(new InputFile(buffer, `Dars_Konspekti_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
           caption: `📝 **45 Daqiqalik dars ishlanmasi (konspekt) tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Maqsadlar, 6 bosqichli xronometraj, blits-savollar va uyga vazifa bilan.`
         });
-        consumeUserUse(userId);
+        consumeUserUse(userId, 'lesson_plan', topic);
         try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       } catch(err) {
         await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
@@ -2215,7 +2573,7 @@ bot.on('callback_query:data', async (ctx) => {
         await ctx.replyWithDocument(new InputFile(buffer, `Test_va_Kalitlar_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
           caption: `🎲 **15 Talik nazorat testlari va javoblar kaliti tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Variantlar (A, B, C, D) va oxirida o'qituvchi uchun javoblar kaliti.`
         });
-        consumeUserUse(userId);
+        consumeUserUse(userId, 'test', topic);
         try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       } catch(err) {
         await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
@@ -2231,7 +2589,7 @@ bot.on('callback_query:data', async (ctx) => {
         await ctx.replyWithDocument(new InputFile(buffer, `Maktab_Buyrugi_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
           caption: `📋 **Rasmiy maktab direktori buyrug'i tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Vazirlik me'yorlari va huquqiy asoslari bilan.`
         });
-        consumeUserUse(userId);
+        consumeUserUse(userId, 'official_order', topic);
         try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       } catch(err) {
         await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
@@ -2248,7 +2606,7 @@ bot.on('callback_query:data', async (ctx) => {
         await ctx.replyWithDocument(new InputFile(buffer, `Bayonnoma_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
           caption: `📜 **Pedagogik kengash bayonnomasi tayyor!** (.docx)\n\n📌 Mavzu: **${topic}**\n✨ Kun tartibi, muzokaralar va rasmiy qaror qismi bilan.`
         });
-        consumeUserUse(userId);
+        consumeUserUse(userId, 'bayonnoma', topic);
         try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       } catch(err) {
         await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
@@ -2264,7 +2622,7 @@ bot.on('callback_query:data', async (ctx) => {
         await ctx.replyWithDocument(new InputFile(buffer, `Tavsifnoma_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`), {
           caption: `🔍 **Pedagogik tavsifnoma (xarakteristika) tayyor!** (.docx)\n\n📌 O'quvchi: **${topic}**\n✨ A'lochi va faol o'quvchi uchun rasmiy xarakteristika.`
         });
-        consumeUserUse(userId);
+        consumeUserUse(userId, 'tavsifnoma', topic);
         try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       } catch(err) {
         await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
@@ -2367,33 +2725,39 @@ bot.on('callback_query:data', async (ctx) => {
       user.plan = 'unlimited';
       user.remainingUses = 999999;
       user.expiresAt = 'Cheksiz VIP';
+      user.expireTimestamp = null;
       label = '👑 Cheksiz VIP';
     } else if (planCode.endsWith('time')) {
       const times = parseInt(planCode, 10) || 1;
       user.plan = `${times}time`;
       user.remainingUses = times;
       user.expiresAt = `${times} ta hujjat`;
+      user.expireTimestamp = null;
       label = `⚡ ${times} Martalik Hujjat`;
     } else if (planCode.endsWith('h')) {
       const hours = parseInt(planCode, 10) || 1;
       user.plan = `${hours}h`;
       user.remainingUses = null;
+      user.expireTimestamp = Date.now() + hours * 3600 * 1000;
       user.expiresAt = `${hours} soat`;
       label = `⏱ ${hours} Soatlik Kirish`;
     } else if (planCode.endsWith('d')) {
       const days = parseInt(planCode, 10) || 1;
       user.plan = `${days}d`;
       user.remainingUses = null;
+      user.expireTimestamp = Date.now() + days * 86400 * 1000;
       user.expiresAt = `${days} kun`;
       label = `📅 ${days} Kunlik`;
     } else if (planCode === '1w') {
       user.plan = 'weekly';
       user.remainingUses = null;
+      user.expireTimestamp = Date.now() + 7 * 86400 * 1000;
       user.expiresAt = '7 kun';
       label = '🗓 1 Haftalik';
     } else if (planCode === '1m') {
       user.plan = 'monthly';
       user.remainingUses = null;
+      user.expireTimestamp = Date.now() + 30 * 86400 * 1000;
       user.expiresAt = '30 kun';
       label = '⭐ 1 Oylik Pro';
     }
@@ -2444,6 +2808,172 @@ bot.on('callback_query:data', async (ctx) => {
     await ctx.answerCallbackQuery({ text: "Foydalanuvchi rad etildi." });
     await ctx.editMessageText(`❌ **Foydalanuvchi rad etildi.** (ID: \`${getDisplayUserId(targetId)}\`)`, { parse_mode: 'Markdown' });
     return;
+  }
+
+  // =========================================================================
+  // FOYDALANUVCHI BOSHQARUVI VA VAQT MANIPULYATSIYASI (MANAGE CALLBACKS)
+  // =========================================================================
+  if (data.startsWith('manage_')) {
+    const role = getEffectiveRole(ctx);
+    if (role !== 'OWNER' && role !== 'ADMIN') {
+      return ctx.answerCallbackQuery({ text: "Sizda boshqaruv huquqi yo'q!", show_alert: true });
+    }
+
+    if (data.startsWith('manage_open_')) {
+      const targetId = resolveUserId(data.replace('manage_open_', ''));
+      await ctx.answerCallbackQuery();
+      return ctx.reply(formatActivityReport(targetId), {
+        parse_mode: 'Markdown',
+        reply_markup: getUserManageKeyboard(targetId)
+      });
+    }
+
+    if (data.startsWith('manage_cut_1h_')) {
+      const targetId = resolveUserId(data.replace('manage_cut_1h_', ''));
+      const res = cutUserTime(targetId, 3600 * 1000);
+      await ctx.answerCallbackQuery({ text: res.success ? "⏱ 1 soat kamaytirildi!" : res.message, show_alert: !res.success });
+      try {
+        await ctx.editMessageText(formatActivityReport(targetId), {
+          parse_mode: 'Markdown',
+          reply_markup: getUserManageKeyboard(targetId)
+        });
+      } catch(e){}
+      return;
+    }
+
+    if (data.startsWith('manage_add_1h_')) {
+      const targetId = resolveUserId(data.replace('manage_add_1h_', ''));
+      const res = addUserTime(targetId, 3600 * 1000);
+      await ctx.answerCallbackQuery({ text: "⏱ 1 soat qo'shildi!" });
+      try {
+        await ctx.editMessageText(formatActivityReport(targetId), {
+          parse_mode: 'Markdown',
+          reply_markup: getUserManageKeyboard(targetId)
+        });
+      } catch(e){}
+      return;
+    }
+
+    if (data.startsWith('manage_cut_1d_')) {
+      const targetId = resolveUserId(data.replace('manage_cut_1d_', ''));
+      const res = cutUserTime(targetId, 24 * 3600 * 1000);
+      await ctx.answerCallbackQuery({ text: res.success ? "📅 1 kun kamaytirildi!" : res.message, show_alert: !res.success });
+      try {
+        await ctx.editMessageText(formatActivityReport(targetId), {
+          parse_mode: 'Markdown',
+          reply_markup: getUserManageKeyboard(targetId)
+        });
+      } catch(e){}
+      return;
+    }
+
+    if (data.startsWith('manage_add_1d_')) {
+      const targetId = resolveUserId(data.replace('manage_add_1d_', ''));
+      const res = addUserTime(targetId, 24 * 3600 * 1000);
+      await ctx.answerCallbackQuery({ text: "📅 1 kun qo'shildi!" });
+      try {
+        await ctx.editMessageText(formatActivityReport(targetId), {
+          parse_mode: 'Markdown',
+          reply_markup: getUserManageKeyboard(targetId)
+        });
+      } catch(e){}
+      return;
+    }
+
+    if (data.startsWith('manage_cut_1use_')) {
+      const targetId = resolveUserId(data.replace('manage_cut_1use_', ''));
+      const user = getUser(targetId);
+      if (user) {
+        user.remainingUses = Math.max(0, (user.remainingUses || 0) - 1);
+        if (user.remainingUses <= 0) {
+          user.status = 'PENDING';
+          user.expiresAt = '0 ta (Tugagan)';
+        }
+        setUser(targetId, user);
+        saveDatabase();
+        await ctx.answerCallbackQuery({ text: "⚡ 1 ta limit ayirildi!" });
+      }
+      try {
+        await ctx.editMessageText(formatActivityReport(targetId), {
+          parse_mode: 'Markdown',
+          reply_markup: getUserManageKeyboard(targetId)
+        });
+      } catch(e){}
+      return;
+    }
+
+    if (data.startsWith('manage_add_5use_')) {
+      const targetId = resolveUserId(data.replace('manage_add_5use_', ''));
+      const user = getUser(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
+      user.status = 'ACTIVE';
+      user.remainingUses = (user.remainingUses || 0) + 5;
+      user.expiresAt = `${user.remainingUses} ta hujjat`;
+      user.expireTimestamp = null;
+      setUser(targetId, user);
+      saveDatabase();
+      await ctx.answerCallbackQuery({ text: "⚡ 5 ta limit qo'shildi!" });
+      try {
+        await ctx.editMessageText(formatActivityReport(targetId), {
+          parse_mode: 'Markdown',
+          reply_markup: getUserManageKeyboard(targetId)
+        });
+      } catch(e){}
+      return;
+    }
+
+    if (data.startsWith('manage_zero_')) {
+      const targetId = resolveUserId(data.replace('manage_zero_', ''));
+      setUserZero(targetId);
+      await ctx.answerCallbackQuery({ text: "🚫 Vaqt va limit 0 qilindi (muzlatildi)!", show_alert: true });
+      try {
+        await ctx.editMessageText(formatActivityReport(targetId), {
+          parse_mode: 'Markdown',
+          reply_markup: getUserManageKeyboard(targetId)
+        });
+      } catch(e){}
+      return;
+    }
+
+    if (data.startsWith('manage_vip_')) {
+      const targetId = resolveUserId(data.replace('manage_vip_', ''));
+      const user = getUser(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
+      user.status = 'ACTIVE';
+      user.plan = 'unlimited';
+      user.remainingUses = 999999;
+      user.expireTimestamp = null;
+      user.expiresAt = 'Cheksiz VIP';
+      setUser(targetId, user);
+      saveDatabase();
+      await ctx.answerCallbackQuery({ text: "👑 Cheksiz VIP berildi!" });
+      try {
+        await ctx.editMessageText(formatActivityReport(targetId), {
+          parse_mode: 'Markdown',
+          reply_markup: getUserManageKeyboard(targetId)
+        });
+      } catch(e){}
+      return;
+    }
+
+    if (data.startsWith('manage_refresh_')) {
+      const targetId = resolveUserId(data.replace('manage_refresh_', ''));
+      await ctx.answerCallbackQuery({ text: "🔄 Ma'lumotlar yangilandi!" });
+      try {
+        await ctx.editMessageText(formatActivityReport(targetId), {
+          parse_mode: 'Markdown',
+          reply_markup: getUserManageKeyboard(targetId)
+        });
+      } catch(e){}
+      return;
+    }
+
+    if (data.startsWith('manage_tariffs_')) {
+      const targetId = resolveUserId(data.replace('manage_tariffs_', ''));
+      await ctx.answerCallbackQuery();
+      return ctx.reply(
+        `👇 **ID: \`${getDisplayUserId(targetId)}\` uchun standart tarifni tanlang:**`,
+        { parse_mode: 'Markdown', reply_markup: getOwnerActionKeyboard(targetId) }
+      );
+    }
   }
 
   // HUJJAT FABRIKASI SHABLONLARI
@@ -2791,7 +3321,7 @@ async function processIntelligentMessage(ctx, userPrompt) {
         .webApp("📱 WebApp-da Ochish", WEBAPP_URL);
 
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      consumeUserUse(userId);
+      consumeUserUse(userId, 'test', finalTopic);
 
       const previewLines = testResult.split('\n').slice(0, 25).join('\n');
       return ctx.reply(`📋 **Testdan namunaviy savollar:**\n\n${previewLines.slice(0, 3000)}\n\n📎 *To'liq ${count} ta savol va tahliliy javoblar kaliti yuqoridagi .docx faylda yuklandi.*`, { reply_markup: kb });
@@ -2831,7 +3361,7 @@ async function processIntelligentMessage(ctx, userPrompt) {
         .webApp("📱 WebApp-da Ochish", WEBAPP_URL);
 
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      consumeUserUse(userId);
+      consumeUserUse(userId, 'lesson_plan', finalTopic);
       return ctx.reply(`📄 **Dars konspektining asosiy qismi:**\n\n${lessonResult.slice(0, 2500)}\n\n📎 *To'liq dars ishlanmasi yuqoridagi .docx faylda yuborildi.*`, { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
@@ -2864,7 +3394,7 @@ async function processIntelligentMessage(ctx, userPrompt) {
         .webApp("📱 WebApp", WEBAPP_URL);
 
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      consumeUserUse(userId);
+      consumeUserUse(userId, 'referat', finalTopic);
       return ctx.reply(`📑 **Referatning kirish va reja qismi:**\n\n${essayResult.slice(0, 2500)}\n\n📎 *To'liq referat yuqoridagi .docx faylda yuborildi.*`, { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
@@ -2892,7 +3422,7 @@ async function processIntelligentMessage(ctx, userPrompt) {
         .text("📊 Slayd (.pptx)", "ai_gen_gamma")
         .webApp("📱 WebApp", WEBAPP_URL);
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      consumeUserUse(userId);
+      consumeUserUse(userId, 'official_order', raw);
       return ctx.reply(orderResult.slice(0, 2500), { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
@@ -2920,7 +3450,7 @@ async function processIntelligentMessage(ctx, userPrompt) {
         .text("📊 Slayd (.pptx)", "ai_gen_gamma")
         .webApp("📱 WebApp", WEBAPP_URL);
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      consumeUserUse(userId);
+      consumeUserUse(userId, 'tavsifnoma', raw);
       return ctx.reply(refResult.slice(0, 2500), { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
@@ -2948,7 +3478,7 @@ async function processIntelligentMessage(ctx, userPrompt) {
         .text("📊 Slayd (.pptx)", "ai_gen_gamma")
         .webApp("📱 WebApp", WEBAPP_URL);
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      consumeUserUse(userId);
+      consumeUserUse(userId, 'bayonnoma', raw);
       return ctx.reply(protoResult.slice(0, 2500), { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
@@ -3009,6 +3539,7 @@ bot.on('message:text', async (ctx) => {
     '🔑 Saytga Kirish Kodi', '🤖 EduAI Yordamchi', '📊 Gamma AI Taqdimot', '🎨 Gamma AI Taqdimot',
     '💻 Slayd Yasash', '📊 Excel Jadvallar', '📜 Faxriy Yorliq', '💳 Litsenziya Sotib Olish',
     '👥 Foydalanuvchilar', '⚡ Tezkor Yoqish', '🔍 Nazorat / Tekshirish', '📊 Tizim Statistikasi',
+    '📈 Faollik Tahlili', '📈 Faollik', '📊 Statistika',
     '👑 Boshqaruv Paneli', '🔙 Orqaga'
   ];
   const isCommandOrMenu = text.startsWith('/') || knownMenuButtons.includes(text);
@@ -3094,6 +3625,181 @@ bot.on('message:text', async (ctx) => {
   }
 
   // =========================================================================
+  // A.0) ADMIN VA OWNER FAOLLIK TAHLILI & BOSHQARUV TUGMALARI
+  // =========================================================================
+  if (text === '📈 Faollik Tahlili' || text === '/activity' || text === '/monitoring' || text === '📈 Faollik') {
+    if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'INSPECTOR') return ctx.reply("❌ Ruxsat yo'q!");
+    return ctx.reply(formatActivityReport(), { parse_mode: 'Markdown' });
+  }
+
+  if (text === '⚡ Tezkor Yoqish') {
+    if (role !== 'OWNER' && role !== 'ADMIN') return ctx.reply("❌ Ruxsat yo'q!");
+    const allUsers = getAllUniqueUsers().filter(u => u.realId !== SUPER_OWNER_ID);
+    const pendingUsers = allUsers.filter(u => u.status === 'PENDING');
+
+    let msg = `⚡ **TEZKOR FOYDALANUVCHILARNI YOQISH VA BOSHQARISH:**\n\n`;
+    if (pendingUsers.length > 0) {
+      msg += `⏳ **Tasdiqlashni kutayotgan foydalanuvchilar:**\n`;
+      pendingUsers.slice(0, 5).forEach(u => {
+        msg += `• **${u.name}** (\`${u.id}\`): \`/active ${u.id} 2h\` yoki \`/user ${u.id}\`\n`;
+      });
+      msg += `\n`;
+    }
+
+    msg += `💡 **Mavjud boshqaruv buyruqlari:**\n` +
+      `• \`/user [ID]\` — 1 kun, 1 hafta, 1 oy tahlili va interaktiv boshqaruv\n` +
+      `• \`/active [ID] 2h\` — 2 soatlik kirish berish\n` +
+      `• \`/cuttime [ID] 1h\` — 1 soat vaqtini kamaytirish\n` +
+      `• \`/addtime [ID] 2h\` — 2 soat vaqt qo'shish\n` +
+      `• \`/zero [ID]\` — Vaqt va limitni 0 qilish (muzlatish)\n` +
+      `• \`/setuses [ID] 5\` — 5 ta hujjat limiti belgilash\n\n` +
+      `👇 **Oxirgi foydalanuvchilardan birini tanlang:**`;
+
+    const kb = new InlineKeyboard();
+    const listToShow = allUsers.slice(0, 6);
+    listToShow.forEach((u, idx) => {
+      kb.text(`👤 ${u.name.slice(0, 14)} (${u.id})`, `manage_open_${u.realId || u.id}`);
+      if (idx % 2 === 1) kb.row();
+    });
+    if (listToShow.length % 2 === 1) kb.row();
+
+    return ctx.reply(msg, { parse_mode: 'Markdown', reply_markup: kb });
+  }
+
+  if (text.startsWith('/user') || text.startsWith('/manage')) {
+    if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'INSPECTOR') return ctx.reply("❌ Ruxsat yo'q!");
+    const parts = text.split(/\s+/);
+    if (parts.length < 2) {
+      return ctx.reply("❌ Namuna: `/user 9017407025` yoki `/user 1`", { parse_mode: 'Markdown' });
+    }
+    const targetId = resolveUserId(parts[1]);
+    const user = getUser(targetId);
+    if (!user) {
+      return ctx.reply(`❌ ID: \`${targetId}\` bo'yicha foydalanuvchi topilmadi.`, { parse_mode: 'Markdown' });
+    }
+    return ctx.reply(formatActivityReport(targetId), {
+      parse_mode: 'Markdown',
+      reply_markup: getUserManageKeyboard(targetId)
+    });
+  }
+
+  if (text.startsWith('/settime ') && (role === 'OWNER' || role === 'ADMIN')) {
+    const parts = text.replace('/settime ', '').trim().split(/\s+/);
+    if (parts.length < 2) {
+      return ctx.reply("❌ Namuna: `/settime 9017407025 2h` yoki `/settime 9017407025 0` (muzlatish) yoki `/settime 9017407025 3d`", { parse_mode: 'Markdown' });
+    }
+    const targetId = resolveUserId(parts[0]);
+    const duration = parts.slice(1).join(' ').toLowerCase();
+
+    if (duration === '0' || duration === 'zero' || duration === 'nol') {
+      setUserZero(targetId);
+      return ctx.reply(`🚫 ID: \`${getDisplayUserId(targetId)}\` foydalanuvchisining vaqti 0 qilindi (muzlatildi)!`, { parse_mode: 'Markdown' });
+    }
+
+    const ms = parseDurationToMs(duration);
+    if (!ms) {
+      return ctx.reply("❌ Noto'g'ri muddat! Masalan: `30m`, `2h`, `1d`, `7d`, `1m` yoki `0`", { parse_mode: 'Markdown' });
+    }
+
+    const user = getUser(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
+    user.status = 'ACTIVE';
+    user.remainingUses = null;
+    user.plan = 'custom_time';
+    user.expireTimestamp = Date.now() + ms;
+    user.expiresAt = formatRemainingTime(user);
+    setUser(targetId, user);
+    saveDatabase();
+
+    return ctx.reply(`✅ ID: \`${getDisplayUserId(targetId)}\` uchun vaqt belgilandi: **${user.expiresAt}**`, { parse_mode: 'Markdown' });
+  }
+
+  if (text.startsWith('/cuttime ') && (role === 'OWNER' || role === 'ADMIN')) {
+    const parts = text.replace('/cuttime ', '').trim().split(/\s+/);
+    if (parts.length < 2) {
+      return ctx.reply("❌ Namuna: `/cuttime 9017407025 1h` yoki `/cuttime 9017407025 30m` yoki `/cuttime 9017407025 1d`", { parse_mode: 'Markdown' });
+    }
+    const targetId = resolveUserId(parts[0]);
+    const duration = parts.slice(1).join(' ').toLowerCase();
+    const ms = parseDurationToMs(duration);
+    if (!ms) return ctx.reply("❌ Noto'g'ri muddat! Masalan: `30m`, `1h`, `2h`, `1d`", { parse_mode: 'Markdown' });
+
+    const res = cutUserTime(targetId, ms);
+    if (!res.success) return ctx.reply(`❌ Xatolik: ${res.message}`);
+    return ctx.reply(`⏱ ID: \`${getDisplayUserId(targetId)}\` dan **${duration}** kamaytirildi!\nQolgan vaqt: **${res.remainingTime}**`, { parse_mode: 'Markdown' });
+  }
+
+  if (text.startsWith('/addtime ') && (role === 'OWNER' || role === 'ADMIN')) {
+    const parts = text.replace('/addtime ', '').trim().split(/\s+/);
+    if (parts.length < 2) {
+      return ctx.reply("❌ Namuna: `/addtime 9017407025 1h` yoki `/addtime 9017407025 2d`", { parse_mode: 'Markdown' });
+    }
+    const targetId = resolveUserId(parts[0]);
+    const duration = parts.slice(1).join(' ').toLowerCase();
+    const ms = parseDurationToMs(duration);
+    if (!ms) return ctx.reply("❌ Noto'g'ri muddat! Masalan: `30m`, `1h`, `2h`, `1d`", { parse_mode: 'Markdown' });
+
+    const res = addUserTime(targetId, ms);
+    return ctx.reply(`⏱ ID: \`${getDisplayUserId(targetId)}\` ga **${duration}** qo'shildi!\nYangi muddat: **${res.remainingTime}**`, { parse_mode: 'Markdown' });
+  }
+
+  if ((text.startsWith('/zero ') || text.startsWith('/freeze ')) && (role === 'OWNER' || role === 'ADMIN')) {
+    const rawId = text.replace(/^\/(?:zero|freeze)\s*/i, '').trim();
+    const targetId = resolveUserId(rawId);
+    const res = setUserZero(targetId);
+    if (!res.success) return ctx.reply(`❌ ${res.message}`);
+    return ctx.reply(`🚫 ID: \`${getDisplayUserId(targetId)}\` foydalanuvchisi vaqti va limiti 0 qilindi (muzlatildi)!`, { parse_mode: 'Markdown' });
+  }
+
+  if (text.startsWith('/setuses ') && (role === 'OWNER' || role === 'ADMIN')) {
+    const parts = text.replace('/setuses ', '').trim().split(/\s+/);
+    if (parts.length < 2) return ctx.reply("❌ Namuna: `/setuses 9017407025 5` yoki `/setuses 9017407025 0`");
+    const targetId = resolveUserId(parts[0]);
+    const count = parseInt(parts[1], 10);
+    const user = getUser(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
+    user.remainingUses = count;
+    user.status = count > 0 ? 'ACTIVE' : 'PENDING';
+    user.expireTimestamp = null;
+    user.expiresAt = `${count} ta hujjat`;
+    setUser(targetId, user);
+    saveDatabase();
+    return ctx.reply(`⚡ ID: \`${getDisplayUserId(targetId)}\` uchun limit o'rnatildi: **${count} ta hujjat**`);
+  }
+
+  if (text.startsWith('/cutuses ') && (role === 'OWNER' || role === 'ADMIN')) {
+    const parts = text.replace('/cutuses ', '').trim().split(/\s+/);
+    if (parts.length < 2) return ctx.reply("❌ Namuna: `/cutuses 9017407025 1`");
+    const targetId = resolveUserId(parts[0]);
+    const count = parseInt(parts[1], 10) || 1;
+    const user = getUser(targetId);
+    if (!user) return ctx.reply("❌ Foydalanuvchi topilmadi.");
+    user.remainingUses = Math.max(0, (user.remainingUses || 0) - count);
+    if (user.remainingUses <= 0) {
+      user.status = 'PENDING';
+      user.expiresAt = '0 ta (Tugagan)';
+    } else {
+      user.expiresAt = `${user.remainingUses} ta hujjat`;
+    }
+    setUser(targetId, user);
+    saveDatabase();
+    return ctx.reply(`⚡ ID: \`${getDisplayUserId(targetId)}\` dan **${count} ta** limit ayirildi. Qolgan: **${user.remainingUses} ta**`);
+  }
+
+  if (text.startsWith('/adduses ') && (role === 'OWNER' || role === 'ADMIN')) {
+    const parts = text.replace('/adduses ', '').trim().split(/\s+/);
+    if (parts.length < 2) return ctx.reply("❌ Namuna: `/adduses 9017407025 5`");
+    const targetId = resolveUserId(parts[0]);
+    const count = parseInt(parts[1], 10) || 1;
+    const user = getUser(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
+    user.status = 'ACTIVE';
+    user.remainingUses = (user.remainingUses || 0) + count;
+    user.expiresAt = `${user.remainingUses} ta hujjat`;
+    user.expireTimestamp = null;
+    setUser(targetId, user);
+    saveDatabase();
+    return ctx.reply(`⚡ ID: \`${getDisplayUserId(targetId)}\` ga **${count} ta** limit qo'shildi. Jami: **${user.remainingUses} ta**`);
+  }
+
+  // =========================================================================
   // A) BARCHA /active BUYRUQLARI
   // =========================================================================
   const lowerText = text.toLowerCase();
@@ -3140,39 +3846,52 @@ bot.on('message:text', async (ctx) => {
     const user = getUser(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
     user.status = 'ACTIVE';
 
-    if (durationRaw === 'unlimited' || durationRaw === 'vip' || durationRaw === 'cheksiz' || durationRaw === 'abadiy') {
+    if (durationRaw === '0' || durationRaw === 'zero' || durationRaw === 'nol') {
+      user.plan = 'none';
+      user.status = 'PENDING';
+      user.remainingUses = 0;
+      user.expireTimestamp = Date.now() - 1000;
+      user.expiresAt = '0 (Muzlatilgan)';
+      planLabel = '🚫 0 (Muzlatilgan)';
+    } else if (durationRaw === 'unlimited' || durationRaw === 'vip' || durationRaw === 'cheksiz' || durationRaw === 'abadiy') {
       user.plan = 'unlimited';
       user.remainingUses = 999999;
+      user.expireTimestamp = null;
       user.expiresAt = 'Cheksiz VIP';
       planLabel = '👑 Cheksiz VIP (Unlimited)';
     } else if (durationRaw.match(/^\d+\s*(?:h|soat|hour|hours)$/)) {
       const h = parseInt(durationRaw, 10) || 1;
       user.plan = `${h}h`;
       user.remainingUses = null;
+      user.expireTimestamp = Date.now() + h * 3600 * 1000;
       user.expiresAt = `${h} soat`;
       planLabel = `⏱ ${h} Soatlik Kirish`;
     } else if (durationRaw.match(/^\d+\s*(?:time|martalik|marta)$/) || /^\d+$/.test(durationRaw)) {
       const times = parseInt(durationRaw, 10) || 1;
       user.plan = `${times}time`;
       user.remainingUses = times;
+      user.expireTimestamp = null;
       user.expiresAt = `${times} ta hujjat`;
       planLabel = `⚡ ${times} Martalik Hujjat`;
     } else if (durationRaw.match(/^\d+\s*(?:d|kun|day|days)$/)) {
       const d = parseInt(durationRaw, 10) || 1;
       user.plan = `${d}d`;
       user.remainingUses = null;
+      user.expireTimestamp = Date.now() + d * 86400 * 1000;
       user.expiresAt = `${d} kun`;
       planLabel = `📅 ${d} Kunlik`;
     } else if (durationRaw.match(/^\d+\s*(?:w|hafta|week|weeks)$/)) {
       const w = parseInt(durationRaw, 10) || 1;
       user.plan = `${w}w`;
       user.remainingUses = null;
+      user.expireTimestamp = Date.now() + w * 7 * 86400 * 1000;
       user.expiresAt = `${w * 7} kun`;
       planLabel = `🗓 ${w} Haftalik`;
     } else if (durationRaw.match(/^\d+\s*(?:m|oy|month|months)$/)) {
       const m = parseInt(durationRaw, 10) || 1;
       user.plan = `${m}m`;
       user.remainingUses = null;
+      user.expireTimestamp = Date.now() + m * 30 * 86400 * 1000;
       user.expiresAt = `${m * 30} kun`;
       planLabel = `⭐ ${m} Oylik Pro`;
     } else {
@@ -3287,7 +4006,7 @@ bot.on('message:text', async (ctx) => {
       );
     }
     const buf = await generateOfficialOrderWordBuffer("Faxriy Yorliq va Sertifikat");
-    consumeUserUse(userId);
+    consumeUserUse(userId, 'official_order', 'Faxriy Yorliq va Sertifikat');
     return ctx.replyWithDocument(new InputFile(buf, "Faxriy_Yorliq_EduHujjat.docx"), {
       caption: "🏆 **QR-kodli namunaviy Faxriy Yorliq hujjati tayyor!** (.docx)"
     });
@@ -3378,11 +4097,14 @@ bot.on('message:text', async (ctx) => {
     if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'INSPECTOR') return ctx.reply("❌ Ruxsat yo'q!");
     const usersList = getAllUniqueUsers();
     let msg = `👥 **FOYDALANUVCHILAR RO'YXATI (${usersList.length} ta):**\n\n`;
-    usersList.slice(0, 15).forEach((u, i) => {
+    usersList.slice(0, 20).forEach((u, i) => {
       const statusIcon = u.status === 'ACTIVE' ? '✅' : (u.status === 'BLOCKED' ? '❌' : '⏳');
-      msg += `${i + 1}. ${statusIcon} ${u.name} (ID: \`${u.id}\`) - ${u.plan || 'none'}\n`;
+      const timeStr = formatRemainingTime(u);
+      msg += `${i + 1}. ${statusIcon} **${u.name}** (ID: \`${u.id}\`)\n` +
+             `   💳 Tarif: **${u.plan || 'none'}** | ⏱ **${timeStr}**\n` +
+             `   👉 Boshqarish: \`/user ${u.id}\`\n\n`;
     });
-    msg += `\n📥 *Barcha ro'yxatni Excelda yuklash uchun pastdagi "Bazani Yuklash (Excel)" tugmasini bosing.*`;
+    msg += `📥 *Barcha ro'yxatni Excelda yuklash uchun pastdagi "Bazani Yuklash (Excel)" tugmasini bosing.*`;
     return ctx.reply(msg, { parse_mode: 'Markdown' });
   }
 
