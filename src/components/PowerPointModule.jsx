@@ -233,11 +233,16 @@ export default function PowerPointModule() {
         <div className="lg:col-span-3 space-y-4">
           {/* Rang mavzusi */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Palette className="w-4 h-4 text-indigo-500" />
-              Gamma Rang Mavzulari:
-            </label>
-            <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Palette className="w-4 h-4 text-indigo-500" />
+                Rang Mavzulari ({Object.keys(GAMMA_THEMES).length} xil):
+              </label>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200/50">
+                100+ Pro
+              </span>
+            </div>
+            <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1.5 custom-scrollbar">
               {Object.values(GAMMA_THEMES).map((th) => (
                 <button
                   key={th.id}
@@ -250,7 +255,7 @@ export default function PowerPointModule() {
                 >
                   <div className="flex items-center gap-2.5">
                     <div 
-                      className="w-5 h-5 rounded-md border border-white/20 shadow-inner flex items-center justify-center"
+                      className="w-5 h-5 rounded-md border border-white/20 shadow-inner flex items-center justify-center shrink-0"
                       style={{ backgroundColor: `#${th.bg}` }}
                     >
                       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: `#${th.accent}` }} />
@@ -259,7 +264,7 @@ export default function PowerPointModule() {
                       {th.name.split('(')[0].trim()}
                     </span>
                   </div>
-                  {themeKey === th.id && <Check className="w-3.5 h-3.5 text-sky-500" />}
+                  {themeKey === th.id && <Check className="w-3.5 h-3.5 text-sky-500 shrink-0" />}
                 </button>
               ))}
             </div>
