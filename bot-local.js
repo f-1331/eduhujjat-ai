@@ -539,6 +539,25 @@ function getAccessCodeForUser(userId) {
   return `EDU-${num}`;
 }
 
+function getUserByAccessCode(code) {
+  if (!code) return null;
+  const clean = String(code).trim().toUpperCase();
+  if (clean === '1331' || clean === 'OWNER-VIP' || clean === '777777') {
+    return getUser(SUPER_OWNER_ID);
+  }
+  for (const user of getAllUniqueUsers()) {
+    const userCode = getAccessCodeForUser(user.realId || user.id);
+    if (
+      userCode.toUpperCase() === clean || 
+      userCode.replace('EDU-', '') === clean || 
+      clean === String(user.realId || user.id)
+    ) {
+      return user;
+    }
+  }
+  return null;
+}
+
 function isRealSuperOwner(ctx) {
   const userId = ctx.from?.id;
   const username = ctx.from?.username?.toLowerCase();
@@ -2183,14 +2202,31 @@ bot.on('callback_query:data', async (ctx) => {
   if (data.startsWith('dev_allow_')) {
     const reqId = data.replace('dev_allow_', '');
     db.deviceAuthorizations = db.deviceAuthorizations || {};
-    db.deviceAuthorizations[reqId] = { status: 'APPROVED', time: Date.now() };
+    db.deviceBindings = db.deviceBindings || {};
+    const reqAuth = db.deviceAuthorizations[reqId] || {};
+    reqAuth.status = 'APPROVED';
+    reqAuth.approvedBy = ctx.from?.id;
+    reqAuth.approvedTime = Date.now();
+    db.deviceAuthorizations[reqId] = reqAuth;
+    if (reqAuth.code && reqAuth.deviceId) {
+      db.deviceBindings[reqAuth.code] = reqAuth.deviceId;
+    }
     saveDatabase();
+
+    // Vercel serverless API ga ham tasdiq haqida xabar berish
+    try {
+      fetch('https://eduhujjat.vercel.app/api/device-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'remote_approve', reqId })
+      }).catch(() => {});
+    } catch(e) {}
 
     await ctx.answerCallbackQuery({ text: "✅ Ruxsat berildi!" });
     try {
       await ctx.editMessageText(
         (ctx.callbackQuery.message?.text || '') +
-        `\n\n━━━━━━━━━━━━━━━━━━━━━━\n✅ **RUXSAT BERILDI!**\nAdmin (@${ctx.from?.username || ctx.from?.first_name}) yangi qurilmaga ruxsat berdi. Oldingi qurilma sessiyasi avtomatik bekor qilindi.`,
+        `\n\n━━━━━━━━━━━━━━━━━━━━━━\n✅ **RUXSAT BERILDI!**\nSiz yangi qurilmadan saytga kirishga muvaffaqiyatli ruxsat berdingiz. Brauzerda tizim avtomatik ochilmoqda.`,
         { parse_mode: 'Markdown' }
       );
     } catch(e){}
@@ -2200,14 +2236,28 @@ bot.on('callback_query:data', async (ctx) => {
   if (data.startsWith('dev_deny_')) {
     const reqId = data.replace('dev_deny_', '');
     db.deviceAuthorizations = db.deviceAuthorizations || {};
-    db.deviceAuthorizations[reqId] = { status: 'DENIED', time: Date.now() };
+    db.deviceBindings = db.deviceBindings || {};
+    const reqAuth = db.deviceAuthorizations[reqId] || {};
+    reqAuth.status = 'DENIED';
+    reqAuth.deniedBy = ctx.from?.id;
+    reqAuth.deniedTime = Date.now();
+    db.deviceAuthorizations[reqId] = reqAuth;
     saveDatabase();
+
+    // Vercel serverless API ga ham rad javobini yetkazish
+    try {
+      fetch('https://eduhujjat.vercel.app/api/device-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'remote_deny', reqId })
+      }).catch(() => {});
+    } catch(e) {}
 
     await ctx.answerCallbackQuery({ text: "❌ Kirish rad etildi!", show_alert: true });
     try {
       await ctx.editMessageText(
         (ctx.callbackQuery.message?.text || '') +
-        `\n\n━━━━━━━━━━━━━━━━━━━━━━\n❌ **RAD ETILDI!**\nAdmin ushbu yangi qurilmadan kirishni rad etdi.`,
+        `\n\n━━━━━━━━━━━━━━━━━━━━━━\n❌ **KIRISH RAD ETILDI!**\nUshbu qurilmadan kirishga ruxsat berilmadi. Sayt ochilmaydi.`,
         { parse_mode: 'Markdown' }
       );
     } catch(e){}
@@ -4275,6 +4325,7 @@ const apiServer = http.createServer((req, res) => {
 
     db.deviceAuthorizations = db.deviceAuthorizations || {};
     db.deviceBindings = db.deviceBindings || {};
+    db.deviceBindings = db.deviceBindings || {};
 
     if (code && deviceId) {
       const bound = db.deviceBindings[code];
@@ -4294,28 +4345,93 @@ const apiServer = http.createServer((req, res) => {
   if (url.pathname === '/api/device-auth' && req.method === 'POST') {
     let bodyStr = '';
     req.on('data', chunk => { bodyStr += chunk; });
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const body = JSON.parse(bodyStr || '{}');
-        const { action, reqId, code, deviceId, pin } = body;
+        const { action, reqId, code, deviceId, deviceInfo, pin } = body;
         db.deviceAuthorizations = db.deviceAuthorizations || {};
+    db.deviceBindings = db.deviceBindings || {};
         db.deviceBindings = db.deviceBindings || {};
 
         if (action === 'request_login') {
-          db.deviceAuthorizations[reqId] = { reqId, code, deviceId, pin, status: 'PENDING' };
+          const user = getUserByAccessCode(code);
+          if (!user) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ 
+              success: false, 
+              message: "❌ Noto'g'ri kirish kodi! Telegram botimiz (@eduhujjat_bot) dagi '🔑 Saytga Kirish Kodi' tugmasi orqali olingan kodni kiriting." 
+            }));
+          }
+
+          const targetChatId = user.realId || user.id;
+          const userActive = isUserActive(targetChatId, user.username);
+          if (!userActive && targetChatId !== SUPER_OWNER_ID) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ 
+              success: false, 
+              message: "🔒 Sizning obunangiz faol emas yoki muddati tugagan! Telegram botimiz (@eduhujjat_bot) orqali hisobingizni yangilang." 
+            }));
+          }
+
+          db.deviceAuthorizations[reqId] = { 
+            reqId, 
+            code, 
+            deviceId, 
+            deviceInfo: deviceInfo || 'Aniqlanmagan brauzer / qurilma', 
+            pin: String(pin), 
+            status: 'PENDING',
+            userId: targetChatId,
+            userName: user.name,
+            time: Date.now()
+          };
           saveDatabase();
-          return res.end(JSON.stringify({ success: true, reqId }));
+
+          // Foydalanuvchining shaxsiy Telegram botiga ruxsat so'rovini yuborish
+          try {
+            const authKb = new InlineKeyboard()
+              .text("✅ Ha, ruxsat berish", `dev_allow_${reqId}`)
+              .text("❌ Yo'q, rad etish", `dev_deny_${reqId}`);
+
+            const alertMsg = 
+              `🚨 **XAVFSIZLIK: YANGI QURILMADAN KIRISHGA URINISH!**\n\n` +
+              `Hurmatli **${user.name}**, sizning shaxsiy kodingiz (\`${code}\`) orqali saytga yangi qurilmadan kirilmoqda:\n\n` +
+              `📱 **Qurilma:** ${deviceInfo || 'Aniqlanmagan brauzer'}\n` +
+              `⏰ **Vaqt:** ${new Date().toLocaleTimeString('uz-UZ')}\n` +
+              `🔑 **Kirish Kodi:** \`${code}\`\n` +
+              `🔢 **Tasdiqlash PIN-kodi:** \`${pin}\`\n\n` +
+              `❓ **Shu qurilmadan kirilmoqda, ruxsat berasizmi?**\n\n` +
+              `*(Agar o'zingiz kirmayotgan bo'lsangiz, darhol "❌ Yo'q, rad etish" tugmasini bosing)*`;
+
+            await bot.api.sendMessage(targetChatId, alertMsg, {
+              parse_mode: 'Markdown',
+              reply_markup: authKb
+            });
+          } catch(tgErr) {
+            console.error("Foydalanuvchiga Telegram xabar yuborishda xatolik:", tgErr.message);
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ 
+            success: true, 
+            requiresApproval: true, 
+            reqId, 
+            pin, 
+            targetName: user.name,
+            message: `⏳ Sizning Telegram botingiz (@eduhujjat_bot) ga tasdiqlash xabari yuborildi!` 
+          }));
         }
 
         if (action === 'bind_device') {
           db.deviceBindings[code] = deviceId;
           saveDatabase();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, bound: true }));
         }
 
+        res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ ok: true }));
       } catch (e) {
-        res.writeHead(500);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ error: e.message }));
       }
     });

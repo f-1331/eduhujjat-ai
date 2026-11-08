@@ -48,10 +48,10 @@ export default function PaywallGate() {
       const res = await checkRemoteApproval(pendingAuth.reqId, pendingAuth.code);
       if (res.approved) {
         setPendingAuth(null);
-        setCodeMessage({ success: true, message: "✅ Super Admin Telegram orqali ruxsat berdi! Tizimga xush kelibsiz." });
+        setCodeMessage({ success: true, message: "✅ Telegram orqali ruxsat berildi! Tizimga xush kelibsiz." });
       } else if (res.denied) {
         setPendingAuth(null);
-        setCodeMessage({ success: false, message: "❌ Super Admin ushbu qurilmadan kirishni rad etdi!" });
+        setCodeMessage({ success: false, message: "❌ Ushbu qurilmadan kirish Telegram orqali rad etildi!" });
       }
     }, 2000);
 
@@ -204,9 +204,9 @@ export default function PaywallGate() {
                 <span className="font-semibold text-white">{deviceInfo}</span>
               </div>
               <div className="flex justify-between items-center text-slate-300">
-                <span>🛡 Super Admin Xabari:</span>
+                <span>🛡 Telegram Tasdiqlash:</span>
                 <span className="text-emerald-400 flex items-center gap-1">
-                  <RefreshCw className="w-3 h-3 animate-spin" /> Telegramga yuborildi
+                  <RefreshCw className="w-3 h-3 animate-spin" /> Telegram botingizga yuborildi
                 </span>
               </div>
             </div>
@@ -218,15 +218,15 @@ export default function PaywallGate() {
                 <div>
                   <h4 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5 mb-1">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    1-Usul: Telegramdan Tasdiqlash
+                    1-Usul: Telegramdan Tasdiqlash (1-bosishda)
                   </h4>
                   <p className="text-[11px] text-slate-300">
-                    Super Admin (@{OWNER_USERNAME}) Telegram botimizdagi <b>[✅ Ruxsat berish]</b> tugmasini bosishi kutilmoqda. Avtomatik tekshirilmoqda...
+                    Sizning Telegram botingizga (@eduhujjat_bot) tasdiqlash xabari yuborildi. Telegramingizdagi <b>[✅ Ha, ruxsat berish]</b> tugmasini bosing!
                   </p>
                 </div>
                 <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400 font-semibold">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  Bot bilan jonli aloqa faol
+                  Botdan javob kutilmoqda (avtomatik ochiladi)...
                 </div>
               </div>
 

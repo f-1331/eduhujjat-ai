@@ -41,5 +41,6 @@
   },
   "simulatedRoles": {},
   "deviceAuthorizations": {},
-  "deviceBindings": {}
+  "deviceBindings": {},
+  "activityLogs": []
 }

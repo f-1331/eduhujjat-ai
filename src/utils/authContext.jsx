@@ -223,51 +223,13 @@ export function AuthProvider({ children }) {
         return { success: true, instant: true, message: "✅ Xush kelibsiz! Ushbu qurilma tasdiqlangan." };
       }
 
-      // YANGI QURILMA: Super Ownerdan ruxsat so'rash kerak!
+      // YANGI QURILMA: Foydalanuvchining shaxsiy Telegram botiga ruxsat so'rovi yuboriladi
       const pin = String(Math.floor(1000 + Math.random() * 9000));
       const reqId = 'req_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
 
-      // Telegram Bot orqali Super Owner (@fayzbek1331) ga bildirishnoma yuborish
-      const alertText = 
-        `🚨 **XAVFSIZLIK OGOHLANTIRISHI: Yangi qurilmadan kirishga urinish!**\n\n` +
-        `🔑 **Kirish Kodi:** \`${clean}\`\n` +
-        `📱 **Yangi Qurilma:** ${deviceInfo}\n` +
-        `⏰ **Sana va Vaqt:** ${new Date().toLocaleString('uz-UZ')}\n` +
-        `🔢 **Tasdiqlash PIN-kodi:** \`${pin}\`\n\n` +
-        `⚠️ **QOIDALARI:** Bitta kod orqali faqat **1 ta qurilma** ishlay oladi!\n` +
-        `Ushbu yangi qurilmaga ruxsat berasizmi? (Ruxsat berilsa, oldingi qurilma sessiyasi avtomatik bekor qilinadi)`;
-
-      const inlineKeyboard = {
-        inline_keyboard: [
-          [
-            { text: "✅ Ruxsat berish (Eskisini o'chirish)", callback_data: `dev_allow_${reqId}` },
-            { text: "❌ Rad etish", callback_data: `dev_deny_${reqId}` }
-          ]
-        ]
-      };
-
-      // Serverless API yoki to'g'ridan-to'g'ri Telegram Bot orqali yuborish
-      let tgSent = false;
+      // Serverless yoki local API orqali tegishli foydalanuvchining shaxsiy Telegram botiga xabar yuborish
       try {
-        const tgRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: SUPER_OWNER_ID,
-            text: alertText,
-            parse_mode: 'Markdown',
-            reply_markup: inlineKeyboard
-          })
-        });
-        const tgData = await tgRes.json();
-        tgSent = tgData.ok;
-      } catch(e) {
-        console.error("Direct TG error:", e);
-      }
-
-      // Serverless API ga ham qayd qilib qo'yish
-      try {
-        await fetch('/api/device-auth', {
+        const resp = await fetch('/api/device-auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -279,7 +241,13 @@ export function AuthProvider({ children }) {
             pin
           })
         });
-      } catch(e) {}
+        const data = await resp.json();
+        if (data && data.success === false && data.message) {
+          return { success: false, message: data.message };
+        }
+      } catch(e) {
+        console.error("Device auth request error:", e);
+      }
 
       return {
         success: false,
@@ -288,7 +256,7 @@ export function AuthProvider({ children }) {
         pin,
         code: clean,
         deviceInfo,
-        message: "⏳ Yangi qurilma aniqlandi! Super Admin (@fayzbek1331) ga Telegram orqali ruxsat so'rovi yuborildi."
+        message: "⏳ Yangi qurilma aniqlandi! Sizning Telegram botingiz (@eduhujjat_bot) ga tasdiqlash xabari yuborildi."
       };
     }
 

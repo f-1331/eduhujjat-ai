@@ -1,6 +1,31 @@
 // api/device-auth.js - Single-Device Session & Telegram Alert Verification Endpoint
+import fs from 'fs';
+import path from 'path';
+
 const BOT_TOKEN = process.env.BOT_TOKEN || '9001772632:AAEe8hXmKAhWwE7VHK1Vd8FMia6TcqYI0Mk';
 const SUPER_OWNER_ID = 6707839718;
+
+function findUserByCode(code) {
+  const clean = String(code || '').trim().toUpperCase();
+  if (clean === '1331' || clean === 'OWNER-VIP' || clean === '777777') {
+    return { id: SUPER_OWNER_ID, realId: SUPER_OWNER_ID, name: 'Super Owner' };
+  }
+  try {
+    const dbPath = path.join(process.cwd(), 'data', 'database.json');
+    if (fs.existsSync(dbPath)) {
+      const data = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+      const users = Object.values(data.users || {});
+      for (const u of users) {
+        const uId = u.realId || u.id;
+        const uCode = `EDU-${Math.abs((uId * 1331) % 900000) + 100000}`;
+        if (uCode === clean || uCode.replace('EDU-', '') === clean || String(uId) === clean) {
+          return u;
+        }
+      }
+    }
+  } catch(e) {}
+  return null;
+}
 
 // Xotirada vaqtinchalik so'rovlarni saqlash
 const pendingRequests = new Map();
@@ -69,21 +94,25 @@ export default async function handler(req, res) {
         createdAt: Date.now()
       });
 
-      // Telegram Super Ownerga xabar yuborish
+      const user = findUserByCode(code) || { id: SUPER_OWNER_ID, realId: SUPER_OWNER_ID, name: 'Foydalanuvchi' };
+      const targetChatId = user.realId || user.id || SUPER_OWNER_ID;
+
+      // Telegramda tegishli foydalanuvchining shaxsiy botiga xabar yuborish
       const alertText = 
-        `🚨 **XAVFSIZLIK OGOHLANTIRISHI: Yangi qurilmadan kirishga urinish!**\n\n` +
-        `🔑 **Kirish Kodi:** \`${code}\`\n` +
-        `📱 **Yangi Qurilma:** ${deviceInfo || 'Aniqlanmagan brauzer'}\n` +
+        `🚨 **XAVFSIZLIK: YANGI QURILMADAN KIRISHGA URINISH!**\n\n` +
+        `Hurmatli **${user.name}**, sizning kodingiz (\`${code}\`) orqali saytga yangi qurilmadan kirilmoqda:\n\n` +
+        `📱 **Qurilma:** ${deviceInfo || 'Aniqlanmagan brauzer'}\n` +
         `⏰ **Vaqt:** ${new Date().toLocaleTimeString('uz-UZ')}\n` +
-        `🔢 **Tezkor PIN-kod:** \`${pin}\`\n\n` +
-        `⚠️ **DIQQAT:** Qoidaga ko'ra, bitta kod bilan faqat **1 ta qurilma** ishlay oladi!\n` +
-        `Agar ruxsat bersangiz, oldingi qurilma sessiyasi avtomatik bekor qilinadi.`;
+        `🔑 **Kirish Kodi:** \`${code}\`\n` +
+        `🔢 **Tasdiqlash PIN-kodi:** \`${pin}\`\n\n` +
+        `❓ **Shu qurilmadan kirilmoqda, ruxsat berasizmi?**\n\n` +
+        `*(Agar o'zingiz kirmayotgan bo'lsangiz, darhol "❌ Yo'q, rad etish" tugmasini bosing)*`;
 
       const inlineKeyboard = {
         inline_keyboard: [
           [
-            { text: "✅ Ruxsat berish (Eskisini chiqarish)", callback_data: `dev_allow_${reqId}` },
-            { text: "❌ Rad etish", callback_data: `dev_deny_${reqId}` }
+            { text: "✅ Ha, ruxsat berish", callback_data: `dev_allow_${reqId}` },
+            { text: "❌ Yo'q, rad etish", callback_data: `dev_deny_${reqId}` }
           ]
         ]
       };
@@ -93,14 +122,14 @@ export default async function handler(req, res) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            chat_id: SUPER_OWNER_ID,
+            chat_id: targetChatId,
             text: alertText,
             parse_mode: 'Markdown',
             reply_markup: inlineKeyboard
           })
         });
         const tgData = await tgRes.json();
-        return res.status(200).json({ success: true, reqId, tgSent: tgData.ok });
+        return res.status(200).json({ success: true, reqId, targetName: user.name, tgSent: tgData.ok });
       } catch (err) {
         console.error("TG alert error:", err);
         return res.status(200).json({ success: true, reqId, tgSent: false, error: err.message });
@@ -128,6 +157,30 @@ export default async function handler(req, res) {
       } else {
         return res.status(400).json({ success: false, message: "❌ Noto'g'ri PIN-kod! Telegram botga yuborilgan 4 xonali kodni kiriting." });
       }
+    }
+
+    // 2b. Telegram botdan ruxsat berilganda masofaviy tasdiqlash
+    if (action === 'remote_approve') {
+      const r = pendingRequests.get(reqId) || {};
+      r.status = 'APPROVED';
+      r.approvedAt = Date.now();
+      pendingRequests.set(reqId, r);
+      if (r.code && r.deviceId) {
+        activeDeviceBindings.set(r.code, {
+          deviceId: r.deviceId,
+          deviceInfo: r.deviceInfo,
+          boundAt: Date.now()
+        });
+      }
+      return res.status(200).json({ success: true, approved: true });
+    }
+
+    if (action === 'remote_deny') {
+      const r = pendingRequests.get(reqId) || {};
+      r.status = 'DENIED';
+      r.deniedAt = Date.now();
+      pendingRequests.set(reqId, r);
+      return res.status(200).json({ success: true, denied: true });
     }
 
     // 3. To'g'ridan-to'g'ri bog'lash (Owner yoki tasdiqlangandan so'ng)
