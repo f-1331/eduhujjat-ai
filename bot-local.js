@@ -12,6 +12,11 @@ import path from 'path';
 import https from 'https';
 import http from 'http';
 import { generateRealAIGammaCards } from './src/utils/aiSlideEngine.js';
+import { 
+  GAMMA_THEMES, 
+  getTopicImageUrl, 
+  fetchImageAsBase64 
+} from './src/utils/powerpointGenerator.js';
 import {
   callGemini,
   generateAITestWithGemini,
@@ -169,6 +174,188 @@ const db = {
   deviceBindings: memoryDb.deviceBindings || {},
   rateLimits: new Map()
 };
+
+// 2.1 SLIDE WIZARD STATE VA BOSHQARUV FUNKSIYALARI
+const slideWizardState = new Map();
+
+function startSlideWizard(ctx, initialTopic = '') {
+  const userId = ctx.from.id;
+  if (!initialTopic || !initialTopic.trim()) {
+    slideWizardState.set(userId, {
+      step: 'awaiting_topic',
+      topic: '',
+      authorName: '',
+      detailLevel: 'medium',
+      includeImages: true,
+      styleName: 'auto'
+    });
+    return ctx.reply(
+      `🎨 **GAMMA & GENSPARK AI TAQDIMOT YARATUVCHISI**\n\n` +
+      `📌 **Taqdimot mavzusini yozing:**\n` +
+      `Masalan: \`8-sinf biologiya Qon tarkibi va vazifalari\` yoki \`Amir Temur davlati\`\n\n` +
+      `*(Mavzuni to'g'ridan-to'g'ri xabar sifatida yuboring)*`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  const topic = initialTopic.trim();
+  slideWizardState.set(userId, {
+    step: 'awaiting_author',
+    topic,
+    authorName: '',
+    detailLevel: 'medium',
+    includeImages: true,
+    styleName: 'auto'
+  });
+  return sendWizardAuthorStep(ctx, topic);
+}
+
+function sendWizardAuthorStep(ctx, topic) {
+  const user = ctx.from;
+  const usernameHandle = user?.username ? `@${user.username}` : (user?.first_name || 'Muallif');
+  const fullName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'O\'qituvchi';
+
+  const kb = new InlineKeyboard()
+    .text(`👤 ${usernameHandle} deb yozish`, "sw_auth_handle")
+    .text(`✍️ ${fullName}`, "sw_auth_name")
+    .row()
+    .text("🏢 Maktab o'qituvchisi", "sw_auth_teacher")
+    .text("⚡ Tezkor yaratish (Standart)", "sw_quick");
+
+  return ctx.reply(
+    `🎨 **Yangi Gamma AI Taqdimot (1/4)**\n` +
+    `📌 Mavzu: **${topic}**\n\n` +
+    `👤 **1-slaydda (Muqovada) taqdimotchi / muallif ismini nima deb yozay?**\n\n` +
+    `Quyidagi tugmalardan birini bosing yoki ism-familiyangizni (maktabingizni) to'g'ridan-to'g'ri xabar qilib yozing:\n` +
+    `*(Masalan: \`Fayzbek Omonov\` yoki \`10-maktab biologiya fani o'qituvchisi\`)*`,
+    { parse_mode: 'Markdown', reply_markup: kb }
+  );
+}
+
+function sendWizardDetailStep(ctx, topic, authorName, editMsg = false) {
+  const kb = new InlineKeyboard()
+    .text("🟢 Qisqa (Tezislar)", "sw_det_short")
+    .text("🟡 O'rtacha (Standart)", "sw_det_medium")
+    .text("🔴 Kengaytirilgan", "sw_det_detailed")
+    .row()
+    .text("⚡ Tezkor yaratish", "sw_quick");
+
+  const msgText = 
+    `📊 **Slaydlardagi ma'lumot hajmi qanday bo'lsin? (2/4)**\n\n` +
+    `📌 Mavzu: **${topic}**\n` +
+    `👤 Muallif: **${authorName}**\n\n` +
+    `• 🟢 **Qisqa** — Asosiy tezislar, lo'nda faktlar va yirik matnlar (5-6 slayd)\n` +
+    `• 🟡 **O'rtacha** — Standart taqdimot, darslikka xos tushuntirish va misollar (6-7 slayd)\n` +
+    `• 🔴 **Kengaytirilgan** — To'liq ma'ruza, chuqur ilmiy tahlil va notiq nutqi (7-9 slayd)\n\n` +
+    `Kerakli hajm tugmasini bosing:`;
+
+  if (editMsg && ctx.callbackQuery?.message) {
+    return ctx.editMessageText(msgText, { parse_mode: 'Markdown', reply_markup: kb });
+  }
+  return ctx.reply(msgText, { parse_mode: 'Markdown', reply_markup: kb });
+}
+
+function sendWizardImageStep(ctx, topic, authorName, detailLevel, editMsg = true) {
+  const kb = new InlineKeyboard()
+    .text("🖼 Ha, HD rasmlar qo'shilsin", "sw_img_yes")
+    .row()
+    .text("🎨 Minimalist grafik (rasmsiz)", "sw_img_no")
+    .row()
+    .text("⚡ Tezkor yaratish", "sw_quick");
+
+  const detailLabels = { short: "🟢 Qisqa (Tezislar)", medium: "🟡 O'rtacha (Standart)", detailed: "🔴 Kengaytirilgan" };
+
+  const msgText = 
+    `🖼 **Slaydlarga mavzuga oid yuqori sifatli rasmlar qo'shilsinmi? (3/4)**\n\n` +
+    `📌 Mavzu: **${topic}**\n` +
+    `👤 Muallif: **${authorName}**\n` +
+    `📊 Hajm: **${detailLabels[detailLevel] || detailLevel}**\n\n` +
+    `Mavzuga mos rang-barang HD illyustratsiyalar, diagrammalar va fotosuratlar slaydlarga joylansinmi?`;
+
+  if (editMsg && ctx.callbackQuery?.message) {
+    return ctx.editMessageText(msgText, { parse_mode: 'Markdown', reply_markup: kb });
+  }
+  return ctx.reply(msgText, { parse_mode: 'Markdown', reply_markup: kb });
+}
+
+function sendWizardStyleStep(ctx, topic, authorName, detailLevel, includeImages, editMsg = true) {
+  const kb = new InlineKeyboard()
+    .text("🎲 Tasodifiy yangi dizayn (100+ xil)", "sw_sty_random")
+    .row()
+    .text("🌌 Obsidian Neon", "sw_sty_obsidian")
+    .text("🌿 Emerald Matrix", "sw_sty_emerald")
+    .row()
+    .text("💎 Royal Amethyst", "sw_sty_amethyst")
+    .text("☀️ Solar Amber", "sw_sty_solar")
+    .row()
+    .text("❄️ Clean Nordic", "sw_sty_nordic")
+    .text("🍷 Crimson Luxury", "sw_sty_crimson")
+    .row()
+    .text("🌊 Deep Ocean", "sw_sty_ocean")
+    .text("⚡ Avtomatik moslashtirish", "sw_sty_auto");
+
+  const msgText = 
+    `🎨 **Dizayn va ranglar palitrasini tanlang: (4/4)**\n\n` +
+    `📌 Mavzu: **${topic}**\n` +
+    `👤 Muallif: **${authorName}**\n` +
+    `🖼 Rasmlar: **${includeImages ? 'Ha, kiritiladi' : 'Rasmsiz minimalist'}**\n\n` +
+    `100 dan ortiq ranglar va dizayn uslubidan birini tanlang yoki avtomatik/tasodifiy uslubni belgilang:`;
+
+  if (editMsg && ctx.callbackQuery?.message) {
+    return ctx.editMessageText(msgText, { parse_mode: 'Markdown', reply_markup: kb });
+  }
+  return ctx.reply(msgText, { parse_mode: 'Markdown', reply_markup: kb });
+}
+
+async function executePresentationGeneration(ctx, topic, options = {}) {
+  const authorName = options.authorName || ctx.from?.first_name || "SmartOffice EduAI";
+  const detailLevel = options.detailLevel || 'medium';
+  const includeImages = options.includeImages !== false;
+  const styleName = options.styleName || 'auto';
+
+  const detailLabels = { short: "🟢 Qisqa (Tezislar)", medium: "🟡 O'rtacha (Standart)", detailed: "🔴 Kengaytirilgan (To'liq ma'ruza)" };
+
+  let waitMsg = null;
+  const statusText = 
+    `🎨 **Gamma & Genspark AI taqdimot tayyorlanmoqda...**\n\n` +
+    `📌 Mavzu: **${topic}**\n` +
+    `👤 Muallif: **${authorName}**\n` +
+    `📊 Hajmi: **${detailLabels[detailLevel] || detailLevel}**\n` +
+    `🖼 Rasmlar: **${includeImages ? 'HD rasmlar joylanmoqda' : 'Grafik kartalar'}**\n` +
+    `🎨 Uslub: **${styleName} (100+ dizayn)**\n\n` +
+    `⏳ *(Gemini AI chuqur tahlil qilmoqda va slaydlar tuzilmoqda...)*`;
+
+  if (ctx.callbackQuery?.message) {
+    try {
+      await ctx.editMessageText(statusText, { parse_mode: 'Markdown' });
+      waitMsg = ctx.callbackQuery.message;
+    } catch(e) {
+      waitMsg = await ctx.reply(statusText, { parse_mode: 'Markdown' });
+    }
+  } else {
+    waitMsg = await ctx.reply(statusText, { parse_mode: 'Markdown' });
+  }
+
+  try {
+    const buffer = await generateGammaPresentationBuffer(topic, { authorName, detailLevel, includeImages, styleName });
+    const safeTopic = topic.slice(0, 25).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_');
+
+    await ctx.replyWithDocument(new InputFile(buffer, `EduAI_${safeTopic}_Taqdimot.pptx`), {
+      caption: 
+        `🎨 **Gamma & Genspark AI taqdimotingiz tayyor!** (.pptx)\n\n` +
+        `📌 Mavzu: **${topic}**\n` +
+        `👤 1-slayddagi muallif: **${authorName}**\n` +
+        `📊 Ma'lumot hajmi: **${detailLabels[detailLevel] || detailLevel}**\n` +
+        `🖼 Rasmlar: **${includeImages ? 'Mavzuga oid HD rasmlar' : 'Minimalist'}**\n` +
+        `✨ 16:9 Widescreen, zamonaviy kartochkali va professional dizayn.`
+    });
+    if (waitMsg) {
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    }
+  } catch(err) {
+    await ctx.reply(`❌ Taqdimot yaratishda xatolik: ${err.message}`);
+  }
+}
 
 function saveDatabase() {
   try {
@@ -626,98 +813,98 @@ async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti
   return await pptx.write({ outputType: 'nodebuffer' });
 }
 
-function getGammaDynamicTheme(topic = "") {
+function getThemeKeyForTopic(topic = "") {
   const t = String(topic || '').toLowerCase();
-  if (/biolog|qon|hujayra|o'simlik|hayvon|anatomi|genetika|ekolog|tibbiyot|salomat|yurak|jigar/i.test(t)) {
-    return {
-      bg: '06130E',
-      cardBg: '0B211A',
-      cardBorder: '144033',
-      accent: '10B981', // Emerald
-      accent2: '34D399', // Mint
-      textColor: 'F0FDF4',
-      subtextColor: '94A3B8'
-    };
-  }
-  if (/tarix|adabiyot|huquq|falsafa|til|ona tili|ingliz|rus|san'at|madaniyat|geograf/i.test(t)) {
-    return {
-      bg: '120E08',
-      cardBg: '1F170D',
-      cardBorder: '3D2C17',
-      accent: 'F59E0B', // Amber
-      accent2: 'FBBF24', // Gold
-      textColor: 'FFFBEB',
-      subtextColor: 'A8A29E'
-    };
-  }
-  if (/fizika|astronom|kimyo|energiya|mexanika|atom|kvant/i.test(t)) {
-    return {
-      bg: '0C0B18',
-      cardBg: '16142A',
-      cardBorder: '2C2754',
-      accent: 'A855F7', // Purple
-      accent2: 'EC4899', // Pink
-      textColor: 'FAF5FF',
-      subtextColor: '94A3B8'
-    };
-  }
-  if (/matematik|algebra|geometr|hisob|iqtisod|moliya|biznes|statistika/i.test(t)) {
-    return {
-      bg: '070F1E',
-      cardBg: '0D1A33',
-      cardBorder: '183260',
-      accent: '3B82F6', // Blue
-      accent2: '38BDF8', // Sky
-      textColor: 'F0F9FF',
-      subtextColor: '94A3B8'
-    };
-  }
-  // Default Obsidian Cyber
-  return {
-    bg: '090D16',
-    cardBg: '131B2E',
-    cardBorder: '1E293B',
-    accent: '38BDF8', // Cyan
-    accent2: '818CF8', // Indigo
-    textColor: 'F8FAFC',
-    subtextColor: '94A3B8'
-  };
+  if (/biolog|qon|hujayra|o'simlik|hayvon|anatomi|genetika|ekolog|tibbiyot|salomat|yurak|jigar/i.test(t)) return 'emerald';
+  if (/tarix|adabiyot|huquq|falsafa|til|ona tili|ingliz|rus|san'at|madaniyat|geograf|temur|bobur/i.test(t)) return 'solar';
+  if (/fizika|astronom|kimyo|energiya|mexanika|atom|kvant|fazo/i.test(t)) return 'amethyst';
+  if (/matematik|algebra|geometr|hisob|iqtisod|moliya|biznes|statistika/i.test(t)) return 'genspark';
+  if (/texnika|robot|dasturlash|ai|sun'iy/i.test(t)) return 'obsidian';
+  return 'obsidian';
 }
 
-async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va biosfera", authorName = "SmartOffice EduAI") {
+async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va biosfera", options = {}) {
+  const authorName = typeof options === 'string' ? options : (options.authorName || "SmartOffice EduAI");
+  const detailLevel = options.detailLevel || 'medium';
+  const includeImages = options.includeImages !== false;
+  const chosenStyle = options.styleName || 'auto';
+
   let cards = null;
   try {
-    cards = await generateAIGammaCardsWithGemini(topic);
+    cards = await generateAIGammaCardsWithGemini(topic, { authorName, detailLevel, includeImages });
   } catch(e) {}
   if (!cards || !Array.isArray(cards) || cards.length === 0) {
     cards = generateRealAIGammaCards(topic);
   }
+
+  // Uslubni aniqlash
+  let theme = null;
+  if (chosenStyle === 'random') {
+    const keys = Object.keys(GAMMA_THEMES);
+    const randKey = keys[Math.floor(Math.random() * keys.length)];
+    theme = GAMMA_THEMES[randKey];
+  } else if (chosenStyle !== 'auto' && GAMMA_THEMES[chosenStyle]) {
+    theme = GAMMA_THEMES[chosenStyle];
+  } else {
+    const key = getThemeKeyForTopic(topic);
+    theme = GAMMA_THEMES[key] || GAMMA_THEMES.obsidian;
+  }
+  const { bg, cardBg, accent, accent2, text: textColor, subtext: subtextColor, cardBorder } = theme;
+
+  // Rasmni yuklab olish
+  let topicImageBase64 = null;
+  if (includeImages) {
+    try {
+      const imgUrl = getTopicImageUrl(topic);
+      topicImageBase64 = await fetchImageAsBase64(imgUrl, 3500);
+    } catch(e) {}
+  }
+
   const pptx = new pptxgen();
   pptx.layout = 'LAYOUT_16x9';
-
-  const theme = getGammaDynamicTheme(topic);
-  const { bg, cardBg, accent, accent2, textColor, subtextColor, cardBorder } = theme;
 
   cards.forEach((card, index) => {
     const slide = pptx.addSlide();
     slide.background = { color: bg };
 
-    // 1. GAMMA & GENSPARK ULTRA-MODERN AMBIENT MESH GLOW (ORQA FONDA YORITISH AULASI)
-    slide.addShape(pptx.ShapeType.ellipse, {
-      x: -1.2, y: -1.0, w: 4.8, h: 4.8,
-      fill: { color: accent, transparency: 86 },
-      line: { color: accent, width: 0 }
-    });
-    slide.addShape(pptx.ShapeType.ellipse, {
-      x: 6.8, y: 2.8, w: 4.6, h: 4.6,
-      fill: { color: accent2, transparency: 88 },
-      line: { color: accent2, width: 0 }
-    });
+    // 4 XIL BETAKROR ORQA FON GRAFIKASI (HECH QACHON BIR XIL BO'LMAYDI)
+    const decorType = index % 4;
+    if (decorType === 0) {
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: -1.2, y: -1.0, w: 4.8, h: 4.8, fill: { color: accent, transparency: 86 }, line: { color: accent, width: 0 }
+      });
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: 6.8, y: 2.8, w: 4.6, h: 4.6, fill: { color: accent2, transparency: 88 }, line: { color: accent2, width: 0 }
+      });
+    } else if (decorType === 1) {
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 0.8, y: 0.28, w: 2.5, h: 0.05, fill: { color: accent }, line: { color: accent, width: 0 }, rectRadius: 0.02
+      });
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: 8.5, y: 0.35, w: 0.12, h: 0.12, fill: { color: accent }, line: { color: accent, width: 0 }
+      });
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: 8.75, y: 0.35, w: 0.12, h: 0.12, fill: { color: accent2 }, line: { color: accent2, width: 0 }
+      });
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: 9.0, y: 0.35, w: 0.12, h: 0.12, fill: { color: subtextColor }, line: { color: subtextColor, width: 0 }
+      });
+    } else if (decorType === 2) {
+      slide.addShape(pptx.ShapeType.line, {
+        x: 8.8, y: -0.5, w: 2.0, h: 2.0, line: { color: cardBorder, width: 1.5, dashType: 'solid' }
+      });
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: -0.5, y: 3.5, w: 3.5, h: 3.5, fill: { color: accent2, transparency: 90 }, line: { color: accent2, width: 0 }
+      });
+    } else {
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 0.8, y: 5.35, w: 1.5, h: 0.06, fill: { color: accent }, line: { color: accent, width: 0 }, rectRadius: 0.03
+      });
+    }
 
-    // 2. YUQORI VA PASTKI ZAMONAVIY DEKORATIV CHIZIQLAR VA BADGE
+    // Top Header Breadcrumb & Divider
     slide.addShape(pptx.ShapeType.line, {
-      x: 0.8, y: 0.62, w: 8.4, h: 0,
-      line: { color: cardBorder, width: 0.75, dashType: 'solid' }
+      x: 0.8, y: 0.62, w: 8.4, h: 0, line: { color: cardBorder, width: 0.75, dashType: 'solid' }
     });
     slide.addText(`SMARTOFFICE & EDUAI PRO  •  GAMMA ENGINE  •  SLAYD ${index + 1}/${cards.length}`, {
       x: 0.8, y: 0.32, w: 8.4, h: 0.28, fontSize: 9.5, color: subtextColor, bold: true
@@ -729,40 +916,115 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
 
     const type = card.type || (index === 0 ? 'hero' : 'concept');
 
-    // 1. HERO SLAYD
-    if (type === 'hero' || (index === 0 && type !== 'split' && type !== 'pillars')) {
+    // 1. HERO SLAYD (MUQOVA - 1-VAROQDA FOYDALANUVCHINING ISMI)
+    if (type === 'hero' || (index === 0 && type !== 'split' && type !== 'pillars' && type !== 'split_image')) {
       slide.addShape(pptx.ShapeType.roundRect, {
         x: 0.8, y: 0.85, w: 8.4, h: 4.4, fill: { color: cardBg }, line: { color: cardBorder, width: 1.5 }, rectRadius: 0.15
       });
-      // Top accent strip
       slide.addShape(pptx.ShapeType.roundRect, {
         x: 0.8, y: 0.85, w: 8.4, h: 0.08, fill: { color: accent }, line: { color: accent, width: 0 }, rectRadius: 0.04
       });
-      // Category badge
       slide.addShape(pptx.ShapeType.roundRect, {
         x: 1.2, y: 1.25, w: 3.5, h: 0.42, fill: { color: bg }, line: { color: accent, width: 1.2 }, rectRadius: 0.08
       });
       slide.addText(card.badge || "GAMMA AI TAQDIMOT", {
         x: 1.2, y: 1.25, w: 3.5, h: 0.42, fontSize: 11, bold: true, color: accent, align: 'center', valign: 'middle'
       });
-      // Title
       slide.addText((card.title || topic).toUpperCase(), {
         x: 1.2, y: 1.85, w: 7.6, h: 1.5, fontSize: 28, bold: true, color: textColor
       });
-      // Subtitle
       slide.addText(card.subtitle || "Zamonaviy ta'lim va tahliliy taqdimot", {
         x: 1.2, y: 3.45, w: 7.6, h: 1.0, fontSize: 14.5, color: subtextColor
       });
-      // Presenter pill footer
+      // 1-VAROQDA MUALLIFNING TELEGRAM / TO'LIQ ISMI
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 1.2, y: 4.55, w: 4.6, h: 0.42, fill: { color: bg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.08
+        x: 1.2, y: 4.55, w: 4.8, h: 0.42, fill: { color: bg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.08
       });
       slide.addText(`👤 Taqdimotchi: ${authorName}  |  ⚡ AI Verified`, {
-        x: 1.35, y: 4.55, w: 4.3, h: 0.42, fontSize: 10, color: subtextColor, valign: 'middle'
+        x: 1.35, y: 4.55, w: 4.5, h: 0.42, fontSize: 10, color: subtextColor, valign: 'middle'
       });
     }
 
-    // 2. CONCEPT / TA'RIF SLAYDI
+    // 2. SPLIT_IMAGE (CHAPDA YUQORI SIFATLI RASM, O'NGDA CHUQUR TAHLIL)
+    else if (type === 'split_image' || (type === 'split' && topicImageBase64 && index % 2 === 1)) {
+      slide.addText(card.title || "Vizual Tahlil va Ilmiy Asoslar", {
+        x: 0.8, y: 0.68, w: 8.4, h: 0.48, fontSize: 22, bold: true, color: textColor
+      });
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 0.8, y: 1.25, w: 3.9, h: 4.0, fill: { color: cardBg }, line: { color: accent, width: 1.5 }, rectRadius: 0.12
+      });
+      if (topicImageBase64) {
+        slide.addImage({
+          data: topicImageBase64,
+          x: 0.9, y: 1.35, w: 3.7, h: 3.3,
+          sizing: { type: 'cover', w: 3.7, h: 3.3 },
+          round: true
+        });
+        slide.addText(card.badge || "HD ILMIY DIAGRAMMA", {
+          x: 1.0, y: 4.75, w: 3.5, h: 0.35, fontSize: 9.5, bold: true, color: accent, align: 'center'
+        });
+      } else {
+        slide.addText("🖼️ VIZUAL GRAFIKA VA SXEMA", {
+          x: 1.0, y: 2.8, w: 3.5, h: 0.6, fontSize: 13, bold: true, color: accent, align: 'center'
+        });
+      }
+
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 5.15, y: 1.25, w: 4.05, h: 4.0, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.12
+      });
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 5.15, y: 1.25, w: 4.05, h: 0.08, fill: { color: accent2 }, line: { color: accent2, width: 0 }, rectRadius: 0.04
+      });
+      slide.addText("📌 Muhim Qoidalar va Tahlil:", {
+        x: 5.35, y: 1.45, w: 3.65, h: 0.35, fontSize: 13.5, bold: true, color: accent2
+      });
+      if (card.explanation) {
+        slide.addText(card.explanation, {
+          x: 5.35, y: 1.85, w: 3.65, h: 1.1, fontSize: 11, color: subtextColor
+        });
+      }
+      const bullets = (card.bullets || card.leftBullets || card.rightBullets || []).map(b => `✓  ${b}`).join("\n\n");
+      slide.addText(bullets || "✓ Mavzuga oid aniq ta'limiy faktlar\n\n✓ Darslik mezonlariga mos xulosalar", {
+        x: 5.35, y: card.explanation ? 3.05 : 1.95, w: 3.65, h: card.explanation ? 2.05 : 3.1, fontSize: 11, color: textColor
+      });
+    }
+
+    // 3. BENTO_3 (BENTO BOX ASYMMETRIC LAYOUT - 1 KATTA + 2 KICHIK)
+    else if (type === 'bento_3') {
+      slide.addText(card.title || "Modulli Bento Tuzilma", {
+        x: 0.8, y: 0.68, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: textColor
+      });
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 0.8, y: 1.25, w: 5.0, h: 4.0, fill: { color: cardBg }, line: { color: accent, width: 1.5 }, rectRadius: 0.12
+      });
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 0.8, y: 1.25, w: 5.0, h: 0.08, fill: { color: accent }, line: { color: accent, width: 0 }, rectRadius: 0.04
+      });
+      slide.addText(card.mainBlock?.title || card.badge || "ASOSIY TADQIQOT", {
+        x: 1.1, y: 1.55, w: 4.4, h: 0.45, fontSize: 16, bold: true, color: accent
+      });
+      slide.addText(card.mainBlock?.desc || card.explanation || "Mavzuning eng fundamental markazi va darslikdagi asosiy g'oyasi.", {
+        x: 1.1, y: 2.1, w: 4.4, h: 2.8, fontSize: 12.5, color: textColor
+      });
+      const sideCards = card.sideCards || [
+        { title: "Parametr 1", desc: "Tahliliy mezon" },
+        { title: "Parametr 2", desc: "Natija va xulosa" }
+      ];
+      sideCards.slice(0, 2).forEach((sc, idx) => {
+        const yPos = 1.25 + (idx * 2.1);
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: 6.05, y: yPos, w: 3.15, h: 1.9, fill: { color: cardBg }, line: { color: idx === 0 ? accent2 : cardBorder, width: 1 }, rectRadius: 0.1
+        });
+        slide.addText(sc.title, {
+          x: 6.25, y: yPos + 0.2, w: 2.75, h: 0.35, fontSize: 12.5, bold: true, color: idx === 0 ? accent2 : textColor
+        });
+        slide.addText(sc.desc, {
+          x: 6.25, y: yPos + 0.6, w: 2.75, h: 1.1, fontSize: 10.5, color: subtextColor
+        });
+      });
+    }
+
+    // 4. CONCEPT / TA'RIF SLAYDI
     else if (type === 'concept') {
       slide.addText(card.title || "Asosiy Tushuncha", {
         x: 0.8, y: 0.68, w: 8.4, h: 0.48, fontSize: 22, bold: true, color: textColor
@@ -811,7 +1073,7 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
       });
     }
 
-    // 3. GRID4 (2x2 KARTALAR)
+    // 5. GRID4 (2x2 KARTALAR)
     else if (type === 'grid4') {
       slide.addText(card.title || "Tarkibiy Qismlar va Tuzilma", {
         x: 0.8, y: 0.68, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: textColor
@@ -849,7 +1111,7 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
       });
     }
 
-    // 4. SPLIT (QIYOSIY TAHLIL & VERSUS)
+    // 6. SPLIT (VERSUS & QIYOSIY TAHLIL)
     else if (type === 'split') {
       slide.addText(card.title || "Qiyosiy va Funksional Tahlil", {
         x: 0.8, y: 0.68, w: 8.4, h: 0.48, fontSize: 22, bold: true, color: textColor
@@ -891,7 +1153,7 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
       });
     }
 
-    // 5. PILLARS (3 TA USTUN)
+    // 7. PILLARS (3 TA USTUN)
     else if (type === 'pillars') {
       slide.addText(card.title || "Asosiy Ustunlar va Tamoyillar", {
         x: 0.8, y: 0.68, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: textColor
@@ -924,7 +1186,7 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
       });
     }
 
-    // 6. STATS / METRIKALAR (PROGRESS BARS BILAN)
+    // 8. STATS (METRIKA VA STATISTIK FAKTLAR)
     else if (type === 'stats' || type === 'deep_dive') {
       slide.addText(card.title || "Asosiy Parametrlar va Statistik Faktlar", {
         x: 0.8, y: 0.68, w: 8.4, h: 0.48, fontSize: 22, bold: true, color: textColor
@@ -991,14 +1253,13 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
       }
     }
 
-    // 7. TIMELINE / ROADMAP (BOSQICHLAR CHIZIG'I BILAN)
+    // 9. TIMELINE / ROADMAP
     else if (type === 'timeline' || type === 'roadmap') {
       slide.addText(card.title || "Jarayon Ketma-Ketligi va Bosqichlar", {
         x: 0.8, y: 0.68, w: 8.4, h: 0.48, fontSize: 22, bold: true, color: textColor
       });
       slide.addShape(pptx.ShapeType.line, {
-        x: 1.3, y: 1.8, w: 0, h: 2.6,
-        line: { color: accent, width: 1.8, dashType: 'dash' }
+        x: 1.3, y: 1.8, w: 0, h: 2.6, line: { color: accent, width: 1.8, dashType: 'dash' }
       });
       const steps = (card.steps || []).slice(0, 3);
       steps.forEach((st, idx) => {
@@ -1009,7 +1270,6 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
         slide.addText(String(idx + 1), {
           x: 1.1, y: yPos + 0.32, w: 0.4, h: 0.4, fontSize: 10, bold: true, color: bg, align: 'center', valign: 'middle'
         });
-
         slide.addShape(pptx.ShapeType.roundRect, {
           x: 1.7, y: yPos, w: 7.5, h: 1.15, fill: { color: cardBg }, line: { color: cardBorder, width: 1 }, rectRadius: 0.1
         });
@@ -1031,7 +1291,7 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
       });
     }
 
-    // 8. QUIZ SLIDE (INTERAKTIV BILIMNI SINASH)
+    // 10. QUIZ SLIDE (INTERAKTIV BILIMNI SINASH)
     else if (type === 'quiz_slide') {
       slide.addText(card.title || "Interaktiv Bilimni Sinash", {
         x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: textColor
@@ -1077,7 +1337,7 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
       });
     }
 
-    // 9. CONCLUSION (XULOSA VA ISTIQBOLLAR)
+    // 11. CONCLUSION / XULOSA
     else {
       slide.addShape(pptx.ShapeType.roundRect, {
         x: 0.8, y: 0.85, w: 8.4, h: 4.4, fill: { color: cardBg }, line: { color: cardBorder, width: 1.5 }, rectRadius: 0.15
@@ -1085,7 +1345,7 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
       slide.addShape(pptx.ShapeType.roundRect, {
         x: 0.8, y: 0.85, w: 8.4, h: 0.08, fill: { color: accent }, line: { color: accent, width: 0 }, rectRadius: 0.04
       });
-      slide.addText(card.title || "Xulosa va Istiqbollar", {
+      slide.addText(card.title || "Yakuniy Xulosa va Natijalar", {
         x: 1.2, y: 1.15, w: 7.6, h: 0.5, fontSize: 22, bold: true, color: accent
       });
       if (card.quote) {
@@ -1096,8 +1356,8 @@ async function generateGammaPresentationBuffer(topic = "Fotosintez jarayoni va b
           x: 1.4, y: 1.9, w: 7.2, h: 0.85, fontSize: 12.5, italic: true, color: textColor, align: 'center', valign: 'middle'
         });
       }
-      const takeaways = (card.takeaways || []).map(t => `★  ${t}`).join("\n\n");
-      slide.addText(takeaways || "★ Mavzuning muhim ta'limiy xulosalari", {
+      const takeawaysText = (card.takeaways || []).map(t => `★  ${t}`).join("\n\n");
+      slide.addText(takeawaysText || "★ Mavzuning muhim ta'limiy xulosalari", {
         x: 1.2, y: 3.0, w: 7.6, h: 2.1, fontSize: 11.5, color: subtextColor
       });
     }
@@ -1572,6 +1832,76 @@ bot.on('callback_query:data', async (ctx) => {
     return;
   }
 
+  // =========================================================================
+  // SLIDE WIZARD CALLBACK HANDLERS (INTERFAOL TAQDIMOT BOSQICHLARI)
+  // =========================================================================
+  if (data.startsWith('sw_auth_')) {
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'lim va zamonaviy metodika" };
+    let chosenAuthor = "SmartOffice EduAI";
+    if (data === 'sw_auth_handle') {
+      chosenAuthor = ctx.from?.username ? `@${ctx.from.username}` : (ctx.from?.first_name || "Muallif");
+    } else if (data === 'sw_auth_name') {
+      chosenAuthor = `${ctx.from?.first_name || ''} ${ctx.from?.last_name || ''}`.trim() || "Muallif";
+    } else if (data === 'sw_auth_teacher') {
+      chosenAuthor = "Maktab o'qituvchisi";
+    }
+    sw.authorName = chosenAuthor;
+    sw.step = 'awaiting_detail';
+    slideWizardState.set(userId, sw);
+    await ctx.answerCallbackQuery({ text: `Muallif: ${chosenAuthor}` });
+    return sendWizardDetailStep(ctx, sw.topic, sw.authorName, true);
+  }
+
+  if (data === 'sw_quick') {
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot" };
+    const author = sw.authorName || ctx.from?.first_name || "SmartOffice EduAI";
+    slideWizardState.delete(userId);
+    await ctx.answerCallbackQuery({ text: "Tezkor taqdimot tayyorlanmoqda..." });
+    return executePresentationGeneration(ctx, sw.topic || "Ta'limiy taqdimot", {
+      authorName: author,
+      detailLevel: 'medium',
+      includeImages: true,
+      styleName: 'auto'
+    });
+  }
+
+  if (data.startsWith('sw_det_')) {
+    const level = data.replace('sw_det_', '');
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "EduAI" };
+    sw.detailLevel = level;
+    sw.step = 'awaiting_images';
+    slideWizardState.set(userId, sw);
+    await ctx.answerCallbackQuery({ text: "Ma'lumot hajmi belgilandi!" });
+    return sendWizardImageStep(ctx, sw.topic, sw.authorName, sw.detailLevel, true);
+  }
+
+  if (data.startsWith('sw_img_')) {
+    const withImg = data === 'sw_img_yes';
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "EduAI" };
+    sw.includeImages = withImg;
+    sw.step = 'awaiting_style';
+    slideWizardState.set(userId, sw);
+    await ctx.answerCallbackQuery({ text: withImg ? "HD rasmlar qo'shiladi!" : "Minimalist tanlandi!" });
+    return sendWizardStyleStep(ctx, sw.topic, sw.authorName, sw.detailLevel || 'medium', sw.includeImages, true);
+  }
+
+  if (data.startsWith('sw_sty_')) {
+    const styleKey = data.replace('sw_sty_', '');
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot" };
+    const finalTopic = sw.topic || db.userSessions.get(userId) || "Ta'limiy taqdimot";
+    const finalAuthor = sw.authorName || ctx.from?.first_name || "SmartOffice EduAI";
+    const finalDetail = sw.detailLevel || 'medium';
+    const finalImages = sw.includeImages !== false;
+    slideWizardState.delete(userId);
+    await ctx.answerCallbackQuery({ text: "Slaydlar yaratilmoqda..." });
+    return executePresentationGeneration(ctx, finalTopic, {
+      authorName: finalAuthor,
+      detailLevel: finalDetail,
+      includeImages: finalImages,
+      styleName: styleKey
+    });
+  }
+
   // GAMMA AI TAYYOR PRESET MAVZULAR
   if (data.startsWith('gamma_preset_')) {
     const topicKey = data.replace('gamma_preset_', '');
@@ -1583,18 +1913,8 @@ bot.on('callback_query:data', async (ctx) => {
       maktab: "Zamonaviy Maktab Monitoringi va Raqamli Davomat"
     };
     const chosenTopic = presetTopics[topicKey] || "Fotosintez jarayoni va biosfera";
-    await ctx.answerCallbackQuery({ text: "Gamma slayd yaratilmoqda..." });
-    const waitMsg = await ctx.reply(`🎨 **"${chosenTopic}" bo'yicha Gamma AI taqdimot tayyorlanmoqda...**\n(Kartochkalar, 3 ustun, metrika va ma'ruzachi nutqi bilan)`);
-    try {
-      const buffer = await generateGammaPresentationBuffer(chosenTopic, ctx.from?.first_name || "SmartOffice EduAI");
-      await ctx.replyWithDocument(new InputFile(buffer, `${topicKey}_Gamma_Taqdimot.pptx`), {
-        caption: `🎨 **Gamma & Genspark AI taqdimoti tayyor!** (.pptx)\n\n📌 Mavzu: **${chosenTopic}**\n✨ Format: 16:9 Widescreen, Obsidian Dark dizaynda kartochkali slaydlar.`
-      });
-      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-    } catch(err) {
-      await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
-    }
-    return;
+    await ctx.answerCallbackQuery({ text: "Mavzu tanlandi!" });
+    return startSlideWizard(ctx, chosenTopic);
   }
 
   // EDUAI DINAMIK MAVZU BO'YICHA FAYL GENERATSIYASI
@@ -1604,18 +1924,8 @@ bot.on('callback_query:data', async (ctx) => {
     const topic = currentText.split(/\r?\n/)[0].slice(0, 80) || "Ta'lim va zamonaviy pedagogika";
 
     if (action === 'gamma') {
-      await ctx.answerCallbackQuery({ text: "Gamma slayd yaratilmoqda..." });
-      const waitMsg = await ctx.reply(`🎨 **"${topic}" bo'yicha Gamma & Genspark AI taqdimot tayyorlanmoqda...**\n(16:9 Obsidian Dark kartochkalar, tahliliy modullar bilan)`);
-      try {
-        const buffer = await generateGammaPresentationBuffer(topic, ctx.from?.first_name || "SmartOffice EduAI");
-        await ctx.replyWithDocument(new InputFile(buffer, `EduAI_Gamma_${topic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.pptx`), {
-          caption: `🎨 **Gamma & Genspark AI taqdimoti tayyor!** (.pptx)\n\n📌 Mavzu: **${topic}**\n✨ Format: 16:9 Widescreen, Obsidian Dark kartochkali slaydlar.`
-        });
-        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      } catch(err) {
-        await ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
-      }
-      return;
+      await ctx.answerCallbackQuery({ text: "Slayd yaratish bosqichlari boshlandi..." });
+      return startSlideWizard(ctx, topic);
     }
 
     if (action === 'lesson') {
@@ -2044,6 +2354,36 @@ bot.on('message:text', async (ctx) => {
   const role = getEffectiveRole(ctx);
 
   if (isSpamming(userId)) return;
+
+  // =========================================================================
+  // SLIDE WIZARD TEXT INPUT (Mavzu yoki muallif ismi kiritilganda)
+  // =========================================================================
+  if (slideWizardState.has(userId)) {
+    const sw = slideWizardState.get(userId);
+    if (sw.step === 'awaiting_topic') {
+      sw.topic = text.trim();
+      sw.step = 'awaiting_author';
+      slideWizardState.set(userId, sw);
+      return sendWizardAuthorStep(ctx, sw.topic);
+    }
+    if (sw.step === 'awaiting_author') {
+      sw.authorName = text.trim();
+      sw.step = 'awaiting_detail';
+      slideWizardState.set(userId, sw);
+      return sendWizardDetailStep(ctx, sw.topic, sw.authorName, false);
+    }
+  }
+
+  // =========================================================================
+  // /slayd BUYRUG'I VA MENYU TUGMALARI
+  // =========================================================================
+  if (text.startsWith('/slayd') || text.startsWith('/slide') || text.startsWith('/taqdimot') || text === '📊 Gamma AI Taqdimot' || text === '💻 Slayd Yasash') {
+    const rawTopic = text.replace(/^\/(?:slayd|slide|taqdimot)\s*/i, '').trim();
+    const topic = rawTopic && rawTopic !== '📊 Gamma AI Taqdimot' && rawTopic !== '💻 Slayd Yasash' 
+      ? rawTopic 
+      : (db.userSessions.get(userId) || '');
+    return startSlideWizard(ctx, topic);
+  }
 
   // =========================================================================
   // A) BARCHA /active BUYRUQLARI
@@ -2659,7 +2999,11 @@ const apiServer = http.createServer((req, res) => {
         } else if (type === 'reference') {
           result = await generateAIStudentReferenceWithGemini(prompt);
         } else if (type === 'cards') {
-          result = await generateAIGammaCardsWithGemini(prompt);
+          result = await generateAIGammaCardsWithGemini(prompt, {
+            authorName: body.authorName,
+            detailLevel: body.detailLevel,
+            includeImages: body.includeImages !== false
+          });
         } else {
           result = await callGemini(
             prompt,

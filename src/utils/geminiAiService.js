@@ -218,20 +218,38 @@ export async function generateAIStudentReferenceWithGemini(studentName) {
 
 /**
  * 6. GAMMA & GENSPARK UCHUN HAQIQIY KOD VA AI BILAN TUZILGAN DINAMIK SLAYDLAR
- * Har bir mavzu uchun mutlaqo yangi, takrorlanmas, turli layoutli (hero, concept, grid4, split, pillars, stats, timeline, quiz_slide, conclusion) taqdimot
+ * Har bir mavzu uchun mutlaqo yangi, takrorlanmas, 15+ xil layoutli va moslashtirilgan taqdimot
  */
-export async function generateAIGammaCardsWithGemini(topic) {
+export async function generateAIGammaCardsWithGemini(topic, options = {}) {
+  const {
+    authorName = "SmartOffice EduAI",
+    detailLevel = "medium", // 'short' | 'medium' | 'detailed'
+    includeImages = true
+  } = (typeof options === 'string' ? { authorName: options } : options);
+
+  let detailGuideline = "MA'LUMOT HAJMI: O'RTACHA (Standart darslik va metodik me'yorda, 6-7 ta slayd, tushunarli va balanslangan tushuntirishlar bilan).";
+  if (detailLevel === 'short') {
+    detailGuideline = "MA'LUMOT HAJMI: QISQA VA LO'NDA (5-6 ta slayd. Har bir slaydda 2-3 ta qisqa, yorqin tezislar va kalit faktlar. Uzoq paragraflar yozma, lo'nda va vizual bo'lsin).";
+  } else if (detailLevel === 'detailed') {
+    detailGuideline = "MA'LUMOT HAJMI: TO'LIQ VA KENGAYTIRILGAN (7-9 ta slayd. Chuqur ilmiy ma'lumotlar, aniq raqamlar, kengaytirilgan tushuntirishlar va har bir slayd uchun ma'ruzachining batafsil nutqi (speakerNotes) bilan to'liq ma'ruza konspekti darajasida).";
+  }
+
   const prompt = 
-    `Mavzu: "${topic}"\n\n` +
-    `Vazifa: Ushbu mavzuni to'liq, chuqur va professional yorituvchi 6 tadan 8 tagacha ZAMONAVIY, XILMA-XIL va BETAKROR slayd kartochkalarini tuzib ber.\n` +
+    `Mavzu: "${topic}"\n` +
+    `Taqdimotchi / Muallif: "${authorName}"\n` +
+    `${detailGuideline}\n\n` +
+    `Vazifa: Ushbu mavzuni to'liq, chuqur va professional yorituvchi ZAMONAVIY, XILMA-XIL va BETAKROR slayd kartochkalarini tuzib ber.\n` +
     `QAT'IY TALABLAR (Gamma.app va Genspark darajasida):\n` +
-    `1. BIR XIL SHABLON TAKRORLANMASIN! Har bir slayd mavzuning ichki mantiqiga mos xilma-xil layoutda bo'lsin.\n` +
-    `2. Matnlar shunchaki 1-2 so'z yoki umumiy gap emas, balki chuqur ilmiy terminlar, aniq raqamlar, formulalar va darslikka xos faktlar bilan to'ldirilsin.\n` +
-    `3. Hech qanday LaTeX yoki dollar ($) belgisidan foydalanmang! Kasrlarni 7/12, darajalarni x^2 yoki oddiy harflar bilan yozing.\n` +
-    `4. Quyidagi slayd turlaridan mavzuga eng moslarini tanlab, xilma-xil ketma-ketlikda foydalaning:\n` +
-    `   - "hero": Kirish titul slaydi (badge, title, subtitle, speakerNotes)\n` +
+    `1. BIR XIL SHABLON TAKRORLANMASIN! Har bir slayd mavzuning ichki mantiqiga mos xilma-xil layout va elementlar joylashuviga ega bo'lsin.\n` +
+    `2. Matnlar mavzuning haqiqiy ilmiy terminlari, aniq raqamlari, misollari va darslikka xos faktlar bilan boyitilsin.\n` +
+    `3. 1-slayd "hero" bo'lib, uning muallif qismida "${authorName}" ko'rsatilsin.\n` +
+    `4. Hech qanday LaTeX yoki dollar ($) belgisidan foydalanmang! Kasrlarni 7/12, darajalarni x^2 yoki oddiy harflar bilan yozing.\n` +
+    `5. Quyidagi boy slayd turlaridan mavzuga eng moslarini tanlab, xilma-xil ketma-ketlikda foydalaning:\n` +
+    `   - "hero": Kirish titul slaydi (badge, title, subtitle, presenter: "${authorName}", speakerNotes)\n` +
     `   - "concept": Fundamental ta'rif yoki asosiy qonuniyat (title, badge, mainConcept, explanation, bullets: ["..."], speakerNotes)\n` +
+    `   - "split_image": Chapda rasm, o'ngda tahlil (title, badge, imageKeyword: "english topic photo keyword", explanation, bullets: ["..."], speakerNotes)\n` +
     `   - "grid4": 2x2 to'rtta tarkibiy qism/funktsiya (title, subtitle, items: [{title, desc}, {title, desc}, {title, desc}, {title, desc}], speakerNotes)\n` +
+    `   - "bento_3": Bento box uslubi (1 ta katta asosiy blok va 2 ta kichik kartochka) (title, mainBlock: {title, desc}, sideCards: [{title, desc}, {title, desc}], speakerNotes)\n` +
     `   - "split": Qiyosiy yoki funksional tahlil (title, leftTitle, leftBullets: ["..."], rightTitle, rightBullets: ["..."], speakerNotes)\n` +
     `   - "pillars": 3 ta ustun/yo'nalish (title, subtitle, cards: [{num: "01", title, desc}, {num: "02", title, desc}, {num: "03", title, desc}], speakerNotes)\n` +
     `   - "stats": Raqamlar, parametrlar va statistik ma'lumotlar (title, stats: [{value, label, desc}, ...], speakerNotes)\n` +
