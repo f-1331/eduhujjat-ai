@@ -4,11 +4,12 @@
 import fs from 'fs';
 
 const CANDIDATE_MODELS = [
-  'gemini-3.5-flash-lite',
-  'gemini-3.5-flash',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
   'gemini-flash-latest',
   'gemini-flash-lite-latest',
-  'gemini-3.6-flash'
+  'gemini-1.5-pro'
 ];
 
 function getApiKey() {
@@ -122,7 +123,7 @@ export async function callGemini(prompt, systemInstruction = "") {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(25000)
+        signal: AbortSignal.timeout(60000)
       });
 
       if (!response.ok) {
@@ -288,7 +289,7 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
     `Vazifa: Ushbu mavzuni to'liq, chuqur va professional yorituvchi ZAMONAVIY, XILMA-XIL va BETAKROR slayd kartochkalarini tuzib ber.\n` +
     `QAT'IY TALABLAR (Gamma.app, Tome, Pitch va Genspark darajasida):\n` +
     `1. BIR XIL SHABLON TAKRORLANMASIN! Har bir slayd mavzuning ichki mantiqiga mos xilma-xil layout va elementlar joylashuviga ega bo'lsin.\n` +
-    `2. Matnlar yuzaki yoki 3 ta qisqa so'z bilan cheklanmasin! Har bir slayd mavzuning haqiqiy ilmiy terminlari, formulalari, hayotiy misollari va darslikka xos faktlari bilan to'liq boyitilsin.\n` +
+    `2. Matnlar yuzaki yoki 3 ta qisqa so'z bilan cheklanmasin! Har bir slayd mavzuning haqiqiy ilmiy terminlari, formulalari, hayotiy misollari, metodik tahlillari va darslikka xos chuqur faktlari bilan to'liq boyitilsin (kamida 3-4 ta to'liq jumlali chuqur punktlar bo'lsin)!\n` +
     `3. 1-slayd "hero" bo'lib, uning muallif qismida "${authorName}" ko'rsatilsin.\n` +
     `4. Hech qanday LaTeX yoki dollar ($) belgisidan foydalanmang! Kasrlarni 7/12, darajalarni x^2 yoki oddiy harflar bilan yozing.\n` +
     `5. Quyidagi boy slayd turlaridan mavzuga eng moslarini tanlab, xilma-xil ketma-ketlikda foydalaning (Har bir slayd uchun mos 2-3 so'zli inglizcha "imageKeyword" kiriting):\n` +
@@ -321,28 +322,115 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
       prompt, 
       "Siz dunyo darajasidagi AI taqdimot dizaynerisiz (Gamma va Genspark uslubida). Siz faqat toza va valid JSON array qaytarasiz. LaTeX va dollar belgisi taqiqlangan."
     );
-    const jsonMatch = raw.match(/\[\s*\{[\s\S]*\}\s*\]/);
+
+    const sanitizeText = (val) => {
+      if (typeof val === 'string') return cleanLatexAndFormat(val);
+      if (Array.isArray(val)) return val.map(sanitizeText);
+      if (val && typeof val === 'object') {
+        const res = {};
+        for (const k of Object.keys(val)) {
+          res[k] = sanitizeText(val[k]);
+        }
+        return res;
+      }
+      return val;
+    };
+
+    // 1-bosqich: To'g'ridan-to'g'ri massivni izlash va parse qilish
+    const cleanedRaw = String(raw || '').replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const jsonMatch = cleanedRaw.match(/\[\s*\{[\s\S]*\}\s*\]/);
     if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Har bir matnni LaTeX qoldiqlaridan tozalash
-        const sanitizeText = (val) => {
-          if (typeof val === 'string') return cleanLatexAndFormat(val);
-          if (Array.isArray(val)) return val.map(sanitizeText);
-          if (val && typeof val === 'object') {
-            const res = {};
-            for (const k of Object.keys(val)) {
-              res[k] = sanitizeText(val[k]);
-            }
-            return res;
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return sanitizeText(parsed);
+        }
+      } catch (e1) {
+        // Trailing vergullarni tozalab qayta urinish
+        try {
+          const repaired = jsonMatch[0].replace(/,\s*([\]}])/g, '$1');
+          const parsed = JSON.parse(repaired);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return sanitizeText(parsed);
           }
-          return val;
-        };
-        return sanitizeText(parsed);
+        } catch(e2) {}
+      }
+    }
+
+    // 2-bosqich: Alohida kartochkalarni bittalab ajratib olish (kesilib qolgan javoblarni ham qutqarish)
+    const cardBlockRegex = /\{[^{}]*"type"\s*:\s*"[^"]+"[^{}]*\}/g;
+    const individualMatches = cleanedRaw.match(cardBlockRegex);
+    if (individualMatches && individualMatches.length >= 2) {
+      const recoveredCards = [];
+      for (const block of individualMatches) {
+        try {
+          const cardObj = JSON.parse(block.replace(/,\s*([\]}])/g, '$1'));
+          if (cardObj && cardObj.type) {
+            recoveredCards.push(cardObj);
+          }
+        } catch(err) {}
+      }
+      if (recoveredCards.length > 0) {
+        return sanitizeText(recoveredCards);
       }
     }
   } catch(e) {
-    // fallback quyida
+    // fallback
   }
   return null;
+}
+
+/**
+ * 7. MAKTAB VA TA'LIM UCHUN DINAMIK EXCEL JADVAL STRUKTURA GENERATORI
+ */
+export async function generateAIExcelTableWithGemini(topic, userPrompt = "") {
+  const prompt = 
+    `Mavzu: "${topic}"\n` +
+    (userPrompt ? `Qo'shimcha talab: "${userPrompt}"\n\n` : `\n`) +
+    `Vazifa: O'zbekiston ta'lim tizimi va ofis me'yorlariga mos, to'liq to'ldirilgan professional Excel jadval ma'lumotlarini JSON formatida tuzib ber.\n` +
+    `QAT'IY TALABLAR:\n` +
+    `1. Jadval sarlavhasi (title) va varaq nomi (sheetName) aniq bo'lsin.\n` +
+    `2. Kamida 5-8 ta professional ustun (headers): masalan №, F.I.Sh / Nomi, Parametrlar, Miqdor/Baho, Foiz, Izoh.\n` +
+    `3. Kamida 10-15 ta to'liq ma'lumotli qator (rows) to'ldirilsin (haqiqiy o'zbekcha ismlar, fanlar, ko'rsatkichlar yoki raqamlar bilan).\n` +
+    `4. Yakuniy umumlashtiruvchi qator (summaryRow: ["JAMI / O'RTACHA", ...]) bo'lsin.\n` +
+    `5. Faqat toza JSON qaytaring:\n` +
+    `{\n` +
+    `  "title": "Jadval bosh sarlavhasi",\n` +
+    `  "sheetName": "Varaq Nomi",\n` +
+    `  "headers": ["№", "Nomi / F.I.Sh", "Ko'rsatkich 1", "Ko'rsatkich 2", "Natija", "Holati"],\n` +
+    `  "rows": [\n` +
+    `    [1, "Misol 1", 85, 90, 87.5, "A'lo"],\n` +
+    `    [2, "Misol 2", 75, 80, 77.5, "Yaxshi"]\n` +
+    `  ],\n` +
+    `  "summaryRow": ["JAMI / O'RTACHA", "15 nafar", "82.4 ball", "100%", "Faol"]\n` +
+    `}`;
+
+  try {
+    const raw = await callGemini(prompt, "Siz Excel ma'lumotlar bazasi ekspertisiz. Faqat toza va valid JSON obyekti qaytaring.");
+    const cleaned = String(raw || '').replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      const parsed = JSON.parse(match[0].replace(/,\s*([\]}])/g, '$1'));
+      if (parsed.headers && Array.isArray(parsed.rows)) {
+        return parsed;
+      }
+    }
+  } catch(e) {}
+
+  // Fallback Dynamic Excel Data
+  return {
+    title: `${topic.toUpperCase()} BO'YICHA TAHLILIY HISOBOT JADVALI`,
+    sheetName: "Tahliliy Jadval",
+    headers: ["№", "Ko'rsatkich / Ob'ekt", "O'lchov Birligi", "Miqdor / Reja", "Amalda / Natija", "O'sish (%)", "Xulosa"],
+    rows: [
+      [1, "1-Chorak yakuni monitoringi", "Ball", 85, 88, "+3.5%", "Ijobiy"],
+      [2, "2-Chorak yakuni monitoringi", "Ball", 85, 90, "+5.8%", "Ijobiy"],
+      [3, "Nazorat ishlari natijalari", "O'rtacha", 4.2, 4.6, "+9.5%", "A'lo"],
+      [4, "O'quvchilar darsga qatnashuvi", "%", 95, 98, "+3.1%", "Namunali"],
+      [5, "Amaliy mashg'ulotlar qamrovi", "Soat", 34, 34, "100%", "Bajarildi"],
+      [6, "Fan olimpiadasiga tayyorgarlik", "Nafar", 8, 10, "+25%", "Yuqori"],
+      [7, "Metodik qo'llanmalar ta'minoti", "To'plam", 12, 12, "100%", "To'liq"]
+    ],
+    summaryRow: ["JAMI / O'RTACHA", "Barcha yo'nalishlar", "Umumiy", 315.2, 332.6, "+105.5%", "Kafolatlangan"]
+  };
 }

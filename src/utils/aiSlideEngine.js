@@ -308,17 +308,90 @@ export const DOMAIN_KNOWLEDGE = {
 
   // 3. AXBOROT TEXNOLOGIYALARI, SUN'IY INTELLEKT VA DASTURLASH
   tech: {
-    match: /sun'iy intellekt|ai|dasturlash|python|algoritm|kiber|it|kompyuter|robot|texnologiya|veb|dastur|neyron/i,
+    match: /sun'iy intellekt|ai|dasturlash|python|algoritm|kiber|it|kompyuter|robot|texnologiya|veb|dastur|neyron|gamma/i,
     build: (topic) => {
+      const isGamma = /gamma/i.test(topic);
       const isAI = /ai|sun'iy intellekt|neyron/i.test(topic);
+
+      if (isGamma) {
+        return [
+          {
+            id: 1, type: "hero", badge: "GAMMA & GENSPARK VIZUAL DIZAYN",
+            title: topic,
+            subtitle: "Zamonaviy AI taqdimotlar arxitekturasi: modulli kartochkalar, yuqori kontrast va interaktiv vizuallashuv",
+            speakerNotes: `Assalomu alaykum! Ushbu taqdimotda biz "${topic}" bo'yicha eng ilg'or generativ texnologiyalar, dizayn prinsiplari va ta'limiy samaradorlikni ko'rib chiqamiz.`
+          },
+          {
+            id: 2, type: "split", badge: "YANGI AVLOD TAQDIMOTLARI",
+            title: "Gamma AI Taqdimotlar Arxitekturasi",
+            leftTitle: "🚀 Asosiy Afzalliklari",
+            leftBullets: [
+              "Blokli va moslashuvchan (fluid responsive) kartochkalar tizimi",
+              "1080p Full HD va 4K formatdagi intellektual fotorealistik illyustratsiyalar",
+              "Har bir mavzu uchun darslik mezonlariga mos ilmiy chuqurlik va faktlar"
+            ],
+            rightTitle: "🎨 Dizayn va Tipografika Mezonlari",
+            rightBullets: [
+              "100 dan ortiq ranglar palitrasi (Obsidian, Emerald, Nordic, Cosmic)",
+              "Sarlavhalar va matnlar o'rtasidagi mukammal ierarxiya va o'qish qulayligi",
+              "Auditoriya diqqatini ushlab turuvchi dinamik perexodlar va vizual nuqtalar"
+            ],
+            speakerNotes: "Gamma uslubidagi taqdimotlar an'anaviy zerikarli slaydlar o'rnini egallab, har bir fikrni alohida estetik blokda ochib beradi."
+          },
+          {
+            id: 3, type: "pillars", badge: "3 ASOSIY USTUN",
+            title: "Muvaffaqiyatli Taqdimotning Uch Tayanchi",
+            subtitle: "Mazmun, Vizual San'at va Auditoriya Bilan Aloqa",
+            cards: [
+              { num: "01", title: "Chuqur Mazmun", desc: "Mavzuning eng fundamental qonuniyatlari, formulalari va hayotiy misollari yoritiladi." },
+              { num: "02", title: "Badiiy Did", desc: "Optimal bo'shliqlar, professional kontrast va yuqori sifatli infografika uyg'unligi." },
+              { num: "03", title: "Natijadorlik", desc: "O'quvchi yoki tinglovchida mustahkam taassurot va fanga bo'lgan qiziqishni uyg'otish." }
+            ],
+            speakerNotes: "Ushbu 3 ta omil uyg'unlashgandagina taqdimot professional va ta'sirchan chiqadi."
+          },
+          {
+            id: 4, type: "deep_dive", badge: "TAHLILIY METRIKA",
+            title: "Zamonaviy Taqdimotlar Samaradorligi",
+            metricValue: "3.5x",
+            metricLabel: "Axborotni Qabul Qilish va Eslab Qolish Ko'rsatkichi",
+            bullets: [
+              "Vizual boy taqdimotlar orqali mavzuni tushunish darajasi 65% dan 95% gacha ortadi",
+              "Dars davomida o'quvchilarning faolligi va qatnashuvi 2 barobardan ziyod oshadi",
+              "O'qituvchining darsga tayyorgarlik vaqti tejalib, individual ishlashga ko'proq imkoniyat yaratiladi"
+            ],
+            speakerNotes: "Statistika ko'rsatadiki, zamonaviy avlod matndan ko'ra strukturalangan vizual kontentni bir necha barobar tez o'zlashtiradi."
+          },
+          {
+            id: 5, type: "roadmap", badge: "AMALIY BOSQICHLAR",
+            title: "Mukammal Taqdimot Yaratish Yo'li",
+            steps: [
+              { step: "1-BOSQICH", title: "G'oya va Reja", text: "Mavzuning maqsadi va asosiy tezislarini aniq belgilab olish." },
+              { step: "2-BOSQICH", title: "Vizuallashtirish", text: "Mos rang palitrasi, yuqori sifatli suratlar va jadvallarni tanlash." },
+              { step: "3-BOSQICH", title: "Taqdim Etish", text: "Ma'ruzachining jonli nutqi va auditoriya bilan interaktiv munozara." }
+            ],
+            speakerNotes: "Ushbu 3 bosqich orqali tayyorlangan taqdimot har doim yuqori baholanadi."
+          },
+          {
+            id: 6, type: "summary", badge: "XULOSA",
+            title: "Xulosa va Asosiy Saboqlar",
+            quote: `"Dizayn shunchaki tashqi ko'rinish emas. Dizayn — bu narsalarning qanday ishlashidir." — Stiv Jobs`,
+            takeaways: [
+              "Har bir slayd o'zida yagona va aniq bir fikrni ifodalashi zarur",
+              "Ilmiy saviyani sodda va tushunarli tilda ifodalash eng oliy mahoratdir",
+              "Vizual vositalar mavzuning mohiyatini ochishga xizmat qilishi kerak"
+            ],
+            speakerNotes: "E'tiboringiz uchun rahmat! Savollar bo'lsa marhamat."
+          }
+        ];
+      }
 
       if (isAI) {
         return [
           {
             id: 1, type: "hero", badge: "SUN'IY INTELLEKT VA RAQAMLI KELAJAK",
-            title: "Sun'iy Intellekt va Neyron Tarmoqlar Inqilobi",
-            subtitle: "Mashinali o'rganish (ML), Chuqur o'rganish (Deep Learning) va Generativ Modellarning (LLM) amaliy qo'llanilishi",
-            speakerNotes: "Assalomu alaykum! Bugungi taqdimotimiz 21-asrning eng kuchli texnologik drayveri — Sun'iy Intellekt va uning sohalarni qanday o'zgartirayotganiga bag'ishlanadi."
+            title: topic,
+            subtitle: "Mashinali o'rganish (ML), Chuqur o'rganish (Deep Learning) va Generativ Modellarning amaliy qo'llanilishi",
+            speakerNotes: `Assalomu alaykum! Bugungi taqdimotimiz "${topic}" mavzusiga va uning sohalarni qanday o'zgartirayotganiga bag'ishlanadi.`
           },
           {
             id: 2, type: "split", badge: "AN'ANAVIY DASTURLASH VS AI",
@@ -457,9 +530,159 @@ export const DOMAIN_KNOWLEDGE = {
     }
   },
 
-  // 4. ANIQ FANLAR (MATEMATIKA, FIZIKA, GEOMETRIYA)
+  // 4A. FIZIKA VA TABIIY HODISALAR
+  physics: {
+    match: /fizika|kulon|zaryad|nyuton|optika|gravitatsiya|tok|elektr|magnit|termodinamika|amper|volt|om qonuni/i,
+    build: (topic) => {
+      const isCoulomb = /kulon|zaryad|elektr/i.test(topic);
+      if (isCoulomb) {
+        return [
+          {
+            id: 1, type: "hero", badge: "ELEKTROSTATIKA VA FIZIKA",
+            title: topic,
+            subtitle: "Qo'zg'almas nuqtaviy zaryadlarning o'zaro ta'sir qonuni: F = k * (|q1 * q2| / r²)",
+            speakerNotes: `Assalomu alaykum! Bugungi darsimizda elektrodinamikaning fundamental poydevori bo'lgan "${topic}" mavzusini chuqur tahlil qilamiz.`
+          },
+          {
+            id: 2, type: "split", badge: "KULON TAJRIBASI VA BURILMA TAROZI",
+            title: "Kulon Qonunining Fizikaviy Isboti",
+            leftTitle: "⚡ Zaryadlar O'rtasidagi O'zaro Ta'sir",
+            leftBullets: [
+              "Bir xil ishorali zaryadlar bir-birini itaradi, har xil ishorali zaryadlar tortadi",
+              "O'zaro ta'sir kuchi zaryadlar miqdorining ko'paytmasiga to'g'ri mutanosib",
+              "Zaryadlar orasidagi masofa 2 marta ortsa, ta'sir kuchi 4 marta kamayadi"
+            ],
+            rightTitle: "🔬 Sharl Kulonning Burilma Tarozi Tajribasi",
+            rightBullets: [
+              "1785-yilda fransuz fizigi Sharl Kulon o'ta nozik burilma tarozi yordamida o'lchov o'tkazgan",
+              "Vakuumda k koeffitsiyenti: k = 9 * 10^9 N*m²/Kl² ga teng",
+              "Elektr doimiysi ε0 = 8.85 * 10^-12 F/m formulasiga tayanadi"
+            ],
+            speakerNotes: "Sharl Kulon o'sha davrda nihoyatda kichik kuchlarni o'lchashga imkon beruvchi burilma tarozini yaratib, tajriba yo'li bilan qonunni kashf etgan."
+          },
+          {
+            id: 3, type: "pillars", badge: "3 TA ASOSIY PARAMETR",
+            title: "Kulon Formulasing 3 Tarkibiy Qismi",
+            subtitle: "F = k * (|q1 * q2| / r²) formulasining fizik tahlili",
+            cards: [
+              { num: "01", title: "Elektr Zaryadi (q)", desc: "Xalqaro birliklar tizimida (SI) Kulon (Kl) bilan o'lchanadi. Elementar zaryad e = 1.6 * 10^-19 Kl." },
+              { num: "02", title: "Masofa (r)", desc: "Nuqtaviy zaryadlar orasidagi masofa metrlarda (m) o'lchanadi va kuch uning kvadratiga teskari mutanosib." },
+              { num: "03", title: "Muhitning Singdiruvchanligi (ε)", desc: "Dielektrik muhit o'zaro ta'sir kuchini ε marta kamaytiradi: F = k * (|q1 * q2| / (ε * r²))." }
+            ],
+            speakerNotes: "Masalalarni yechishda muhitning dielektrik singdiruvchanligini (ε) hisobga olishni unutmaslik kerak."
+          },
+          {
+            id: 4, type: "deep_dive", badge: "MIQDORIY METRIKA",
+            title: "Elektrostatika Ko'rsatkichlari va Doimiylari",
+            metricValue: "9 * 10^9",
+            metricLabel: "k = N*m²/Kl² (Vakuumdagi Mutanosiblik Koeffitsiyenti)",
+            bullets: [
+              "Gravitatsiya kuchiga nisbatan elektr kuchi 10^36 marta kuchliroqdir",
+              "Atom va molekulalarning barqarorligi Kulon kuchi orqali ta'minlanadi",
+              "Zaryad saqlanish qonuni: Yopiq tizimdagi barcha zaryadlar yig'indisi o'zgarmasdir"
+            ],
+            speakerNotes: "Tasavvur qiling, ikki elektron o'rtasidagi Kulon kuchi ularning tortishish kuchidan 10 ning 36-darajasicha ustundir!"
+          },
+          {
+            id: 5, type: "roadmap", badge: "MASALALAR YECHISH USLUBI",
+            title: "Elektrostatik Masalalarni Yechish Algoritmi",
+            steps: [
+              { step: "1-QADAM", title: "SI Tizimiga O'tkazish", text: "Mikrokulon (mkKl) va santimetrlarni Kl va metrga aylantirish." },
+              { step: "2-QADAM", title: "Vektorlarni Yo'naltirish", text: "Zaryadlar ishorasiga qarab itarilish yoki tortilish yo'nalishini chizish." },
+              { step: "3-QADAM", title: "Superpozitsiya Prinsiplari", text: "Bir necha zaryad bo'lsa, teng ta'sir etuvchi kuchni geometrik qo'shish." }
+            ],
+            speakerNotes: "Testlarda eng ko'p uchraydigan xato — birliklarni SI sistemasiga o'tkazmaslikdir."
+          },
+          {
+            id: 6, type: "summary", badge: "XULOSA",
+            title: "Xulosa va Hayotiy Tadbiqi",
+            quote: `"Fizika — koinotning qanday yaratilgani va moddalarning o'zaro bog'lanish qonuniyatidir."`,
+            takeaways: [
+              "Kulon qonuni butun elektrodinamika va elektronika fanlarining boshlang'ich nuqtasidir",
+              "Lazer printerlar, fotonusxa apparatlari va chang tozalagichlar aynan shu qonunga tayanadi",
+              "Formulani to'g'ri qo'llash orqali har qanday murakkab nazorat masalasini yechish mumkin"
+            ],
+            speakerNotes: "E'tiboringiz uchun rahmat! Amaliy laboratoriya mashg'ulotlarida ushbu qonuniyatni yana sinab ko'ramiz."
+          }
+        ];
+      }
+
+      // General Physics
+      return [
+        {
+          id: 1, type: "hero", badge: "FIZIKA VA TABIIYOT FANLARI",
+          title: topic,
+          subtitle: "Fundamental qonuniyatlar, laboratoriya tajribalari va formulalar tahlili",
+          speakerNotes: `Assalomu alaykum! Bugungi darsimiz "${topic}" mavzusiga bag'ishlanadi.`
+        },
+        {
+          id: 2, type: "split", badge: "NAZARIYA VA TAJRIBA",
+          title: `${topic}: Fizikaviy Mohiyat`,
+          leftTitle: "🔬 Qonuniyat va Hodisa",
+          leftBullets: [
+            "Hodisaning tabiatda va texnikada namoyon bo'lishi",
+            "Asosiy fizik miqdorlar va ularning o'lchov birliklari (SI)",
+            "Tajriba xulosalari va olingan natijalarning ishonchliligi"
+          ],
+          rightTitle: "📐 Formulalar va O'lchov",
+          rightBullets: [
+            "Matematik bog'lanishlar va mutanosiblik koeffitsiyentlari",
+            "Turli muhitlarda parametrlar o'zgarish dinamikasi",
+            "Hisoblash formulalari va xatoliklarni baholash mezonlari"
+          ],
+          speakerNotes: "Fizika qonunlari har doim amaliy tajribalar bilan mustahkamlanishi lozim."
+        },
+        {
+          id: 3, type: "pillars", badge: "3 TA TAYANCH YO'NALISH",
+          title: "Asosiy Fizik Tamoyillar",
+          subtitle: "Nazariya, Tajriba va Amaliyot",
+          cards: [
+            { num: "01", title: "Fundamental Qoida", desc: "Mavzuning darslikdagi tayanch aksioma va ta'riflari." },
+            { num: "02", title: "Tajriba Sinovi", desc: "Laboratoriya asboblari yordamida o'lchangan aniq ma'lumotlar." },
+            { num: "03", title: "Texnik Tadbiq", desc: "Kundalik texnika, asbob-uskunalar va sanoatdagi amaliy foydasi." }
+          ],
+          speakerNotes: "Har qanday fizik hodisa ushbu uchlik orqali to'liq tushuniladi."
+        },
+        {
+          id: 4, type: "deep_dive", badge: "AMALIY STATISTIKA",
+          title: "Miqdoriy Parametrlar va O'lchovlar",
+          metricValue: "100%",
+          metricLabel: "Xalqaro SI Birliklar Tizimiga Muvofiqlik",
+          bullets: [
+            "Parametrlarning standart o'lchov birliklarida aniq ifodalanishi",
+            "Nazariy hisob-kitoblar va real eksperiment mosligi",
+            "Zamonaviy fizika va muhandislikdagi hal qiluvchi o'rni"
+          ],
+          speakerNotes: "Fizikada hisoblash aniqligi texnika xavfsizligining garovidir."
+        },
+        {
+          id: 5, type: "roadmap", badge: "TAJRIBA BOSQICHLARI",
+          title: "Tajribani O'tkazish Ketma-ketligi",
+          steps: [
+            { step: "1-BOSQICH", title: "Asboblarni Sozlash", text: "Laboratoriya uskunalarini tekshirish va nol holatiga keltirish." },
+            { step: "2-BOSQICH", title: "O'lchovlarni Olish", text: "Bir necha bor o'lchash orqali o'rtacha qiymatni hisoblash." },
+            { step: "3-BOSQICH", title: "Xulosa Chiqarish", text: "Olingan natijalarni nazariy formula bilan solishtirish." }
+          ],
+          speakerNotes: "Ushbu metodik algoritm ilmiy xulosalarning aniqligini kafolatlaydi."
+        },
+        {
+          id: 6, type: "summary", badge: "XULOSA",
+          title: "Xulosa va Darslik Mezonlari",
+          quote: `"Tabiat o'z qonunlarini matematika va fizika tilida yozgan."`,
+          takeaways: [
+            "Mavzuni mukammal o'zlashtirish barcha nazorat testlarida yuqori ball olishni ta'minlaydi",
+            "Fizik qonuniyatlar insoniyat taraqqiyotining asosiy harakatlantiruvchi kuchidir",
+            "Nazariy formulalarni amaliy masalalarda qo'llashni davom ettiring"
+          ],
+          speakerNotes: "E'tiboringiz uchun tashakkur!"
+        }
+      ];
+    }
+  },
+
+  // 4. ANIQ FANLAR (MATEMATIKA, GEOMETRIYA)
   math: {
-    match: /matematika|fizika|pifagor|geometriya|formula|tenglama|uchburchak|nyuton|energiya|termodinamika/i,
+    match: /matematika|pifagor|geometriya|formula|tenglama|uchburchak|integral|hosila|algebra/i,
     build: (topic) => {
       const isPythagoras = /pifagor/i.test(topic);
 

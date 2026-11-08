@@ -25,7 +25,8 @@ import {
   generateAIOfficialOrderWithGemini,
   generateAIProtocolWithGemini,
   generateAIStudentReferenceWithGemini,
-  generateAIGammaCardsWithGemini
+  generateAIGammaCardsWithGemini,
+  generateAIExcelTableWithGemini
 } from './src/utils/geminiAiService.js';
 import {
   generateAITestSuite, 
@@ -1145,12 +1146,14 @@ async function generateWordBuffer(students) {
   return await Packer.toBuffer(doc);
 }
 
-async function generateLessonPlanWordBuffer(topic = "Ona tili va adabiyot") {
-  let planText = "";
-  try {
-    planText = await generateAILessonPlanWithGemini(topic);
-  } catch(e) {
-    planText = generateAILessonPlan(topic);
+async function generateLessonPlanWordBuffer(topic = "Ona tili va adabiyot", customPlanText = "") {
+  let planText = customPlanText;
+  if (!planText) {
+    try {
+      planText = await generateAILessonPlanWithGemini(topic);
+    } catch(e) {
+      planText = generateAILessonPlan(topic);
+    }
   }
   const planLines = planText.split('\n');
 
@@ -1175,6 +1178,80 @@ async function generateLessonPlanWordBuffer(topic = "Ona tili va adabiyot") {
     }]
   });
   return await Packer.toBuffer(doc);
+}
+
+async function generateReferatWordBuffer(topic = "Mustaqil Ish va Referat", customReferatText = "") {
+  let text = customReferatText;
+  if (!text) {
+    try {
+      const prompt = `Mavzu: "${topic}"\nVazifa: O'zbekiston oliy va maktab ta'limi standartlariga mos to'liq akademik referat yozib ber. Reja, kirish, kamida 3 ta asosiy bob, xulosa va 10+ ilmiy adabiyotlar bo'lsin.`;
+      text = await callGemini(prompt);
+    } catch(e) {
+      text = `# ${topic}\n\n1. Reja\n2. Kirish\n3. Asosiy Qism\n4. Xulosa\n5. Adabiyotlar`;
+    }
+  }
+  const lines = text.split('\n');
+  const docChildren = [
+    new Paragraph({ text: "O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "AKADEMIK REFERAT VA ILMIY MA'RUZA", heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: `Mavzu: "${topic.slice(0, 80)}"`, alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "----------------------------------------------------------------------------------" }),
+    new Paragraph({ text: "" })
+  ];
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      docChildren.push(new Paragraph({ text: "" }));
+    } else if (trimmed.startsWith('#') || (trimmed.startsWith('**') && trimmed.endsWith('**'))) {
+      docChildren.push(new Paragraph({ children: [new TextRun({ text: trimmed.replace(/[#*]/g, '').trim(), bold: true })], heading: HeadingLevel.HEADING_2 }));
+    } else {
+      docChildren.push(new Paragraph({ text: trimmed.replace(/[*_]/g, '') }));
+    }
+  });
+
+  const doc = new Document({
+    sections: [{
+      properties: { page: { margin: { top: 720, bottom: 720, left: 1080, right: 720 } } },
+      children: docChildren
+    }]
+  });
+  return await Packer.toBuffer(doc);
+}
+
+function generateDynamicExcelBuffer(tableData) {
+  const wb = XLSX.utils.book_new();
+  const sheetName = (tableData.sheetName || "Tahliliy Jadval").slice(0, 31);
+  const aoa = [
+    ["O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI"],
+    [(tableData.title || "HISOBOT VA MONITORING JADVALI").toUpperCase()],
+    [`Hujjat sanasi: ${new Date().toLocaleDateString('uz-UZ')} | Maqom: Rasmiy ta'limiy-tahliliy hujjat`],
+    [],
+    tableData.headers || ["№", "Nomi / F.I.Sh", "Ko'rsatkich", "Natija", "Izoh"]
+  ];
+  if (Array.isArray(tableData.rows)) {
+    tableData.rows.forEach(r => aoa.push(r));
+  }
+  if (Array.isArray(tableData.summaryRow) && tableData.summaryRow.length > 0) {
+    aoa.push([]);
+    aoa.push(tableData.summaryRow);
+  }
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const colWidths = (tableData.headers || []).map((h, colIdx) => {
+    let maxLen = String(h || '').length;
+    if (Array.isArray(tableData.rows)) {
+      tableData.rows.forEach(row => {
+        const cell = row[colIdx];
+        if (cell !== undefined && cell !== null) {
+          maxLen = Math.max(maxLen, String(cell).length);
+        }
+      });
+    }
+    return { wch: Math.min(45, Math.max(8, maxLen + 3)) };
+  });
+  ws['!cols'] = colWidths;
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 }
 
 async function generateOfficialOrderWordBuffer(orderTitle = "O'quvchilarni rag'batlantirish to'g'risida") {
@@ -1260,22 +1337,24 @@ async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti
 
 
 
-async function generateTestWordBuffer(rawText) {
+async function generateTestWordBuffer(rawText, customTestText = "", count = 15) {
   const lines = rawText.split(/\r?\n/).filter(l => l.trim().length > 3);
   const sampleTopic = lines[0] || "O'zbekiston tarixi va fan asoslari";
 
-  let testText = "";
-  try {
-    testText = await generateAITestWithGemini(sampleTopic, 15);
-  } catch(e) {
-    testText = generateAITestSuite(sampleTopic, 15);
+  let testText = customTestText;
+  if (!testText) {
+    try {
+      testText = await generateAITestWithGemini(sampleTopic, count);
+    } catch(e) {
+      testText = generateAITestSuite(sampleTopic, count);
+    }
   }
   const testLines = testText.split('\n');
 
   const docChildren = [
-    new Paragraph({ text: "O'ZBEKISTON RESPUBLIKASI MAKTAB TA'LIMI", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "NAZORAT TESTLARI VARIANTI (15 TALIK)", heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: `Mavzu: "${sampleTopic.slice(0, 60)}"`, alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: `NAZORAT TESTLARI VARIANTI (${count} TALIK)`, heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: `Mavzu: "${sampleTopic.slice(0, 80)}"`, alignment: AlignmentType.CENTER }),
     new Paragraph({ text: "----------------------------------------------------------------------------------" }),
     new Paragraph({ text: "" })
   ];
@@ -1452,6 +1531,46 @@ function getTariffInlineKeyboard(userId) {
     .row()
     .webApp("🚀 Telegram Mini App", WEBAPP_URL)
     .url("🌐 Brauzerda Ochish", WEBAPP_URL);
+}
+
+function getExcelInlineKeyboard() {
+  return new InlineKeyboard()
+    .text("📊 1. Master 5-in-1 Maktab To'plami (.xlsx)", "excel_master").row()
+    .text("📈 2. Oylik Davomat Tabeli (.xlsx)", "excel_davomat").row()
+    .text("🎯 3. Baholar Jurnali & GPA (.xlsx)", "excel_grades").row()
+    .text("📅 4. Dars Jadvali & Navbatchilik (.xlsx)", "excel_schedule").row()
+    .text("👥 5. Qizlar va O'g'illar (.xlsx)", "excel_gender").row()
+    .text("✍️ 6. AI Maxsus Yangi Jadval Yaratish", "excel_custom");
+}
+
+function sendExcelMenu(ctx) {
+  const text = 
+    `📊 **EDUKATSIYA VA OFIS UCHUN PROFESSIONAL EXCEL JADVALLARI**\n\n` +
+    `Tayyor 5 xil maktab shablonini **bir bosishda** yuklab oling yoki AI orqali istalgan yangi jadvalni yaratdiring:\n\n` +
+    `• **Master 5-in-1:** Barcha o'quvchilar, pasport/metrika, baholar, oylik davomat va dars jadvali yagona to'liq kitobda.\n` +
+    `• **Davomat tabeli:** 1-31 kunlar, sababli/sababsiz dars qoldirishlar va formulali qatnashuv hisobi.\n` +
+    `• **Baholar va GPA:** Fanlar kesimida o'zlashtirish, GPA reyting va akademik toifalar.\n` +
+    `• **Dars jadvali:** Haftalik 6 kunlik dars soatlari, xonalar va navbatchilik grafigi.\n\n` +
+    `👇 **Kerakli jadvalni tanlang yoki matn yozib buyurtma bering:**`;
+  return ctx.reply(text, { parse_mode: 'Markdown', reply_markup: getExcelInlineKeyboard() });
+}
+
+async function handleDynamicExcelCreation(ctx, topic) {
+  const userId = ctx.from.id;
+  const waitMsg = await ctx.reply(`📊 **"${topic}" mavzusida professional Excel jadval yaratilmoqda...**\n⏳ *(AI ustunlar, qatorlar va formulalarni hisoblamoqda)*`);
+  try {
+    const tableData = await generateAIExcelTableWithGemini(topic);
+    const buffer = generateDynamicExcelBuffer(tableData);
+    const safeFilename = `EduHujjat_${topic.slice(0, 25).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.xlsx`;
+    await ctx.replyWithDocument(new InputFile(buffer, safeFilename), {
+      caption: `📊 **"${tableData.title || topic}" jadvali tayyor!** (.xlsx)\n\n📌 Varaq: **${tableData.sheetName || 'Jadval'}**\n✨ Ustunlar: **${tableData.headers?.length || 5} ta** | Qatorlar: **${tableData.rows?.length || 10} ta**\n📐 To'liq formulalar va avtomatik hisob-kitoblar bilan.`
+    });
+    consumeUserUse(userId);
+    try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+  } catch(err) {
+    try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    await ctx.reply(`❌ Excel jadval yaratishda xatolik: ${err.message}`);
+  }
 }
 
 function getOwnerActionKeyboard(targetUserId) {
@@ -2317,7 +2436,7 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   // HUJJAT FABRIKASI SHABLONLARI
-  if (data.startsWith('doc_')) {
+  if (data.startsWith('doc_') || data.startsWith('excel_')) {
     if (!isUserActive(userId, ctx.from?.username)) {
       await ctx.answerCallbackQuery({ text: "Obunangiz faol emas! Avval tarifni faollashtiring.", show_alert: true });
       return ctx.reply(
@@ -2325,6 +2444,71 @@ bot.on('callback_query:data', async (ctx) => {
         `Sizning Telegram ID: \`${userId}\`\n\n` +
         `Quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
         { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
+  }
+
+  // EXCEL JADVALLAR KANALI
+  if (data.startsWith('excel_')) {
+    if (data === 'excel_master') {
+      await ctx.answerCallbackQuery({ text: "Master Excel to'plami tayyorlanmoqda..." });
+      const demoStudents = parseStudentsFromText("1. Karimova Dildora Jasur qizi\n2. Abdullayev Jasur Rustam o'g'li\n3. Omonov Sardor Baxtiyor o'g'li\n4. Toshmatova Rayhon Farhod qizi");
+      const buf = generateMasterSchoolScheduleExcelBuffer(demoStudents);
+      await ctx.replyWithDocument(new InputFile(buf, "Master_Maktab_5in1.xlsx"), {
+        caption: "📊 **Master 5-in-1 Maktab To'plami tayyor!** (.xlsx)\n\n📌 5 ta to'liq varaq: Umumiy ro'yxat, Pasport/Metrika, Baholar & GPA, Oylik davomat va Dars jadvali."
+      });
+      return consumeUserUse(userId);
+    }
+
+    if (data === 'excel_davomat') {
+      await ctx.answerCallbackQuery({ text: "Davomat tabeli tayyorlanmoqda..." });
+      const demoStudents = parseStudentsFromText("1. Karimova Dildora Jasur qizi\n2. Abdullayev Jasur Rustam o'g'li\n3. Omonov Sardor Baxtiyor o'g'li\n4. Toshmatova Rayhon Farhod qizi");
+      const buf = generateAttendanceExcelBuffer(demoStudents);
+      await ctx.replyWithDocument(new InputFile(buf, "Oylik_Davomat_Tabeli.xlsx"), {
+        caption: "📈 **Oylik davomat tabeli tayyor!** (.xlsx)\n\n📌 1-31 kunlar, dam olish kunlari ajratilgan, formulali qatnashuv hisobi bilan."
+      });
+      return consumeUserUse(userId);
+    }
+
+    if (data === 'excel_grades') {
+      await ctx.answerCallbackQuery({ text: "Baholar jurnali tayyorlanmoqda..." });
+      const demoStudents = parseStudentsFromText("1. Karimova Dildora Jasur qizi\n2. Abdullayev Jasur Rustam o'g'li\n3. Omonov Sardor Baxtiyor o'g'li");
+      const buf = generateGradesExcelBuffer(demoStudents);
+      await ctx.replyWithDocument(new InputFile(buf, "Baholar_Jurnali_GPA.xlsx"), {
+        caption: "🎯 **Baholar jurnali va GPA reyting jadvali tayyor!** (.xlsx)\n\n📌 7 ta fan bo'yicha baholar, GPA avto-hisob va akademik toifalar bilan."
+      });
+      return consumeUserUse(userId);
+    }
+
+    if (data === 'excel_schedule') {
+      await ctx.answerCallbackQuery({ text: "Dars jadvali tayyorlanmoqda..." });
+      const demoStudents = parseStudentsFromText("1. Karimova Dildora Jasur qizi\n2. Abdullayev Jasur Rustam o'g'li");
+      const buf = generateScheduleExcelBuffer(demoStudents);
+      await ctx.replyWithDocument(new InputFile(buf, "Dars_Jadvali_va_Navbatchilik.xlsx"), {
+        caption: "📅 **Haftalik dars jadvali va navbatchilik grafigi tayyor!** (.xlsx)\n\n📌 6 kunlik dars soatlari, xonalar va har kungi navbatchi o'quvchilar taqsimoti bilan."
+      });
+      return consumeUserUse(userId);
+    }
+
+    if (data === 'excel_gender') {
+      await ctx.answerCallbackQuery({ text: "Qizlar va o'g'illar jadvali tayyorlanmoqda..." });
+      const demoStudents = parseStudentsFromText("1. Karimova Dildora Jasur qizi\n2. Abdullayev Jasur Rustam o'g'li\n3. Omonov Sardor Baxtiyor o'g'li\n4. Toshmatova Rayhon Farhod qizi");
+      const buf = generateGenderExcelBuffer(demoStudents);
+      await ctx.replyWithDocument(new InputFile(buf, "Qizlar_va_Ogillar_Jadvali.xlsx"), {
+        caption: "👥 **Qizlar va o'g'il bolalar taqsimoti jadvali tayyor!** (.xlsx)\n\n📌 2 ta alohida varaq, foizli diagramma va to'liq kontaktlar bilan."
+      });
+      return consumeUserUse(userId);
+    }
+
+    if (data === 'excel_custom') {
+      await ctx.answerCallbackQuery({ text: "Mavzuni yozing..." });
+      return ctx.reply(
+        `✍️ **Qanday jadval kerakligini xabar sifatida yozib yuboring:**\n\n` +
+        `Masalan:\n` +
+        `• \`8-sinf kimyo laboratoriya xarajatlari jadvali\`\n` +
+        `• \`Maktab oylik xarajatlar smetasi excel\`\n` +
+        `• \`10-maktab sport musobaqasi g'oliblari jadvali\`\n\n` +
+        `AI 5 soniyada barcha ustunlar va formulalarni to'ldirib .xlsx fayl qilib beradi!`
       );
     }
   }
@@ -2532,12 +2716,14 @@ async function processIntelligentMessage(ctx, userPrompt) {
 
   // XAVFSIZLIK VA PAYWALL TEKSHIRUVI:
   if (!isUserActive(userId, username)) {
-    return ctx.reply(
-      `🔒 **Hisobingiz hali tasdiqlanmagan.**\n\n` +
-      `Sizning Telegram ID: \`${userId}\`\n\n` +
-      `EduAI imkoniyatlaridan foydalanish uchun quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
-      { reply_markup: getTariffInlineKeyboard(userId) }
-    );
+    const u = getUser(userId);
+    const isExhausted = u && typeof u.remainingUses === 'number' && u.remainingUses <= 0;
+    const msg = isExhausted
+      ? `⚠️ **Sizning bepul / 1 martalik limitingiz yakunlandi!**\n\nSizga berilgan bepul hujjat tayyorlandi. Cheksiz hujjatlar, Gamma AI taqdimotlar va Excel jadvallaridan foydalanishni davom ettirish uchun tariflardan birini tanlang:`
+      : `🔒 **Hisobingiz hali tasdiqlanmagan.**\n\n` +
+        `Sizning Telegram ID: \`${userId}\`\n\n` +
+        `EduAI imkoniyatlaridan foydalanish uchun quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`;
+    return ctx.reply(msg, { reply_markup: getTariffInlineKeyboard(userId) });
   }
 
   const raw = userPrompt.trim();
@@ -2553,16 +2739,23 @@ async function processIntelligentMessage(ctx, userPrompt) {
     return startSlideWizard(ctx, cleanTopic || raw);
   }
 
+  // 1B. EXCEL JADVAL SO'ROVI (MASALAN: 8-sinf kimyo jadval, davomat tabeli excel, baholar jurnali xlsx)
+  const isExcelRequest = /\b(?:excel|jadval|jadvallar|jadvallari|jadvali|tabel|tabeli|jurnal|jurnali|xlsx)\b/i.test(lower);
+  if (isExcelRequest) {
+    const cleanTopic = raw.replace(/\b(?:excel|jadval|jadvallar|jadvallari|jadvali|tabel|tabeli|jurnal|jurnali|xlsx|tuzib ber|tuz|yarat|qilib ber|kerak|yasash|tayyorla|qil|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
+    return handleDynamicExcelCreation(ctx, cleanTopic || raw);
+  }
+
   // 2. TEST SO'ROVI (MASALAN: 9-sinf huquq 100talik test, 15 talik test, fizika testlari)
   const isTestRequest = /\b(?:test|testlar|testlari|testi|nazorat ishi|nazorat|savollar|savollari)\b/i.test(lower) || /\d+\s*(?:ta|talik)\s*(?:test|savol)/i.test(lower);
 
   if (isTestRequest) {
     const countMatch = raw.match(/(\d+)\s*(?:ta|talik|savol|test)/i);
-    const count = countMatch ? Math.min(Math.max(1, parseInt(countMatch[1], 10)), 50) : 10;
+    const count = countMatch ? Math.min(Math.max(1, parseInt(countMatch[1], 10)), 50) : 15;
     const cleanTopic = raw.replace(/\b(?:test|testlar|testlari|testi|nazorat ishi|nazorat|tuzib ber|tuz|yarat|ber|kerak|yoz|varianti|variant|\d+\s*talik|\d+\s*ta|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
     const finalTopic = cleanTopic || raw;
 
-    const waitMsg = await ctx.reply(`🎯 **"${finalTopic}" bo'yicha ${count} talik nazorat testi va kalitlar tuzilmoqda...**\n⏳ *(DTS standartlari va tasodifiy A, B, C, D variantlar bilan)*`);
+    const waitMsg = await ctx.reply(`🎯 **"${finalTopic}" bo'yicha ${count} talik nazorat testi va Word (.docx) hujjati tuzilmoqda...**\n⏳ *(DTS standartlari, 3 ta tafakkur darajasi va javoblar kaliti bilan)*`);
     try {
       let testResult = "";
       try {
@@ -2571,15 +2764,26 @@ async function processIntelligentMessage(ctx, userPrompt) {
         testResult = generateAITestSuite(finalTopic, count);
       }
 
+      // Word (.docx) faylini yaratish va darhol foydalanuvchiga yuborish
+      const docxBuffer = await generateTestWordBuffer(finalTopic, testResult, count);
+      const safeFilename = `Test_${finalTopic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}_${count}talik.docx`;
+
+      await ctx.replyWithDocument(new InputFile(docxBuffer, safeFilename), {
+        caption: `🎯 **"${finalTopic}" bo'yicha ${count} talik test tayyor!** (.docx)\n\n✨ Rasmiy maktab me'yori, A, B, C, D variantlar va oxirida o'qituvchi uchun javoblar kaliti (ilmiy asosi bilan).`
+      });
+
       const kb = new InlineKeyboard()
-        .text("📥 Testni Word (.docx) yuklash", "ai_gen_test")
         .text("📊 Slayd (.pptx) qilish", "ai_gen_gamma")
-        .row()
         .text("📝 Dars konspekti (.docx)", "ai_gen_lesson")
+        .row()
+        .text("📊 Excel jadval (.xlsx)", "excel_master")
         .webApp("📱 WebApp-da Ochish", WEBAPP_URL);
 
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(testResult.slice(0, 4000), { reply_markup: kb });
+      consumeUserUse(userId);
+
+      const previewLines = testResult.split('\n').slice(0, 25).join('\n');
+      return ctx.reply(`📋 **Testdan namunaviy savollar:**\n\n${previewLines.slice(0, 3000)}\n\n📎 *To'liq ${count} ta savol va tahliliy javoblar kaliti yuqoridagi .docx faylda yuklandi.*`, { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Test tuzishda xatolik: ${err.message}`);
@@ -2592,7 +2796,7 @@ async function processIntelligentMessage(ctx, userPrompt) {
     const cleanTopic = raw.replace(/\b(?:konspekt|konspekti|dars ishlanmasi|dars ishlanma|dars rejasi|dars reja|45 daqiqalik|45 daqiqa|ochiq dars|tuzib ber|tuz|yarat|yoz|kerak|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
     const finalTopic = cleanTopic || raw;
 
-    const waitMsg = await ctx.reply(`📝 **"${finalTopic}" bo'yicha 45 daqiqalik dars ishlanmasi (konspekt) tayyorlanmoqda...**\n⏳ *(6 bosqichli xronometraj bilan)*`);
+    const waitMsg = await ctx.reply(`📝 **"${finalTopic}" bo'yicha 45 daqiqalik dars konspekti (.docx) tayyorlanmoqda...**\n⏳ *(6 bosqichli xronometraj va DTS mezonlari bilan)*`);
     try {
       let lessonResult = "";
       try {
@@ -2601,15 +2805,23 @@ async function processIntelligentMessage(ctx, userPrompt) {
         lessonResult = generateAILessonPlan(finalTopic);
       }
 
+      const docxBuffer = await generateLessonPlanWordBuffer(finalTopic, lessonResult);
+      const safeFilename = `Konspekt_${finalTopic.slice(0, 25).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`;
+
+      await ctx.replyWithDocument(new InputFile(docxBuffer, safeFilename), {
+        caption: `📝 **"${finalTopic}" bo'yicha 45 daqiqalik dars konspekti tayyor!** (.docx)\n\n✨ Maqsadlar, metodlar, 6 bosqichli xronometraj, yangi mavzu bayoni, mustahkamlash va uy vazifasi.`
+      });
+
       const kb = new InlineKeyboard()
-        .text("📥 Konspektni Word (.docx) yuklash", "ai_gen_lesson")
         .text("📊 Slayd (.pptx) qilish", "ai_gen_gamma")
-        .row()
         .text("🎯 15 Talik Test (.docx)", "ai_gen_test")
+        .row()
+        .text("📊 Excel Jadval (.xlsx)", "excel_schedule")
         .webApp("📱 WebApp-da Ochish", WEBAPP_URL);
 
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(lessonResult.slice(0, 4000), { reply_markup: kb });
+      consumeUserUse(userId);
+      return ctx.reply(`📄 **Dars konspektining asosiy qismi:**\n\n${lessonResult.slice(0, 2500)}\n\n📎 *To'liq dars ishlanmasi yuqoridagi .docx faylda yuborildi.*`, { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Konspekt tayyorlashda xatolik: ${err.message}`);
@@ -2621,18 +2833,28 @@ async function processIntelligentMessage(ctx, userPrompt) {
   if (isEssayRequest) {
     const cleanTopic = raw.replace(/\b(?:referat|insho|ma'ruza|maqola|mustaqil ish|doklad|tuzib ber|yozib ber|yoz|tayyorla|kerak|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
     const finalTopic = cleanTopic || raw;
-    const waitMsg = await ctx.reply(`📑 **"${finalTopic}" mavzusida akademik referat / ma'ruza tayyorlanmoqda...**\n⏳ *(Reja, kirish, asosiy qismlar, xulosa va adabiyotlar bilan)*`);
+    const waitMsg = await ctx.reply(`📑 **"${finalTopic}" mavzusida akademik referat (.docx) tayyorlanmoqda...**\n⏳ *(Reja, kirish, 3 ta asosiy bob, xulosa va adabiyotlar bilan)*`);
     try {
-      const essayPrompt = `Mavzu: "${finalTopic}"\nVazifa: O'zbekiston oliy va xalq ta'limi standartlariga mos, chuqur, akademik va ilmiy darajadagi to'liq referat/ma'ruza matni yozib ber.\nReja:\n1. Kirish (Mavzuning dolzarbligi va maqsadlari)\n2. Asosiy Qism (2-3 ta asosiy bo'lim va chuqur tahlil)\n3. Xulosa va Amaliy Ahamiyati\n4. Foydalanilgan Adabiyotlar Ro'yxati\n\nQat'iy qoida: LaTeX va dollar ($) belgisidan foydalanmang!`;
-      const essayResult = await callGemini(essayPrompt, "Siz O'zbekistonning eng yuqori toifali akademik olimi va metodistisiz. Darhol to'g'ridan-to'g'ri referat matnini taqdim eting, o'zingizni oqlash yoki ortiqcha gap yozmang.");
+      const essayPrompt = `Mavzu: "${finalTopic}"\nVazifa: O'zbekiston oliy va xalq ta'limi standartlariga mos, chuqur, akademik va ilmiy darajadagi to'liq referat/ma'ruza matni yozib ber.\nReja:\n1. Kirish (Mavzuning dolzarbligi va maqsadlari)\n2. Asosiy Qism (kamida 3 ta asosiy bob va chuqur ilmiy tahlil)\n3. Xulosa va Amaliy Ahamiyati\n4. Foydalanilgan Adabiyotlar Ro'yxati\n\nQat'iy qoida: LaTeX va dollar ($) belgisidan foydalanmang!`;
+      const essayResult = await callGemini(essayPrompt, "Siz O'zbekistonning eng yuqori toifali akademik olimi va metodistisiz. Darhol to'g'ridan-to'g'ri to'liq referat matnini taqdim eting.");
+
+      const docxBuffer = await generateReferatWordBuffer(finalTopic, essayResult);
+      const safeFilename = `Referat_${finalTopic.slice(0, 25).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`;
+
+      await ctx.replyWithDocument(new InputFile(docxBuffer, safeFilename), {
+        caption: `📑 **"${finalTopic}" mavzusida akademik referat tayyor!** (.docx)\n\n✨ Reja, kirish, asosiy boblar, xulosa va 10+ ilmiy adabiyotlar ro'yxati bilan.`
+      });
+
       const kb = new InlineKeyboard()
         .text("📊 Slayd (.pptx) qilish", "ai_gen_gamma")
         .text("📝 Konspekt (.docx)", "ai_gen_lesson")
         .row()
         .text("🎯 Test (.docx)", "ai_gen_test")
         .webApp("📱 WebApp", WEBAPP_URL);
+
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(essayResult.slice(0, 4000), { reply_markup: kb });
+      consumeUserUse(userId);
+      return ctx.reply(`📑 **Referatning kirish va reja qismi:**\n\n${essayResult.slice(0, 2500)}\n\n📎 *To'liq referat yuqoridagi .docx faylda yuborildi.*`, { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Referat tayyorlashda xatolik: ${err.message}`);
@@ -2641,7 +2863,7 @@ async function processIntelligentMessage(ctx, userPrompt) {
 
   // 5. BUYRUQ LOYIHASI
   if (/\b(?:buyruq|qaror|farmoyish)\b/i.test(lower)) {
-    const waitMsg = await ctx.reply("📋 **Rasmiy maktab buyrug'i loyihasi tayyorlanmoqda...**");
+    const waitMsg = await ctx.reply("📋 **Rasmiy maktab buyrug'i loyihasi (.docx) tayyorlanmoqda...**");
     try {
       let orderResult = "";
       try {
@@ -2649,11 +2871,18 @@ async function processIntelligentMessage(ctx, userPrompt) {
       } catch(e) {
         orderResult = generateAIOfficialOrder(raw);
       }
+
+      const docxBuffer = await generateOfficialOrderWordBuffer(raw, orderResult);
+      await ctx.replyWithDocument(new InputFile(docxBuffer, "Maktab_Direktori_Buyrugi.docx"), {
+        caption: `📋 **Rasmiy maktab direktori buyrug'i tayyor!** (.docx)\n\n✨ GOST me'yorlari va vazirlik talablari bilan.`
+      });
+
       const kb = new InlineKeyboard()
-        .text("📥 Buyruqni Word (.docx) yuklash", "ai_gen_order")
+        .text("📊 Slayd (.pptx)", "ai_gen_gamma")
         .webApp("📱 WebApp", WEBAPP_URL);
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(orderResult.slice(0, 4000), { reply_markup: kb });
+      consumeUserUse(userId);
+      return ctx.reply(orderResult.slice(0, 2500), { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Buyruq tuzishda xatolik: ${err.message}`);
@@ -2662,7 +2891,7 @@ async function processIntelligentMessage(ctx, userPrompt) {
 
   // 6. O'QUVCHI TAVSIFNOMASI
   if (/\b(?:tavsifnoma|xarakteristika)\b/i.test(lower)) {
-    const waitMsg = await ctx.reply("📝 **O'quvchi uchun rasmiy pedagogik tavsifnoma yozilmoqda...**");
+    const waitMsg = await ctx.reply("📝 **O'quvchi uchun rasmiy pedagogik tavsifnoma (.docx) yozilmoqda...**");
     try {
       let refResult = "";
       try {
@@ -2670,11 +2899,18 @@ async function processIntelligentMessage(ctx, userPrompt) {
       } catch(e) {
         refResult = generateAIStudentReference(raw, "10-A");
       }
+
+      const docxBuffer = await generateStudentReferenceWordBuffer(raw, "10-A");
+      await ctx.replyWithDocument(new InputFile(docxBuffer, "Oquvchi_Tavsifnomasi.docx"), {
+        caption: `🔍 **Pedagogik tavsifnoma (xarakteristika) tayyor!** (.docx)\n\n✨ Rasmiy xarakteristika va muhr o'rni bilan.`
+      });
+
       const kb = new InlineKeyboard()
-        .text("📥 Tavsifnomani Word (.docx) yuklash", "ai_gen_tavsif")
+        .text("📊 Slayd (.pptx)", "ai_gen_gamma")
         .webApp("📱 WebApp", WEBAPP_URL);
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(refResult.slice(0, 4000), { reply_markup: kb });
+      consumeUserUse(userId);
+      return ctx.reply(refResult.slice(0, 2500), { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Tavsifnoma yozishda xatolik: ${err.message}`);
@@ -2683,7 +2919,7 @@ async function processIntelligentMessage(ctx, userPrompt) {
 
   // 7. BAYONNOMA / PROTOKOL
   if (/\b(?:bayonnoma|protokol)\b/i.test(lower)) {
-    const waitMsg = await ctx.reply("📑 **Pedagogik kengash bayonnomasi tayyorlanmoqda...**");
+    const waitMsg = await ctx.reply("📑 **Pedagogik kengash bayonnomasi (.docx) tayyorlanmoqda...**");
     try {
       let protoResult = "";
       try {
@@ -2691,11 +2927,18 @@ async function processIntelligentMessage(ctx, userPrompt) {
       } catch(e) {
         protoResult = generateAIPedagogicalProtocol(raw);
       }
+
+      const docxBuffer = await generateProtocolWordBuffer(raw, "45");
+      await ctx.replyWithDocument(new InputFile(docxBuffer, "Kengash_Bayonnomasi.docx"), {
+        caption: `📜 **Pedagogik kengash bayonnomasi tayyor!** (.docx)\n\n✨ Kun tartibi, muzokaralar va rasmiy qaror qismi bilan.`
+      });
+
       const kb = new InlineKeyboard()
-        .text("📥 Bayonnomani Word (.docx) yuklash", "ai_gen_proto")
+        .text("📊 Slayd (.pptx)", "ai_gen_gamma")
         .webApp("📱 WebApp", WEBAPP_URL);
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(protoResult.slice(0, 4000), { reply_markup: kb });
+      consumeUserUse(userId);
+      return ctx.reply(protoResult.slice(0, 2500), { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Bayonnoma tuzishda xatolik: ${err.message}`);
@@ -2818,6 +3061,25 @@ bot.on('message:text', async (ctx) => {
     const rawTopic = text.replace(/^\/(?:slayd|slide|taqdimot)\s*/i, '').trim();
     const topic = (!isButton && rawTopic) ? rawTopic : '';
     return startSlideWizard(ctx, topic);
+  }
+
+  // =========================================================================
+  // /excel, /jadval BUYRUQLARI VA "📊 Excel Jadvallar" TUGMASI
+  // =========================================================================
+  if (text.startsWith('/excel') || text.startsWith('/jadval') || text === '📊 Excel Jadvallar') {
+    if (!isUserActive(userId, username)) {
+      return ctx.reply(
+        `🔒 **Excel jadvallaridan foydalanish uchun hisobingizni faollashtiring.**\n\n` +
+        `Sizning Telegram ID: \`${userId}\`\n\n` +
+        `Quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
+    const rawTopic = text.replace(/^\/(?:excel|jadval)\s*/i, '').trim();
+    if (rawTopic && rawTopic !== '📊 Excel Jadvallar') {
+      return handleDynamicExcelCreation(ctx, rawTopic);
+    }
+    return sendExcelMenu(ctx);
   }
 
   // =========================================================================

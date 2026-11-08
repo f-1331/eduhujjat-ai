@@ -1403,7 +1403,20 @@ export async function generatePresentationPptx(config = {}) {
 
   slideDeck.forEach((card, index) => {
     const slide = pres.addSlide();
-    slide.background = { color: style.bg };
+    const arch = resolveSlideArchitecture(card, index, slideDeck.length);
+
+    // Gamma & Genspark uslubida har bir slayd uchun dinamik almashinuvchi fon kontrasti
+    let slideBgColor = style.bg;
+    if (index === 0 || index === slideDeck.length - 1) {
+      slideBgColor = style.bg;
+    } else if (arch === 'citation_quote' || arch === 'stats_kpi' || arch === 'quiz_interactive') {
+      slideBgColor = style.cardBg;
+    } else if (index % 2 === 1) {
+      slideBgColor = style.bg;
+    } else {
+      slideBgColor = style.cardBg;
+    }
+    slide.background = { color: slideBgColor };
 
     // PPTX Perexod (Transition Animatsiyasi)
     slide.transition = {
@@ -1414,14 +1427,16 @@ export async function generatePresentationPptx(config = {}) {
     // 100+ XIL DINAMIK FON GRAFIKASI (HECH QACHON BIR XIL BO'LMAYDI)
     applyDynamicBackgroundPattern(slide, pres, style, index, slideDeck.length);
 
-    // Top Header Breadcrumb & Divider
-    slide.addShape(pres.ShapeType.line, {
-      x: 0.8, y: 0.62, w: 8.4, h: 0,
-      line: { color: style.cardBorder, width: 0.75, dashType: 'solid' }
-    });
-    slide.addText(`SMARTOFFICE & EDUAI PRO  •  GAMMA & GENSPARK ENGINE  •  SLAYD ${index + 1}/${slideDeck.length}`, {
-      x: 0.8, y: 0.32, w: 8.4, h: 0.28, fontSize: 9.5, color: style.subtext, bold: true, fontFace: 'Arial'
-    });
+    // Top Header Breadcrumb & Divider (Faqat ichki slaydlarda, Hero muqovada emas)
+    if (index > 0) {
+      slide.addShape(pres.ShapeType.line, {
+        x: 0.8, y: 0.62, w: 8.4, h: 0,
+        line: { color: style.cardBorder, width: 0.75, dashType: 'solid' }
+      });
+      slide.addText(`SMARTOFFICE & EDUAI PRO  •  GAMMA & GENSPARK ENGINE  •  SLAYD ${index + 1}/${slideDeck.length}`, {
+        x: 0.8, y: 0.32, w: 8.4, h: 0.28, fontSize: 9.5, color: style.subtext, bold: true, fontFace: 'Arial'
+      });
+    }
 
     if (card.speakerNotes) {
       slide.addNotes(card.speakerNotes);
