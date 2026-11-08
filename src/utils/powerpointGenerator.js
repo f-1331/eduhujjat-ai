@@ -165,6 +165,30 @@ export function getTopicImageUrl(topic = "") {
   return EDUCATIONAL_TOPIC_IMAGES.default;
 }
 
+export function resolveCardImageUrl(card, topic = "", imageStyle = "realistic") {
+  const keyword = card?.imageKeyword || card?.title || topic;
+  const cleanKeyword = String(keyword).replace(/[^a-zA-Z0-9\s]/g, ' ').trim().slice(0, 50);
+
+  if (imageStyle === 'ai3d') {
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' 3d render clean modern isometric octane c4d presentation graphics')}?width=800&height=600&nologo=true`;
+  }
+  if (imageStyle === 'vector') {
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' clean vector flat art educational illustration modern colorful')}?width=800&height=600&nologo=true`;
+  }
+  if (imageStyle === 'infographic') {
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' scientific infographic schematic diagram clean presentation vector')}?width=800&height=600&nologo=true`;
+  }
+  if (imageStyle === 'abstract') {
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' modern abstract glassmorphism pastel gradient 3d aesthetic')}?width=800&height=600&nologo=true`;
+  }
+  // Realistic
+  const matchedUnsplash = getTopicImageUrl(cleanKeyword);
+  if (matchedUnsplash && matchedUnsplash !== EDUCATIONAL_TOPIC_IMAGES.default) {
+    return matchedUnsplash;
+  }
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' award winning photography national geographic 8k highly detailed')}?width=800&height=600&nologo=true`;
+}
+
 export async function fetchImageAsBase64(imageUrl, timeoutMs = 3500) {
   if (!imageUrl) return null;
   try {
@@ -360,11 +384,16 @@ export function resolveSlideArchitecture(card, index, totalSlides) {
   if (type === 'swot' || type === 'swot_analysis') return 'swot_analysis';
   if (type === 'quote' || type === 'citation') return 'citation_quote';
   if (type === 'problem_solution' || type === 'problem') return 'problem_solution';
+  if (type === 'comparison_table' || type === 'table' || type === 'matrix') return 'comparison_table';
+  if (type === 'progress_metrics' || type === 'progress') return 'progress_metrics';
+  if (type === 'case_study' || type === 'case') return 'case_study';
+  if (type === 'tri_gallery' || type === 'gallery') return 'tri_gallery';
+  if (type === 'faq_accordion' || type === 'faq') return 'faq_accordion';
   if (type === 'concept' || type === 'spotlight') return 'concept_spotlight';
   if (type === 'summary' || type === 'conclusion') return 'summary_takeaways';
 
-  // Modular distribution across 13 distinct architectural families
-  const familyIndex = (index - 1) % 13;
+  // Modular distribution across 19 distinct architectural families
+  const familyIndex = (index - 1) % 19;
   switch (familyIndex) {
     case 0: return 'concept_spotlight';
     case 1: return 'bento_3';
@@ -377,8 +406,14 @@ export function resolveSlideArchitecture(card, index, totalSlides) {
     case 8: return 'flow_diagram';
     case 9: return 'swot_analysis';
     case 10: return 'problem_solution';
-    case 11: return 'citation_quote';
-    case 12: return 'split_versus';
+    case 11: return 'comparison_table';
+    case 12: return 'progress_metrics';
+    case 13: return 'case_study';
+    case 14: return 'tri_gallery';
+    case 15: return 'faq_accordion';
+    case 16: return 'citation_quote';
+    case 17: return 'split_versus';
+    case 18: return 'quiz_interactive';
     default: return 'concept_spotlight';
   }
 }
@@ -471,7 +506,7 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
   }
 
   // 2. SPLIT IMAGE ARCHITECTURE (Chapda HD rasm, O'ngda chuqur tahlil)
-  if (arch === 'split_image' || (card.bullets && topicImageBase64 && index % 2 === 1)) {
+  if (arch === 'split_image') {
     slide.addText(card.title || "Vizual Tahlil va Ilmiy Asoslar", {
       x: 0.8, y: 0.68, w: 8.4, h: 0.48, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
     });
@@ -541,12 +576,19 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
       slide.addShape(pres.ShapeType.roundRect, {
         x: 6.05, y: yPos, w: 3.15, h: 1.9, fill: { color: style.cardBg }, line: { color: idx === 0 ? style.accent2 : style.cardBorder, width: 1 }, rectRadius: 0.1
       });
-      slide.addText(sc.title, {
-        x: 6.25, y: yPos + 0.2, w: 2.75, h: 0.35, fontSize: 12.5, bold: true, color: idx === 0 ? style.accent2 : style.text, fontFace: 'Arial'
-      });
-      slide.addText(sc.desc, {
-        x: 6.25, y: yPos + 0.6, w: 2.75, h: 1.1, fontSize: 10.5, color: style.subtext, fontFace: 'Arial'
-      });
+      if (idx === 1 && topicImageBase64) {
+        slide.addImage({
+          data: topicImageBase64,
+          x: 6.15, y: yPos + 0.1, w: 2.95, h: 1.7, sizing: { type: 'cover', w: 2.95, h: 1.7 }, round: true
+        });
+      } else {
+        slide.addText(sc.title, {
+          x: 6.25, y: yPos + 0.2, w: 2.75, h: 0.35, fontSize: 12.5, bold: true, color: idx === 0 ? style.accent2 : style.text, fontFace: 'Arial'
+        });
+        slide.addText(sc.desc, {
+          x: 6.25, y: yPos + 0.6, w: 2.75, h: 1.1, fontSize: 10.5, color: style.subtext, fontFace: 'Arial'
+        });
+      }
     });
     return;
   }
@@ -960,7 +1002,163 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
     return;
   }
 
-  // 15. SUMMARY & TAKEAWAYS (Yakuniy Xulosa & Natijalar)
+  // 15. COMPARISON TABLE ARCHITECTURE (Matritsa va Taqqoslash Jadvali)
+  if (arch === 'comparison_table') {
+    slide.addText(card.title || "Qiyosiy Mezonlar va Tahlil Matritsasi", {
+      x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
+    });
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 0.8, y: 1.25, w: 8.4, h: 3.9, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1.2 }, rectRadius: 0.12
+    });
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 0.8, y: 1.25, w: 8.4, h: 0.55, fill: { color: style.bg }, line: { color: style.accent, width: 1 }, rectRadius: 0.08
+    });
+    slide.addText("Tahliliy Mezon / Parametr", { x: 1.0, y: 1.25, w: 3.4, h: 0.55, fontSize: 11, bold: true, color: style.accent, valign: 'middle', fontFace: 'Arial' });
+    slide.addText(card.col1 || "1-Model / Yondashuv", { x: 4.5, y: 1.25, w: 2.2, h: 0.55, fontSize: 11, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial' });
+    slide.addText(card.col2 || "2-Model / Standart", { x: 6.8, y: 1.25, w: 2.2, h: 0.55, fontSize: 11, bold: true, color: style.accent2, align: 'center', valign: 'middle', fontFace: 'Arial' });
+
+    const rows = card.tableRows || [
+      { param: "Ilmiy asoslanganlik darajasi", val1: "✓ Yuqori (DTS)", val2: "✓ To'liq mos" },
+      { param: "Amaliyotga tatbiq qilish tezligi", val1: "✓ Tezkor (1-2 hafta)", val2: "⚠️ O'rtacha (1 oy)" },
+      { param: "O'quvchilar tomonidan o'zlashtirish", val1: "★ 95% Samaradorlik", val2: "★ 80% Samaradorlik" },
+      { param: "Resurslar va vaqt tejamkorligi", val1: "✓ 2x Tejash", val2: "✕ Qo'shimcha xarajat" }
+    ];
+    rows.slice(0, 4).forEach((r, idx) => {
+      const yPos = 1.9 + (idx * 0.72);
+      if (idx % 2 === 1) {
+        slide.addShape(pres.ShapeType.rect, {
+          x: 0.85, y: yPos, w: 8.3, h: 0.65, fill: { color: style.bg, transparency: 60 }, line: { width: 0 }
+        });
+      }
+      slide.addText(r.param, { x: 1.0, y: yPos, w: 3.4, h: 0.65, fontSize: 10.5, color: style.text, valign: 'middle', fontFace: 'Arial' });
+      slide.addText(r.val1, { x: 4.5, y: yPos, w: 2.2, h: 0.65, fontSize: 10.5, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial' });
+      slide.addText(r.val2, { x: 6.8, y: yPos, w: 2.2, h: 0.65, fontSize: 10.5, bold: true, color: style.accent2, align: 'center', valign: 'middle', fontFace: 'Arial' });
+    });
+    return;
+  }
+
+  // 16. PROGRESS METRICS ARCHITECTURE (Foizli Progress Barlar)
+  if (arch === 'progress_metrics') {
+    slide.addText(card.title || "Samaradorlik Ko'rsatkichlari va Dinamika", {
+      x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
+    });
+    const metrics = card.progressItems || [
+      { title: "Nazariy tushunchalarni o'zlashtirish", pct: 94, note: "A'lo darajadagi ko'rsatkich" },
+      { title: "Amaliy mashg'ulotlar faolligi", pct: 86, note: "O'quvchilarning 86% qismi jalb etilgan" },
+      { title: "Test sinovlari va monitoring natijasi", pct: 91, note: "O'tish balidan yuqori natija" },
+      { title: "Ijodiy va mantiqiy fikrlash rivoji", pct: 78, note: "Doimiy ijobiy dinamika" }
+    ];
+    metrics.slice(0, 4).forEach((m, idx) => {
+      const yPos = 1.25 + (idx * 0.98);
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: 0.8, y: yPos, w: 8.4, h: 0.85, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.08
+      });
+      slide.addText(m.title, { x: 1.0, y: yPos + 0.08, w: 5.5, h: 0.32, fontSize: 11.5, bold: true, color: style.text, fontFace: 'Arial' });
+      slide.addText(`${m.pct}%`, { x: 7.4, y: yPos + 0.08, w: 1.6, h: 0.32, fontSize: 12, bold: true, color: style.accent, align: 'right', fontFace: 'Arial' });
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: 1.0, y: yPos + 0.45, w: 6.0, h: 0.12, fill: { color: style.bg }, line: { width: 0 }, rectRadius: 0.06
+      });
+      const filledW = Math.max(0.5, (6.0 * (m.pct / 100)));
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: 1.0, y: yPos + 0.45, w: filledW, h: 0.12, fill: { color: idx % 2 === 0 ? style.accent : style.accent2 }, line: { width: 0 }, rectRadius: 0.06
+      });
+      slide.addText(m.note || "", { x: 1.0, y: yPos + 0.58, w: 7.8, h: 0.22, fontSize: 8.5, color: style.subtext, fontFace: 'Arial' });
+    });
+    return;
+  }
+
+  // 17. CASE STUDY ARCHITECTURE (Haqiqiy Keys va Amaliy Tadqiqot)
+  if (arch === 'case_study') {
+    slide.addText(card.title || "Amaliy Keys va Tadqiqot Natijalari", {
+      x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
+    });
+    const stages = [
+      { tag: "01. VAZIYAT", title: "Dastlabki Holat va Muammo", col: "EF4444", desc: card.caseSituation || "Mavzuni an'anaviy o'rganishda o'quvchilarda tushunish qiyinchiliklari va past faollik kuzatildi." },
+      { tag: "02. AMALIYOT", title: "Qo'llanilgan Yangi Metod", col: "3B82F6", desc: card.caseAction || "Interaktiv metodlar, zamonaviy laboratoriya tajribalari va ko'rgazmali infografikalar joriy etildi." },
+      { tag: "03. NATIJA", title: "Qo'lga Kiritilgan Yutuq", col: "10B981", desc: card.caseResult || "O'zlashtirish ko'rsatkichi 45% ga oshdi, o'quvchilar mustaqil ilmiy xulosa chiqarish ko'nikmasiga ega bo'ldi." }
+    ];
+    stages.forEach((st, idx) => {
+      const xPos = 0.8 + (idx * 2.9);
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: xPos, y: 1.3, w: 2.65, h: 3.85, fill: { color: style.cardBg }, line: { color: st.col, width: 1.2 }, rectRadius: 0.12
+      });
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: xPos, y: 1.3, w: 2.65, h: 0.08, fill: { color: st.col }, line: { width: 0 }, rectRadius: 0.04
+      });
+      slide.addText(st.tag, { x: xPos + 0.2, y: 1.5, w: 2.25, h: 0.3, fontSize: 10, bold: true, color: st.col, fontFace: 'Arial' });
+      slide.addText(st.title, { x: xPos + 0.2, y: 1.85, w: 2.25, h: 0.5, fontSize: 13, bold: true, color: style.text, fontFace: 'Arial' });
+      slide.addText(st.desc, { x: xPos + 0.2, y: 2.45, w: 2.25, h: 2.5, fontSize: 10.5, color: style.subtext, fontFace: 'Arial' });
+    });
+    return;
+  }
+
+  // 18. TRI GALLERY ARCHITECTURE (3 ta Vizual Mini-Karta)
+  if (arch === 'tri_gallery') {
+    slide.addText(card.title || "Vizual Konsepsiyalar Galereyasi", {
+      x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
+    });
+    const items = (card.cards || card.items || [
+      { title: "Asosiy Element", desc: "Mavzuning dastlabki poydevori va muhim ta'rifi" },
+      { title: "Rivojlanish Fazasi", desc: "Ketma-ket kechadigan o'zgarishlar va jarayon" },
+      { title: "Yakuniy Hosila", desc: "Olingan yakuniy natija va amaliy ahamiyat" }
+    ]).slice(0, 3);
+    items.forEach((it, idx) => {
+      const xPos = 0.8 + (idx * 2.9);
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: xPos, y: 1.3, w: 2.65, h: 3.85, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.12
+      });
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: xPos + 0.15, y: 1.45, w: 2.35, h: 1.7, fill: { color: style.bg }, line: { color: style.accent, width: 1 }, rectRadius: 0.08
+      });
+      if (topicImageBase64) {
+        slide.addImage({
+          data: topicImageBase64,
+          x: xPos + 0.2, y: 1.5, w: 2.25, h: 1.6, sizing: { type: 'cover', w: 2.25, h: 1.6 }
+        });
+      } else {
+        slide.addText("🖼️ VIZUAL KARTA", {
+          x: xPos + 0.2, y: 2.1, w: 2.25, h: 0.4, fontSize: 11, bold: true, color: style.accent, align: 'center', fontFace: 'Arial'
+        });
+      }
+      slide.addText(it.title || `Konsept 0${idx + 1}`, {
+        x: xPos + 0.2, y: 3.3, w: 2.25, h: 0.45, fontSize: 12.5, bold: true, color: style.text, fontFace: 'Arial'
+      });
+      slide.addText(it.desc || it.text || "", {
+        x: xPos + 0.2, y: 3.8, w: 2.25, h: 1.25, fontSize: 10, color: style.subtext, fontFace: 'Arial'
+      });
+    });
+    return;
+  }
+
+  // 19. FAQ ACCORDION ARCHITECTURE (3 ta Muhim Savol va Ilmiy Sharh)
+  if (arch === 'faq_accordion') {
+    slide.addText(card.title || "Asosiy Savollar va Ilmiy Tushuntirishlar", {
+      x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
+    });
+    const faqs = card.faqItems || [
+      { q: "Mavzuning eng fundamental o'rganish maqsadi nimadan iborat?", a: "O'quvchilarda jarayonning mohiyatini ilmiy asosda tushunish va DTS mezonlariga mos ko'nikmalarni shakllantirish." },
+      { q: "Ushbu qonuniyat kundalik hayot va amaliyotda qayerda uchraydi?", a: "Tabiatdagi barcha moddalar almashinuvida, ishlab chiqarish texnologiyalarida va ekologik tizimlarda asosiy o'rin tutadi." },
+      { q: "Imtihon va nazorat testlarida nimalarga alohida e'tibor qaratish kerak?", a: "Formulalar, asosiy terminlar va hodisalar o'rtasidagi sabab-oqibat bog'liqliklarini aniq bilish zarur." }
+    ];
+    faqs.slice(0, 3).forEach((f, idx) => {
+      const yPos = 1.25 + (idx * 1.3);
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: 0.8, y: yPos, w: 8.4, h: 1.15, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.1
+      });
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: 0.8, y: yPos, w: 0.08, h: 1.15, fill: { color: idx === 1 ? style.accent2 : style.accent }, line: { width: 0 }, rectRadius: 0.04
+      });
+      slide.addText(`❓ ${f.q}`, {
+        x: 1.05, y: yPos + 0.12, w: 7.9, h: 0.35, fontSize: 11.5, bold: true, color: style.text, fontFace: 'Arial'
+      });
+      slide.addText(`💡 ${f.a}`, {
+        x: 1.05, y: yPos + 0.48, w: 7.9, h: 0.58, fontSize: 10, color: style.subtext, fontFace: 'Arial'
+      });
+    });
+    return;
+  }
+
+  // 20. SUMMARY & TAKEAWAYS (Yakuniy Xulosa & Natijalar)
   slide.addShape(pres.ShapeType.roundRect, {
     x: 0.8, y: 0.85, w: 8.4, h: 4.4, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1.5 }, rectRadius: 0.15
   });
@@ -994,7 +1192,9 @@ export async function generatePresentationPptx(config = {}) {
     cards = null,
     authorName = "SmartOffice EduAI",
     filename = "Gamma_Taqdimot.pptx",
-    includeImages = true
+    includeImages = true,
+    imageDensity = 'medium',
+    imageStyle = 'realistic'
   } = config;
 
   let themeKey = styleName;
@@ -1040,11 +1240,46 @@ export async function generatePresentationPptx(config = {}) {
     }
   }
 
-  // Topic rasmini yuklab olish (Rasm uslubi va miqdorini inobatga olgan holda)
+  // Topic va per-slide maxsus kontekstli rasmlarni parallel yuklab olish
   let topicImageBase64 = null;
+  const cardImages = [];
   if (includeImages) {
-    const imgUrl = getTopicImageUrl(topic);
-    topicImageBase64 = await fetchImageAsBase64(imgUrl, 3000);
+    try {
+      const imgUrl = getTopicImageUrl(topic);
+      topicImageBase64 = await fetchImageAsBase64(imgUrl, 2500);
+    } catch (e) {
+      topicImageBase64 = null;
+    }
+
+    const visualArchs = ['split_image', 'tri_gallery', 'case_study', 'bento_3', 'concept_spotlight'];
+    const fetchPromises = slideDeck.map(async (card, idx) => {
+      if (idx === 0) return topicImageBase64;
+      const arch = resolveSlideArchitecture(card, idx, slideDeck.length);
+      const isVisualLayout = visualArchs.includes(arch);
+      let shouldFetch = false;
+      if (imageDensity === 'high') {
+        shouldFetch = true;
+      } else if (imageDensity === 'low') {
+        shouldFetch = isVisualLayout && (idx === 2 || idx === Math.floor(slideDeck.length / 2));
+      } else {
+        // medium (standart)
+        shouldFetch = isVisualLayout || (idx % 2 === 0);
+      }
+
+      if (shouldFetch) {
+        try {
+          const cardUrl = resolveCardImageUrl(card, topic, imageStyle);
+          const b64 = await fetchImageAsBase64(cardUrl, 2500);
+          return b64 || topicImageBase64;
+        } catch (err) {
+          return topicImageBase64;
+        }
+      }
+      return null;
+    });
+
+    const settled = await Promise.allSettled(fetchPromises);
+    settled.forEach(s => cardImages.push(s.status === 'fulfilled' ? s.value : null));
   }
 
   const pres = new pptxgen();
@@ -1078,8 +1313,9 @@ export async function generatePresentationPptx(config = {}) {
       slide.addNotes(card.speakerNotes);
     }
 
-    // 100+ XIL SLAYD ARXITEKTURASI RENDERINGI
-    renderSlideArchitecture(slide, pres, card, style, index, slideDeck.length, topicImageBase64, authorName, topic);
+    // 100+ XIL SLAYD ARXITEKTURASI RENDERINGI (Har bir slayd uchun maxsus kontekstli rasm)
+    const slideImg = (cardImages && cardImages[index]) ? cardImages[index] : topicImageBase64;
+    renderSlideArchitecture(slide, pres, card, style, index, slideDeck.length, slideImg, authorName, topic);
 
     // Pastki Elegant Footer (1-slayddan keyingi barcha varaqlarda)
     if (index > 0) {

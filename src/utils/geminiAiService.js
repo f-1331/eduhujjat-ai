@@ -288,7 +288,7 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
     `2. Matnlar mavzuning haqiqiy ilmiy terminlari, aniq raqamlari, misollari va darslikka xos faktlar bilan boyitilsin.\n` +
     `3. 1-slayd "hero" bo'lib, uning muallif qismida "${authorName}" ko'rsatilsin.\n` +
     `4. Hech qanday LaTeX yoki dollar ($) belgisidan foydalanmang! Kasrlarni 7/12, darajalarni x^2 yoki oddiy harflar bilan yozing.\n` +
-    `5. Quyidagi boy slayd turlaridan mavzuga eng moslarini tanlab, xilma-xil ketma-ketlikda foydalaning:\n` +
+    `5. Quyidagi boy slayd turlaridan mavzuga eng moslarini tanlab, xilma-xil ketma-ketlikda foydalaning (Har bir slayd uchun mos 2-3 so'zli inglizcha "imageKeyword" kiriting):\n` +
     `   - "hero": Kirish titul slaydi (badge, title, subtitle, presenter: "${authorName}", speakerNotes)\n` +
     `   - "concept": Fundamental ta'rif yoki asosiy qonuniyat (title, badge, mainConcept, explanation, bullets: ["..."], speakerNotes)\n` +
     `   - "split_image": Chapda rasm, o'ngda tahlil (title, badge, imageKeyword: "english topic photo keyword", explanation, bullets: ["..."], speakerNotes)\n` +
@@ -302,9 +302,14 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
     `   - "flow_diagram": 4 ta qadamli gorizontal ketma-ket sxema (title, flowSteps: [{step: "01", title, desc}, ...], speakerNotes)\n` +
     `   - "swot_analysis": SWOT strategik matritsa (title, swotS: ["..."], swotW: ["..."], swotO: ["..."], swotT: ["..."], speakerNotes)\n` +
     `   - "problem_solution": Dolzarb muammo va ilmiy innovatsion yechim (title, problems: ["..."], solutions: ["..."], speakerNotes)\n` +
+    `   - "comparison_table": Qiyosiy mezonlar matritsasi/jadvali (title, col1Title, col2Title, rows: [{param, col1, col2}], speakerNotes)\n` +
+    `   - "progress_metrics": Samaradorlik va foizli progress barlar (title, metrics: [{label, percent, desc}], speakerNotes)\n` +
+    `   - "case_study": Haqiqiy keys va amaliy tadqiqot (title, caseSituation, caseAction, caseResult, speakerNotes)\n` +
+    `   - "tri_gallery": 3 ta vizual tahliliy karta (title, items: [{title, desc}], imageKeyword: "english keyword", speakerNotes)\n` +
+    `   - "faq_accordion": 3 ta asosiy savol va ilmiy tushuntirish (title, qas: [{q, a}], speakerNotes)\n` +
     `   - "citation_quote": Katta ta'sirchan ilmiy iqtibos (quote, author, speakerNotes)\n` +
     `   - "quiz_slide": Interaktiv nazorat/munozara savoli (title, question, options: ["A) ...", "B) ...", "C) ...", "D) ..."], answer, speakerNotes)\n` +
-    `   - "conclusion": Xulosa va amaliy saboqlar (title, quote, takeaways: ["...", "..."], speakerNotes)\n\n` + +
+    `   - "conclusion": Xulosa va amaliy saboqlar (title, quote, takeaways: ["...", "..."], speakerNotes)\n\n` +
     `Faqat quyidagi JSON massiv formatida javob qaytar (boshqa hech qanday so'z yoki belgi yozma):\n` +
     `[ { "type": "...", ... } ]`;
 
