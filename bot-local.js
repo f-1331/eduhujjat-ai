@@ -439,15 +439,15 @@ async function executePresentationGeneration(ctx, topic, options = {}) {
 
   let waitMsg = null;
   const statusText = 
-    `🎨 **Gamma & Genspark AI taqdimot tayyorlanmoqda...**\n\n` +
+    `🎨 **Gamma & Genspark AI Premium Taqdimot Tayyorlanmoqda...**\n\n` +
     `📌 Mavzu: **${topic}**\n` +
     `👤 Muallif: **${authorName}**\n` +
     `📄 Slaydlar soni: **${slideCount} ta** (1-30 betlik)\n` +
     `📊 Hajmi: **${detailLabels[detailLevel] || detailLevel}**\n` +
-    `🖼 Rasmlar: **${styleLabels[imageStyle] || imageStyle}** (${densityLabels[imageDensity] || imageDensity})\n` +
+    `🖼 Rasmlar: **1080p Full HD** (${densityLabels[imageDensity] || imageDensity})\n` +
     `🎨 Uslub: **${styleName} (100+ dizayn)**\n` +
     `⚡ Perexodlar: **Dinamik animatsiyalar bilan**\n\n` +
-    `⏳ *(Gemini AI chuqur tahlil qilmoqda va slaydlar tuzilmoqda...)*`;
+    `⏳ *AI chuqur ilmiy tahlil o'tkazmoqda va har bir slayd uchun maxsus 1080p Full HD tasvirlarni chizmoqda (bu 15-30 soniya olishi mumkin, iltimos kuting)...*`;
 
   if (ctx.callbackQuery?.message) {
     try {

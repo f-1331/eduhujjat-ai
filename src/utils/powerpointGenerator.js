@@ -174,33 +174,33 @@ export function resolveCardImageUrl(card, topic = "", imageStyle = "realistic") 
     .slice(0, 60);
 
   if (!cleanKeyword || cleanKeyword.length < 3) {
-    cleanKeyword = "modern science education research";
+    cleanKeyword = "modern science education research presentation";
   }
 
   const seed = Math.floor(Math.random() * 999999);
 
   if (imageStyle === 'ai3d') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' 3d isometric render octane presentation graphics high quality')}` +
-      `?width=800&height=600&nologo=true&seed=${seed}`;
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' 3d isometric render octane c4d presentation graphics 4k uhd')}` +
+      `?width=1920&height=1080&nologo=true&seed=${seed}`;
   }
   if (imageStyle === 'vector') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' flat vector illustration clean graphic design colorful educational')}` +
-      `?width=800&height=600&nologo=true&seed=${seed}`;
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' flat vector illustration clean graphic design colorful educational 4k')}` +
+      `?width=1920&height=1080&nologo=true&seed=${seed}`;
   }
   if (imageStyle === 'infographic') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' scientific infographic chart diagram schematic presentation vector')}` +
-      `?width=800&height=600&nologo=true&seed=${seed}`;
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' scientific infographic chart diagram schematic presentation vector 4k')}` +
+      `?width=1920&height=1080&nologo=true&seed=${seed}`;
   }
   if (imageStyle === 'abstract') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' abstract pastel gradient glassmorphism aesthetic 3d minimal')}` +
-      `?width=800&height=600&nologo=true&seed=${seed}`;
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' abstract pastel gradient glassmorphism aesthetic 3d minimal 4k')}` +
+      `?width=1920&height=1080&nologo=true&seed=${seed}`;
   }
   // Realistic (Default)
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' photography high quality national geographic 4k crisp detailed educational')}` +
-    `?width=800&height=600&nologo=true&seed=${seed}`;
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' professional studio photography national geographic 4k uhd crisp detailed educational award winning')}` +
+    `?width=1920&height=1080&nologo=true&seed=${seed}`;
 }
 
-export async function fetchImageAsBase64(imageUrl, timeoutMs = 7000) {
+export async function fetchImageAsBase64(imageUrl, timeoutMs = 15000) {
   if (!imageUrl) return null;
   try {
     const res = await fetch(imageUrl, { signal: AbortSignal.timeout(timeoutMs) });
@@ -647,18 +647,35 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
       slide.addShape(pres.ShapeType.roundRect, {
         x: xPos, y: 1.35, w: 2.65, h: 0.08, fill: { color: col }, line: { color: col, width: 0 }, rectRadius: 0.04
       });
-      slide.addShape(pres.ShapeType.ellipse, {
-        x: xPos + 0.25, y: 1.58, w: 0.55, h: 0.55, fill: { color: style.bg }, line: { color: col, width: 1.2 }
-      });
-      slide.addText(c.num || `0${idx + 1}`, {
-        x: xPos + 0.25, y: 1.58, w: 0.55, h: 0.55, fontSize: 12, bold: true, color: col, align: 'center', valign: 'middle', fontFace: 'Arial'
-      });
-      slide.addText(c.title, {
-        x: xPos + 0.25, y: 2.25, w: 2.15, h: 0.5, fontSize: 13.5, bold: true, color: style.text, fontFace: 'Arial'
-      });
-      slide.addText(c.desc, {
-        x: xPos + 0.25, y: 2.8, w: 2.15, h: 2.3, fontSize: 10.5, color: style.subtext, fontFace: 'Arial'
-      });
+
+      if (idx === 1 && topicImageBase64) {
+        slide.addShape(pres.ShapeType.roundRect, {
+          x: xPos + 0.15, y: 1.5, w: 2.35, h: 1.5, fill: { color: style.bg }, line: { color: col, width: 1 }, rectRadius: 0.08
+        });
+        slide.addImage({
+          data: topicImageBase64,
+          x: xPos + 0.18, y: 1.53, w: 2.29, h: 1.44, sizing: { type: 'cover', w: 2.29, h: 1.44 }, round: true
+        });
+        slide.addText(c.title, {
+          x: xPos + 0.2, y: 3.1, w: 2.25, h: 0.45, fontSize: 12.5, bold: true, color: style.text, fontFace: 'Arial'
+        });
+        slide.addText(c.desc, {
+          x: xPos + 0.2, y: 3.6, w: 2.25, h: 1.6, fontSize: 10, color: style.subtext, fontFace: 'Arial'
+        });
+      } else {
+        slide.addShape(pres.ShapeType.ellipse, {
+          x: xPos + 0.25, y: 1.58, w: 0.55, h: 0.55, fill: { color: style.bg }, line: { color: col, width: 1.2 }
+        });
+        slide.addText(c.num || `0${idx + 1}`, {
+          x: xPos + 0.25, y: 1.58, w: 0.55, h: 0.55, fontSize: 12, bold: true, color: col, align: 'center', valign: 'middle', fontFace: 'Arial'
+        });
+        slide.addText(c.title, {
+          x: xPos + 0.25, y: 2.25, w: 2.15, h: 0.5, fontSize: 13.5, bold: true, color: style.text, fontFace: 'Arial'
+        });
+        slide.addText(c.desc, {
+          x: xPos + 0.25, y: 2.8, w: 2.15, h: 2.3, fontSize: 10.5, color: style.subtext, fontFace: 'Arial'
+        });
+      }
     });
     return;
   }
@@ -754,6 +771,11 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
     slide.addText(card.title || "Jarayon Ketma-Ketligi va Bosqichlar", {
       x: 0.8, y: 0.68, w: 8.4, h: 0.48, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
     });
+
+    const hasTimeImg = !!topicImageBase64;
+    const cardW = hasTimeImg ? 4.6 : 7.5;
+    const titleW = hasTimeImg ? 2.5 : 5.25;
+
     slide.addShape(pres.ShapeType.line, {
       x: 1.3, y: 1.8, w: 0, h: 2.6, line: { color: style.accent, width: 1.8, dashType: 'dash' }
     });
@@ -767,21 +789,31 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
         x: 1.1, y: yPos + 0.32, w: 0.4, h: 0.4, fontSize: 10, bold: true, color: style.bg, align: 'center', valign: 'middle', fontFace: 'Arial'
       });
       slide.addShape(pres.ShapeType.roundRect, {
-        x: 1.7, y: yPos, w: 7.5, h: 1.15, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.1
+        x: 1.7, y: yPos, w: cardW, h: 1.15, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.1
       });
       slide.addShape(pres.ShapeType.roundRect, {
         x: 1.7, y: yPos, w: 0.08, h: 1.15, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.04
       });
       slide.addText(st.step || `${idx + 1}-BOSQICH`, {
-        x: 1.95, y: yPos + 0.2, w: 1.6, h: 0.32, fontSize: 9.5, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial'
+        x: 1.85, y: yPos + 0.2, w: 1.5, h: 0.32, fontSize: 9.5, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial'
       });
       slide.addText(st.title, {
-        x: 3.75, y: yPos + 0.18, w: 5.25, h: 0.35, fontSize: 12.5, bold: true, color: style.text, fontFace: 'Arial'
+        x: 3.45, y: yPos + 0.18, w: titleW, h: 0.35, fontSize: 12, bold: true, color: style.text, fontFace: 'Arial'
       });
       slide.addText(st.desc || st.text || "", {
-        x: 3.75, y: yPos + 0.55, w: 5.25, h: 0.5, fontSize: 10.5, color: style.subtext, fontFace: 'Arial'
+        x: 3.45, y: yPos + 0.55, w: titleW, h: 0.5, fontSize: 10, color: style.subtext, fontFace: 'Arial'
       });
     });
+
+    if (hasTimeImg) {
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: 6.55, y: 1.35, w: 2.65, h: 3.8, fill: { color: style.bg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.12
+      });
+      slide.addImage({
+        data: topicImageBase64,
+        x: 6.65, y: 1.45, w: 2.45, h: 3.6, sizing: { type: 'cover', w: 2.45, h: 3.6 }, round: true
+      });
+    }
     return;
   }
 
@@ -1126,7 +1158,19 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
       });
       slide.addText(st.tag, { x: xPos + 0.2, y: 1.5, w: 2.25, h: 0.3, fontSize: 10, bold: true, color: st.col, fontFace: 'Arial' });
       slide.addText(st.title, { x: xPos + 0.2, y: 1.85, w: 2.25, h: 0.5, fontSize: 13, bold: true, color: style.text, fontFace: 'Arial' });
-      slide.addText(st.desc, { x: xPos + 0.2, y: 2.45, w: 2.25, h: 2.5, fontSize: 10.5, color: style.subtext, fontFace: 'Arial' });
+
+      if (idx === 1 && topicImageBase64) {
+        slide.addShape(pres.ShapeType.roundRect, {
+          x: xPos + 0.15, y: 2.45, w: 2.35, h: 1.5, fill: { color: style.bg }, line: { color: st.col, width: 1 }, rectRadius: 0.08
+        });
+        slide.addImage({
+          data: topicImageBase64,
+          x: xPos + 0.18, y: 2.48, w: 2.29, h: 1.44, sizing: { type: 'cover', w: 2.29, h: 1.44 }, round: true
+        });
+        slide.addText(st.desc, { x: xPos + 0.2, y: 4.05, w: 2.25, h: 1.0, fontSize: 9.5, color: style.subtext, fontFace: 'Arial' });
+      } else {
+        slide.addText(st.desc, { x: xPos + 0.2, y: 2.45, w: 2.25, h: 2.5, fontSize: 10.5, color: style.subtext, fontFace: 'Arial' });
+      }
     });
     return;
   }
@@ -1318,30 +1362,28 @@ export async function generatePresentationPptx(config = {}) {
   if (includeImages) {
     try {
       const imgUrl = resolveCardImageUrl({ title: topic, imageKeyword: topic }, topic, imageStyle);
-      topicImageBase64 = await fetchImageAsBase64(imgUrl, 7000);
+      topicImageBase64 = await fetchImageAsBase64(imgUrl, 15000);
     } catch (e) {
       topicImageBase64 = null;
     }
 
-    const visualArchs = ['split_image', 'tri_gallery', 'case_study', 'bento_3', 'concept_spotlight', 'hero_classic', 'pillars_3', 'problem_solution', 'summary_takeaways'];
+    const visualArchs = ['split_image', 'tri_gallery', 'case_study', 'bento_3', 'concept_spotlight', 'hero_classic', 'pillars_3', 'problem_solution', 'summary_takeaways', 'timeline_steps'];
     const fetchPromises = slideDeck.map(async (card, idx) => {
       if (idx === 0) return topicImageBase64;
       const arch = resolveSlideArchitecture(card, idx, slideDeck.length);
       const isVisualLayout = visualArchs.includes(arch);
       let shouldFetch = false;
-      if (imageDensity === 'high') {
-        shouldFetch = true;
-      } else if (imageDensity === 'low') {
+      if (imageDensity === 'low') {
         shouldFetch = isVisualLayout && (idx === 2 || idx === Math.floor(slideDeck.length / 2));
       } else {
-        // medium (standart)
-        shouldFetch = isVisualLayout || (idx % 2 === 0);
+        // High va Medium: Gamma darajasidagi maksimal vizual to'yinganlik
+        shouldFetch = true;
       }
 
       if (shouldFetch) {
         try {
           const cardUrl = resolveCardImageUrl(card, topic, imageStyle);
-          const b64 = await fetchImageAsBase64(cardUrl, 7000);
+          const b64 = await fetchImageAsBase64(cardUrl, 15000);
           return b64 || topicImageBase64;
         } catch (err) {
           return topicImageBase64;
