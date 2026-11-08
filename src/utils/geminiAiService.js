@@ -77,6 +77,9 @@ export function cleanLatexAndFormat(text) {
   // 8. Ortiqcha probellarni tozalash
   clean = clean.replace(/[ \t]{2,}/g, ' ');
 
+  // 9. Robotik va ikkilanuvchi kirish iboralarini tozalash (To'g'ridan-to'g'ri ilmiy-pedagogik matn boshlanishi)
+  clean = clean.replace(/^(?:Assalomu\s+alaykum[!\.,]?\s*)?(?:Sizning\s+qisqa\s+murojaatingizdan\s+kelib\s+chiqib[,\s]*)?(?:bu\s+yerda[,\s]*)?(?:men\s+(?:taxmin\s+qilaman|shuni\s+nazarda\s+tutgan\s+deb\s+o'ylayman)[^.\n]*[.\n]+)?/i, '');
+
   return clean.trim();
 }
 

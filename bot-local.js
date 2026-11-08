@@ -535,11 +535,17 @@ function getEffectiveRole(ctx) {
   return 'USER';
 }
 
+function getUser(userId) {
+  if (!userId) return null;
+  const numId = parseInt(userId, 10);
+  return db.users.get(numId) || db.users.get(String(userId)) || null;
+}
+
 function isUserActive(userId, username) {
   if (userId === SUPER_OWNER_ID) {
     const role = db.simulatedRoles.get(userId);
     if (role === 'USER') {
-      const u = db.users.get(userId);
+      const u = getUser(userId);
       return u?.status === 'ACTIVE';
     }
     return true;
@@ -548,7 +554,7 @@ function isUserActive(userId, username) {
   if (username && username.toLowerCase() === OWNER_USERNAME.toLowerCase()) return true;
   if (username && db.admins.has(username.toLowerCase())) return true;
   
-  const user = db.users.get(userId);
+  const user = getUser(userId);
   if (!user || user.status !== 'ACTIVE') return false;
 
   if (typeof user.remainingUses === 'number' && user.remainingUses <= 0) {
@@ -561,7 +567,7 @@ function isUserActive(userId, username) {
 
 function consumeUserUse(userId) {
   if (!userId || userId === SUPER_OWNER_ID) return null;
-  const user = db.users.get(userId);
+  const user = getUser(userId);
   if (user && typeof user.remainingUses === 'number') {
     user.remainingUses = Math.max(0, user.remainingUses - 1);
     if (user.remainingUses <= 0) {
@@ -2499,23 +2505,23 @@ async function processIntelligentMessage(ctx, userPrompt) {
   db.userSessions.set(userId, raw);
   const lower = raw.toLowerCase();
 
-  // 1. SLAYD / TAQDIMOT ISTAGI
-  if (/\b(?:slayd|taqdimot|prezentatsiya|powerpoint|pptx)\b/i.test(lower) && /\b(?:tuz|yarat|qilib ber|kerak|yasash|tayyorla|qil)\b/i.test(lower)) {
-    const cleanTopic = raw.replace(/\b(?:slayd|taqdimot|prezentatsiya|powerpoint|pptx|tuzib ber|tuz|yarat|qilib ber|kerak|yasash|tayyorla|qil|menga|iltimos)\b/gi, '').trim();
+  // 1. SLAYD / TAQDIMOT ISTAGI (MASALAN: Amir Temur slayd, fotosintez prezentatsiya, slayd tuzib ber)
+  const isSlideRequest = /\b(?:slayd|slaydi|slaydlar|slaydlari|taqdimot|taqdimoti|prezentatsiya|prezentatsiyasi|powerpoint|pptx)\b/i.test(lower);
+  if (isSlideRequest) {
+    const cleanTopic = raw.replace(/\b(?:slayd|slaydi|slaydlar|slaydlari|taqdimot|taqdimoti|prezentatsiya|prezentatsiyasi|powerpoint|pptx|tuzib ber|tuz|yarat|qilib ber|kerak|yasash|tayyorla|qil|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
     return startSlideWizard(ctx, cleanTopic || raw);
   }
 
-  // 2. TEST SO'ROVI (MASALAN: 8-sinf biologiya qon 10talik test)
-  const isTestRequest = /\b(?:test|savollar varianti|nazorat testi)\b/i.test(lower) && 
-    (/\b(?:tuz|yarat|ber|kerak|yoz|variant|talik|dts|savol|sinf)\b/i.test(lower) || /\d+\s*talik/i.test(lower));
+  // 2. TEST SO'ROVI (MASALAN: 9-sinf huquq 100talik test, 15 talik test, fizika testlari)
+  const isTestRequest = /\b(?:test|testlar|testlari|testi|nazorat ishi|nazorat|savollar|savollari)\b/i.test(lower) || /\d+\s*(?:ta|talik)\s*(?:test|savol)/i.test(lower);
 
   if (isTestRequest) {
-    const countMatch = raw.match(/(\d+)\s*(?:ta|talik|savol)/i);
-    const count = countMatch ? Math.min(parseInt(countMatch[1], 10), 30) : 10;
-    const cleanTopic = raw.replace(/\b(?:test|testlar|tuzib ber|tuz|yarat|ber|kerak|yoz|nazorat|varianti|variant|\d+\s*talik|\d+\s*ta|menga|iltimos)\b/gi, '').trim();
+    const countMatch = raw.match(/(\d+)\s*(?:ta|talik|savol|test)/i);
+    const count = countMatch ? Math.min(Math.max(1, parseInt(countMatch[1], 10)), 50) : 10;
+    const cleanTopic = raw.replace(/\b(?:test|testlar|testlari|testi|nazorat ishi|nazorat|tuzib ber|tuz|yarat|ber|kerak|yoz|varianti|variant|\d+\s*talik|\d+\s*ta|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
     const finalTopic = cleanTopic || raw;
 
-    const waitMsg = await ctx.reply(`🎲 **"${finalTopic}" bo'yicha ${count} talik nazorat testi va kalitlar tuzilmoqda...**\n⏳ *(DTS standartlari va tasodifiy A,B,C,D variantlar bilan)*`);
+    const waitMsg = await ctx.reply(`🎯 **"${finalTopic}" bo'yicha ${count} talik nazorat testi va kalitlar tuzilmoqda...**\n⏳ *(DTS standartlari va tasodifiy A, B, C, D variantlar bilan)*`);
     try {
       let testResult = "";
       try {
@@ -2526,23 +2532,23 @@ async function processIntelligentMessage(ctx, userPrompt) {
 
       const kb = new InlineKeyboard()
         .text("📥 Testni Word (.docx) yuklash", "ai_gen_test")
-        .text("🎨 Slayd (.pptx) qilish", "ai_gen_gamma")
+        .text("📊 Slayd (.pptx) qilish", "ai_gen_gamma")
         .row()
         .text("📝 Dars konspekti (.docx)", "ai_gen_lesson")
-        .webApp("🚀 WebApp-da Ochish", WEBAPP_URL);
+        .webApp("📱 WebApp-da Ochish", WEBAPP_URL);
 
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(testResult, { reply_markup: kb });
+      return ctx.reply(testResult.slice(0, 4000), { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Test tuzishda xatolik: ${err.message}`);
     }
   }
 
-  // 3. KONSPEKT / DARS ISHLANMASI
-  const isLessonRequest = /\b(?:konspekt|dars ishlanma|dars ishlanmasi|dars reja|45 daqiqa)\b/i.test(lower);
+  // 3. KONSPEKT / DARS ISHLANMASI (MASALAN: 9-sinf kimyo konspekt, 45 daqiqalik dars ishlanma)
+  const isLessonRequest = /\b(?:konspekt|konspekti|dars ishlanma|dars ishlanmasi|dars reja|dars rejasi|45 daqiqa|45 daqiqalik|ochiq dars)\b/i.test(lower);
   if (isLessonRequest) {
-    const cleanTopic = raw.replace(/\b(?:konspekt|dars ishlanmasi|dars ishlanma|dars rejasi|dars reja|45 daqiqalik|45 daqiqa|tuzib ber|tuz|yarat|yoz|kerak|menga|iltimos)\b/gi, '').trim();
+    const cleanTopic = raw.replace(/\b(?:konspekt|konspekti|dars ishlanmasi|dars ishlanma|dars rejasi|dars reja|45 daqiqalik|45 daqiqa|ochiq dars|tuzib ber|tuz|yarat|yoz|kerak|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
     const finalTopic = cleanTopic || raw;
 
     const waitMsg = await ctx.reply(`📝 **"${finalTopic}" bo'yicha 45 daqiqalik dars ishlanmasi (konspekt) tayyorlanmoqda...**\n⏳ *(6 bosqichli xronometraj bilan)*`);
@@ -2556,21 +2562,44 @@ async function processIntelligentMessage(ctx, userPrompt) {
 
       const kb = new InlineKeyboard()
         .text("📥 Konspektni Word (.docx) yuklash", "ai_gen_lesson")
-        .text("🎨 Slayd (.pptx) qilish", "ai_gen_gamma")
+        .text("📊 Slayd (.pptx) qilish", "ai_gen_gamma")
         .row()
-        .text("🎲 15 Talik Test (.docx)", "ai_gen_test")
-        .webApp("🚀 WebApp-da Ochish", WEBAPP_URL);
+        .text("🎯 15 Talik Test (.docx)", "ai_gen_test")
+        .webApp("📱 WebApp-da Ochish", WEBAPP_URL);
 
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(lessonResult, { reply_markup: kb });
+      return ctx.reply(lessonResult.slice(0, 4000), { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Konspekt tayyorlashda xatolik: ${err.message}`);
     }
   }
 
-  // 4. BUYRUQ LOYIHASI
-  if (/\b(?:buyruq|qaror)\b/i.test(lower) && /\b(?:tuz|yoz|loyihasi|maktab|direktor|ber)\b/i.test(lower)) {
+  // 4. REFERAT / INSHO / MUSTAQIL ISH / MAQOLA
+  const isEssayRequest = /\b(?:referat|insho|ma'ruza|maqola|mustaqil ish|doklad)\b/i.test(lower);
+  if (isEssayRequest) {
+    const cleanTopic = raw.replace(/\b(?:referat|insho|ma'ruza|maqola|mustaqil ish|doklad|tuzib ber|yozib ber|yoz|tayyorla|kerak|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
+    const finalTopic = cleanTopic || raw;
+    const waitMsg = await ctx.reply(`📑 **"${finalTopic}" mavzusida akademik referat / ma'ruza tayyorlanmoqda...**\n⏳ *(Reja, kirish, asosiy qismlar, xulosa va adabiyotlar bilan)*`);
+    try {
+      const essayPrompt = `Mavzu: "${finalTopic}"\nVazifa: O'zbekiston oliy va xalq ta'limi standartlariga mos, chuqur, akademik va ilmiy darajadagi to'liq referat/ma'ruza matni yozib ber.\nReja:\n1. Kirish (Mavzuning dolzarbligi va maqsadlari)\n2. Asosiy Qism (2-3 ta asosiy bo'lim va chuqur tahlil)\n3. Xulosa va Amaliy Ahamiyati\n4. Foydalanilgan Adabiyotlar Ro'yxati\n\nQat'iy qoida: LaTeX va dollar ($) belgisidan foydalanmang!`;
+      const essayResult = await callGemini(essayPrompt, "Siz O'zbekistonning eng yuqori toifali akademik olimi va metodistisiz. Darhol to'g'ridan-to'g'ri referat matnini taqdim eting, o'zingizni oqlash yoki ortiqcha gap yozmang.");
+      const kb = new InlineKeyboard()
+        .text("📊 Slayd (.pptx) qilish", "ai_gen_gamma")
+        .text("📝 Konspekt (.docx)", "ai_gen_lesson")
+        .row()
+        .text("🎯 Test (.docx)", "ai_gen_test")
+        .webApp("📱 WebApp", WEBAPP_URL);
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(essayResult.slice(0, 4000), { reply_markup: kb });
+    } catch(err) {
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(`❌ Referat tayyorlashda xatolik: ${err.message}`);
+    }
+  }
+
+  // 5. BUYRUQ LOYIHASI
+  if (/\b(?:buyruq|qaror|farmoyish)\b/i.test(lower)) {
     const waitMsg = await ctx.reply("📋 **Rasmiy maktab buyrug'i loyihasi tayyorlanmoqda...**");
     try {
       let orderResult = "";
@@ -2581,18 +2610,18 @@ async function processIntelligentMessage(ctx, userPrompt) {
       }
       const kb = new InlineKeyboard()
         .text("📥 Buyruqni Word (.docx) yuklash", "ai_gen_order")
-        .webApp("🚀 WebApp", WEBAPP_URL);
+        .webApp("📱 WebApp", WEBAPP_URL);
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(orderResult, { reply_markup: kb });
+      return ctx.reply(orderResult.slice(0, 4000), { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Buyruq tuzishda xatolik: ${err.message}`);
     }
   }
 
-  // 5. O'QUVCHI TAVSIFNOMASI
+  // 6. O'QUVCHI TAVSIFNOMASI
   if (/\b(?:tavsifnoma|xarakteristika)\b/i.test(lower)) {
-    const waitMsg = await ctx.reply("🔍 **O'quvchi uchun rasmiy pedagogik tavsifnoma yozilmoqda...**");
+    const waitMsg = await ctx.reply("📝 **O'quvchi uchun rasmiy pedagogik tavsifnoma yozilmoqda...**");
     try {
       let refResult = "";
       try {
@@ -2602,18 +2631,18 @@ async function processIntelligentMessage(ctx, userPrompt) {
       }
       const kb = new InlineKeyboard()
         .text("📥 Tavsifnomani Word (.docx) yuklash", "ai_gen_tavsif")
-        .webApp("🚀 WebApp", WEBAPP_URL);
+        .webApp("📱 WebApp", WEBAPP_URL);
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(refResult, { reply_markup: kb });
+      return ctx.reply(refResult.slice(0, 4000), { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Tavsifnoma yozishda xatolik: ${err.message}`);
     }
   }
 
-  // 6. BAYONNOMA / PROTOKOL
+  // 7. BAYONNOMA / PROTOKOL
   if (/\b(?:bayonnoma|protokol)\b/i.test(lower)) {
-    const waitMsg = await ctx.reply("📜 **Pedagogik kengash bayonnomasi tayyorlanmoqda...**");
+    const waitMsg = await ctx.reply("📑 **Pedagogik kengash bayonnomasi tayyorlanmoqda...**");
     try {
       let protoResult = "";
       try {
@@ -2623,40 +2652,49 @@ async function processIntelligentMessage(ctx, userPrompt) {
       }
       const kb = new InlineKeyboard()
         .text("📥 Bayonnomani Word (.docx) yuklash", "ai_gen_proto")
-        .webApp("🚀 WebApp", WEBAPP_URL);
+        .webApp("📱 WebApp", WEBAPP_URL);
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(protoResult, { reply_markup: kb });
+      return ctx.reply(protoResult.slice(0, 4000), { reply_markup: kb });
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Bayonnoma tuzishda xatolik: ${err.message}`);
     }
   }
 
-  // 7. UNIVERSAL CHAT / PEDAGOGIK MASLAHAT VA ILMIY SAVOL-JAVOB
-  const waitMsg = await ctx.reply("⏳ **EduAI (Google Gemini) o'ylamoqda va javob tayyorlamoqda...**");
+  // 8. UNIVERSAL CHAT / PEDAGOGIK MASLAHAT VA ILMIY SAVOL-JAVOB (MASALAN: 9-kimyo ko'payish)
+  const waitMsg = await ctx.reply("⚡ **EduAI tahlil qilmoqda va ilmiy material tayyorlamoqda...**");
   try {
-    const answer = await callGemini(
-      raw,
-      "Siz O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi mezonlari bo'yicha eng yuqori toifali pedagogik ekspert, metodist va universal maslahatchisiz. Foydalanuvchining har qanday ta'limiy, metodik yoki fanga oid savoliga aniq, ilmiy asoslangan, tushunarli va chiroyli o'zbek tilida to'liq javob bering. Hech qanday LaTeX yoki dollar ($) belgisidan foydalanmang."
-    );
+    const systemInstruction = 
+      "Siz O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi mezonlari bo'yicha Respublika darajasidagi bosh ekspert-metodist va universal pedagogik AI intellektisiz.\n\n" +
+      "QAT'IY QOIDALAR (AI TUSHUNISHI VA JAVOB STANDARTI):\n" +
+      "1. FOYDALANUVCHINING INTENTSIYASINI CHUQUR TUSHUNING: Foydalanuvchi qisqa yozsa ham (masalan: '9-kimyo ko'payish', 'mitoz', 'bosim'), bu O'zbekiston umumta'lim maktabi darsligi, fani va o'quv dasturi bilan bevosita bog'liq! Fanning darslik mezonlaridan kelib chiqib, mavzuni chuqur va to'liq yoritib bering.\n" +
+      "2. HECH QACHON O'ZINGIZNI OQLAMANG VA IKKILANMANG: 'Assalomu alaykum, sizning qisqa murojaatingizdan kelib chiqib...', 'Men shuni nazarda tutgan deb taxmin qilaman...', 'Savolingizni aniqroq yozing...' kabi robotik, keraksiz gaplarni yozish QAT'IYAN TAQIQLANADI! Darhol to'g'ridan-to'g'ri professional ilmiy-pedagogik materialni bering.\n" +
+      "3. TUZILISH:\n" +
+      "   - Sarlavha: Aniq fan va mavzu nomi (masalan: 🔬 9-Sinf Kimyo & Biologiya: Hujayra Bo'linishining Biokimyoviy Asoslari)\n" +
+      "   - I. Fundamental Ilmiy Qonuniyatlar va Tushunchalar (DNK, ATF, oqsillar sintezi, moddalar almashinuvi)\n" +
+      "   - II. Maktab Darsligi DTS Mezonlari va Aniq Faktlar\n" +
+      "   - III. Amaliy Xulosalar va Metodik Tavsiyalar\n" +
+      "4. LaTeX va dollar ($) belgisi mutlaqo taqiqlanadi! Formullalarni oddiy matn bilan yozing (H2O, O2, C6H12O6, x^2, a/b).";
+
+    const answer = await callGemini(raw, systemInstruction);
 
     const actionKb = new InlineKeyboard()
-      .text("🎨 Slayd (.pptx) qilish", "ai_gen_gamma")
+      .text("📊 Slayd (.pptx) qilish", "ai_gen_gamma")
       .text("📝 Dars konspekti (.docx)", "ai_gen_lesson")
       .row()
-      .text("🎲 10 Talik Test (.docx)", "ai_gen_test")
-      .webApp("🚀 WebApp-da Ko'rish", WEBAPP_URL);
+      .text("🎯 15 Talik Test (.docx)", "ai_gen_test")
+      .webApp("📱 WebApp-da Ko'rish", WEBAPP_URL);
 
     try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-    return ctx.reply(answer, { reply_markup: actionKb });
+    return ctx.reply(answer.slice(0, 4000), { reply_markup: actionKb });
   } catch(err) {
     try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
     return ctx.reply(`🤖 **EduAI Tahlili:**\n\n«${raw}» mavzusi bo'yicha materiallar tayyorlash uchun quyidagi tugmalardan birini tanlang:`, {
       reply_markup: new InlineKeyboard()
-        .text("🎨 Slayd (.pptx)", "ai_gen_gamma")
+        .text("📊 Slayd (.pptx)", "ai_gen_gamma")
         .text("📝 Dars konspekti (.docx)", "ai_gen_lesson")
         .row()
-        .text("🎲 Test (.docx)", "ai_gen_test")
+        .text("🎯 Test (.docx)", "ai_gen_test")
     });
   }
 }
