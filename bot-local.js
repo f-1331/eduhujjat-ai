@@ -178,6 +178,8 @@ const db = {
 
 // 2.1 SLIDE WIZARD STATE VA BOSHQARUV FUNKSIYALARI
 const slideWizardState = new Map();
+// 5 tadan ko'p slaydlar uchun admin tasdig'i navbati
+const pendingSlideApprovals = new Map();
 
 function startSlideWizard(ctx, initialTopic = '') {
   const userId = ctx.from.id;
@@ -186,6 +188,7 @@ function startSlideWizard(ctx, initialTopic = '') {
       step: 'awaiting_topic',
       topic: '',
       authorName: '',
+      slideCount: 5,
       detailLevel: 'medium',
       includeImages: true,
       styleName: 'auto'
@@ -204,6 +207,7 @@ function startSlideWizard(ctx, initialTopic = '') {
     step: 'awaiting_author',
     topic,
     authorName: '',
+    slideCount: 5,
     detailLevel: 'medium',
     includeImages: true,
     styleName: 'auto'
@@ -224,7 +228,7 @@ function sendWizardAuthorStep(ctx, topic) {
     .text("⚡ Tezkor yaratish (Standart)", "sw_quick");
 
   return ctx.reply(
-    `🎨 **Yangi Gamma AI Taqdimot (1/4)**\n` +
+    `🎨 **Yangi Gamma AI Taqdimot (1/5)**\n` +
     `📌 Mavzu: **${topic}**\n\n` +
     `👤 **1-slaydda (Muqovada) taqdimotchi / muallif ismini nima deb yozay?**\n\n` +
     `Quyidagi tugmalardan birini bosing yoki ism-familiyangizni (maktabingizni) to'g'ridan-to'g'ri xabar qilib yozing:\n` +
@@ -233,7 +237,36 @@ function sendWizardAuthorStep(ctx, topic) {
   );
 }
 
-function sendWizardDetailStep(ctx, topic, authorName, editMsg = false) {
+function sendWizardSlideCountStep(ctx, topic, authorName, editMsg = false) {
+  const kb = new InlineKeyboard()
+    .text("📄 5 ta slayd (Standart)", "sw_cnt_5")
+    .text("📑 7 ta slayd", "sw_cnt_7")
+    .row()
+    .text("📊 10 ta slayd", "sw_cnt_10")
+    .text("📚 15 ta slayd", "sw_cnt_15")
+    .row()
+    .text("✍️ Boshqa son (yozish)", "sw_cnt_custom")
+    .row()
+    .text("⚡ Tezkor (5 ta slayd)", "sw_quick");
+
+  const msgText = 
+    `📄 **Taqdimotingiz necha slayddan (betdan) iborat bo'lsin? (2/5)**\n\n` +
+    `📌 Mavzu: **${topic}**\n` +
+    `👤 Muallif: **${authorName}**\n\n` +
+    `• 📄 **5 ta slayd** — Standart ta'rif (Boshlang'ich bepul)\n` +
+    `• 📑 **7 ta slayd** — Kengaytirilgan tahliliy taqdimot\n` +
+    `• 📊 **10 ta slayd** — To'liq ma'ruza va darslik konspekti\n` +
+    `• 📚 **15 ta slayd** — Katta akademik / anjuman taqdimoti\n` +
+    `• ✍️ **Boshqa son** — Istalgan bet sonini yozib kiritish\n\n` +
+    `⚠️ *Eslatma: 5 tadan ko'p slaydlar uchun admin tasdig'i va qo'shimcha to'lov talab etiladi.*`;
+
+  if (editMsg && ctx.callbackQuery?.message) {
+    return ctx.editMessageText(msgText, { parse_mode: 'Markdown', reply_markup: kb });
+  }
+  return ctx.reply(msgText, { parse_mode: 'Markdown', reply_markup: kb });
+}
+
+function sendWizardDetailStep(ctx, topic, authorName, slideCount = 5, editMsg = false) {
   const kb = new InlineKeyboard()
     .text("🟢 Qisqa (Tezislar)", "sw_det_short")
     .text("🟡 O'rtacha (Standart)", "sw_det_medium")
@@ -242,12 +275,13 @@ function sendWizardDetailStep(ctx, topic, authorName, editMsg = false) {
     .text("⚡ Tezkor yaratish", "sw_quick");
 
   const msgText = 
-    `📊 **Slaydlardagi ma'lumot hajmi qanday bo'lsin? (2/4)**\n\n` +
+    `📊 **Slaydlardagi ma'lumot hajmi qanday bo'lsin? (3/5)**\n\n` +
     `📌 Mavzu: **${topic}**\n` +
-    `👤 Muallif: **${authorName}**\n\n` +
-    `• 🟢 **Qisqa** — Asosiy tezislar, lo'nda faktlar va yirik matnlar (5-6 slayd)\n` +
-    `• 🟡 **O'rtacha** — Standart taqdimot, darslikka xos tushuntirish va misollar (6-7 slayd)\n` +
-    `• 🔴 **Kengaytirilgan** — To'liq ma'ruza, chuqur ilmiy tahlil va notiq nutqi (7-9 slayd)\n\n` +
+    `👤 Muallif: **${authorName}**\n` +
+    `📄 Slaydlar soni: **${slideCount} ta**\n\n` +
+    `• 🟢 **Qisqa** — Asosiy tezislar, lo'nda faktlar va yirik matnlar\n` +
+    `• 🟡 **O'rtacha** — Standart darslikka xos tushuntirish va amaliy misollar\n` +
+    `• 🔴 **Kengaytirilgan** — To'liq ma'ruza, chuqur ilmiy tahlil va notiq nutqi (speakerNotes)\n\n` +
     `Kerakli hajm tugmasini bosing:`;
 
   if (editMsg && ctx.callbackQuery?.message) {
@@ -256,7 +290,7 @@ function sendWizardDetailStep(ctx, topic, authorName, editMsg = false) {
   return ctx.reply(msgText, { parse_mode: 'Markdown', reply_markup: kb });
 }
 
-function sendWizardImageStep(ctx, topic, authorName, detailLevel, editMsg = true) {
+function sendWizardImageStep(ctx, topic, authorName, detailLevel, slideCount = 5, editMsg = true) {
   const kb = new InlineKeyboard()
     .text("🖼 Ha, HD rasmlar qo'shilsin", "sw_img_yes")
     .row()
@@ -267,9 +301,10 @@ function sendWizardImageStep(ctx, topic, authorName, detailLevel, editMsg = true
   const detailLabels = { short: "🟢 Qisqa (Tezislar)", medium: "🟡 O'rtacha (Standart)", detailed: "🔴 Kengaytirilgan" };
 
   const msgText = 
-    `🖼 **Slaydlarga mavzuga oid yuqori sifatli rasmlar qo'shilsinmi? (3/4)**\n\n` +
+    `🖼 **Slaydlarga mavzuga oid yuqori sifatli rasmlar qo'shilsinmi? (4/5)**\n\n` +
     `📌 Mavzu: **${topic}**\n` +
     `👤 Muallif: **${authorName}**\n` +
+    `📄 Slaydlar: **${slideCount} ta**\n` +
     `📊 Hajm: **${detailLabels[detailLevel] || detailLevel}**\n\n` +
     `Mavzuga mos rang-barang HD illyustratsiyalar, diagrammalar va fotosuratlar slaydlarga joylansinmi?`;
 
@@ -279,7 +314,7 @@ function sendWizardImageStep(ctx, topic, authorName, detailLevel, editMsg = true
   return ctx.reply(msgText, { parse_mode: 'Markdown', reply_markup: kb });
 }
 
-function sendWizardStyleStep(ctx, topic, authorName, detailLevel, includeImages, editMsg = true) {
+function sendWizardStyleStep(ctx, topic, authorName, detailLevel, includeImages, slideCount = 5, editMsg = true) {
   const kb = new InlineKeyboard()
     .text("🎲 Tasodifiy yangi dizayn (100+ xil)", "sw_sty_random")
     .row()
@@ -296,9 +331,10 @@ function sendWizardStyleStep(ctx, topic, authorName, detailLevel, includeImages,
     .text("⚡ Avtomatik moslashtirish", "sw_sty_auto");
 
   const msgText = 
-    `🎨 **Dizayn va ranglar palitrasini tanlang: (4/4)**\n\n` +
+    `🎨 **Dizayn va ranglar palitrasini tanlang: (5/5)**\n\n` +
     `📌 Mavzu: **${topic}**\n` +
     `👤 Muallif: **${authorName}**\n` +
+    `📄 Slaydlar soni: **${slideCount} ta**\n` +
     `🖼 Rasmlar: **${includeImages ? 'Ha, kiritiladi' : 'Rasmsiz minimalist'}**\n\n` +
     `100 dan ortiq ranglar va dizayn uslubidan birini tanlang yoki avtomatik/tasodifiy uslubni belgilang:`;
 
@@ -308,11 +344,32 @@ function sendWizardStyleStep(ctx, topic, authorName, detailLevel, includeImages,
   return ctx.reply(msgText, { parse_mode: 'Markdown', reply_markup: kb });
 }
 
+async function generateGammaPresentationBuffer(topic, options = {}) {
+  const authorName = options.authorName || "SmartOffice EduAI";
+  const detailLevel = options.detailLevel || 'medium';
+  const slideCount = options.slideCount || 5;
+  const includeImages = options.includeImages !== false;
+  const styleName = options.styleName || 'auto';
+
+  const cards = await generateAIGammaCardsWithGemini(topic, { authorName, detailLevel, slideCount, includeImages });
+  const buffer = await generatePresentationPptx({
+    topic,
+    styleName,
+    cards,
+    authorName,
+    slideCount,
+    includeImages,
+    outputType: 'nodebuffer'
+  });
+  return buffer;
+}
+
 async function executePresentationGeneration(ctx, topic, options = {}) {
   const authorName = options.authorName || ctx.from?.first_name || "SmartOffice EduAI";
   const detailLevel = options.detailLevel || 'medium';
   const includeImages = options.includeImages !== false;
   const styleName = options.styleName || 'auto';
+  const slideCount = options.slideCount || 5;
 
   const detailLabels = { short: "🟢 Qisqa (Tezislar)", medium: "🟡 O'rtacha (Standart)", detailed: "🔴 Kengaytirilgan (To'liq ma'ruza)" };
 
@@ -321,6 +378,7 @@ async function executePresentationGeneration(ctx, topic, options = {}) {
     `🎨 **Gamma & Genspark AI taqdimot tayyorlanmoqda...**\n\n` +
     `📌 Mavzu: **${topic}**\n` +
     `👤 Muallif: **${authorName}**\n` +
+    `📄 Slaydlar soni: **${slideCount} ta**\n` +
     `📊 Hajmi: **${detailLabels[detailLevel] || detailLevel}**\n` +
     `🖼 Rasmlar: **${includeImages ? 'HD rasmlar joylanmoqda' : 'Grafik kartalar'}**\n` +
     `🎨 Uslub: **${styleName} (100+ dizayn)**\n\n` +
@@ -338,14 +396,15 @@ async function executePresentationGeneration(ctx, topic, options = {}) {
   }
 
   try {
-    const buffer = await generateGammaPresentationBuffer(topic, { authorName, detailLevel, includeImages, styleName });
+    const buffer = await generateGammaPresentationBuffer(topic, { authorName, detailLevel, includeImages, styleName, slideCount });
     const safeTopic = topic.slice(0, 25).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_');
 
-    await ctx.replyWithDocument(new InputFile(buffer, `EduAI_${safeTopic}_Taqdimot.pptx`), {
+    await ctx.replyWithDocument(new InputFile(buffer, `EduAI_${safeTopic}_${slideCount}slayd.pptx`), {
       caption: 
         `🎨 **Gamma & Genspark AI taqdimotingiz tayyor!** (.pptx)\n\n` +
         `📌 Mavzu: **${topic}**\n` +
         `👤 1-slayddagi muallif: **${authorName}**\n` +
+        `📄 Slaydlar soni: **${slideCount} ta**\n` +
         `📊 Ma'lumot hajmi: **${detailLabels[detailLevel] || detailLevel}**\n` +
         `🖼 Rasmlar: **${includeImages ? 'Mavzuga oid HD rasmlar' : 'Minimalist'}**\n` +
         `✨ 16:9 Widescreen, zamonaviy kartochkali va professional dizayn.`
@@ -1296,10 +1355,10 @@ bot.on('callback_query:data', async (ctx) => {
       chosenAuthor = "Maktab o'qituvchisi";
     }
     sw.authorName = chosenAuthor;
-    sw.step = 'awaiting_detail';
+    sw.step = 'awaiting_slide_count';
     slideWizardState.set(userId, sw);
     await ctx.answerCallbackQuery({ text: `Muallif: ${chosenAuthor}` });
-    return sendWizardDetailStep(ctx, sw.topic, sw.authorName, true);
+    return sendWizardSlideCountStep(ctx, sw.topic, sw.authorName, true);
   }
 
   if (data === 'sw_quick') {
@@ -1311,28 +1370,51 @@ bot.on('callback_query:data', async (ctx) => {
       authorName: author,
       detailLevel: 'medium',
       includeImages: true,
-      styleName: 'auto'
+      styleName: 'auto',
+      slideCount: 5
     });
+  }
+
+  if (data.startsWith('sw_cnt_')) {
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "EduAI" };
+    if (data === 'sw_cnt_custom') {
+      sw.step = 'awaiting_custom_count';
+      slideWizardState.set(userId, sw);
+      await ctx.answerCallbackQuery({ text: "Slayd sonini yozing..." });
+      return ctx.reply(
+        `✍️ **Necha betlik slayd yaratmoqchisiz?**\n\n` +
+        `Iltimos, kerakli slaydlar sonini raqam bilan xabar sifatida yuboring (masalan: \`8\` yoki \`12\` yoki \`20\`):\n\n` +
+        `*(Eslatma: 5 tadan ortiq bo'lsa, to'lov va admin tasdig'i talab etiladi)*`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+
+    const count = parseInt(data.replace('sw_cnt_', ''), 10) || 5;
+    sw.slideCount = count;
+    sw.step = 'awaiting_detail';
+    slideWizardState.set(userId, sw);
+    await ctx.answerCallbackQuery({ text: `${count} ta slayd belgilandi!` });
+    return sendWizardDetailStep(ctx, sw.topic, sw.authorName, sw.slideCount, true);
   }
 
   if (data.startsWith('sw_det_')) {
     const level = data.replace('sw_det_', '');
-    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "EduAI" };
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "EduAI", slideCount: 5 };
     sw.detailLevel = level;
     sw.step = 'awaiting_images';
     slideWizardState.set(userId, sw);
     await ctx.answerCallbackQuery({ text: "Ma'lumot hajmi belgilandi!" });
-    return sendWizardImageStep(ctx, sw.topic, sw.authorName, sw.detailLevel, true);
+    return sendWizardImageStep(ctx, sw.topic, sw.authorName, sw.detailLevel, sw.slideCount || 5, true);
   }
 
   if (data.startsWith('sw_img_')) {
     const withImg = data === 'sw_img_yes';
-    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "EduAI" };
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "EduAI", slideCount: 5 };
     sw.includeImages = withImg;
     sw.step = 'awaiting_style';
     slideWizardState.set(userId, sw);
     await ctx.answerCallbackQuery({ text: withImg ? "HD rasmlar qo'shiladi!" : "Minimalist tanlandi!" });
-    return sendWizardStyleStep(ctx, sw.topic, sw.authorName, sw.detailLevel || 'medium', sw.includeImages, true);
+    return sendWizardStyleStep(ctx, sw.topic, sw.authorName, sw.detailLevel || 'medium', sw.includeImages, sw.slideCount || 5, true);
   }
 
   if (data.startsWith('sw_sty_')) {
@@ -1342,14 +1424,169 @@ bot.on('callback_query:data', async (ctx) => {
     const finalAuthor = sw.authorName || ctx.from?.first_name || "SmartOffice EduAI";
     const finalDetail = sw.detailLevel || 'medium';
     const finalImages = sw.includeImages !== false;
+    const finalCount = sw.slideCount || 5;
     slideWizardState.delete(userId);
-    await ctx.answerCallbackQuery({ text: "Slaydlar yaratilmoqda..." });
+    await ctx.answerCallbackQuery({ text: "Tanlov qabul qilindi!" });
+
+    // 5 TADAN KO'P SLAYDLARNI TEKSHIRISH:
+    const isOwner = (userId === SUPER_OWNER_ID) || (ctx.from?.username?.toLowerCase() === OWNER_USERNAME.toLowerCase());
+
+    if (finalCount > 5 && !isOwner) {
+      const reqId = `sl_${userId}_${Date.now()}`;
+      pendingSlideApprovals.set(reqId, {
+        reqId,
+        userId,
+        chatId: ctx.chat.id,
+        user: ctx.from,
+        topic: finalTopic,
+        authorName: finalAuthor,
+        slideCount: finalCount,
+        detailLevel: finalDetail,
+        includeImages: finalImages,
+        styleName: styleKey,
+        createdAt: Date.now()
+      });
+
+      // 1. Foydalanuvchiga to'lov va tasdiqlash haqida ma'lumot
+      await ctx.reply(
+        `💎 **5 tadan ko'p betlik slayd uchun qo'shimcha to'lov va admin tasdig'i zarur!**\n\n` +
+        `📌 **Mavzu:** ${finalTopic}\n` +
+        `👤 **Muallif:** ${finalAuthor}\n` +
+        `📄 **So'ralgan slayd soni:** **${finalCount} ta** (Standart 5 tadan ortiq)\n\n` +
+        `⚠️ *Standart bepul imkoniyatimizda 5 tagacha slayd taqdim etiladi. Siz ${finalCount} ta slayd tanlaganingiz uchun bot egasiga (@${OWNER_USERNAME}) ruxsat so'rovi yuborildi.*\n\n` +
+        `💳 *To'lovni amalga oshirish yoki tezkor tasdiqlash uchun admin: @${OWNER_USERNAME}*\n` +
+        `⏳ Admin ruxsat berishi bilanoq maxsus ${finalCount} betlik taqdimotingiz avtomatik yaratilib, sizga yuboriladi!`,
+        { parse_mode: 'Markdown' }
+      );
+
+      // 2. Bot egasiga so'rov yuborish
+      const ownerTargetChatId = db.ownerChatId || SUPER_OWNER_ID;
+      const ownerKb = new InlineKeyboard()
+        .text(`✅ Ruxsat berish (${finalCount} ta)`, `slide_appr_${reqId}`)
+        .text(`❌ Rad etish`, `slide_deny_${reqId}`);
+
+      const ownerAlert = 
+        `🚨 **YANGI SLAYD RUXSAT SO'ROVI (5+ SLAYD)**\n\n` +
+        `👤 **Foydalanuvchi:** ${ctx.from?.first_name || ''} ${ctx.from?.last_name || ''} (@${ctx.from?.username || "yo'q"})\n` +
+        `🆔 **Telegram ID:** \`${userId}\`\n` +
+        `📄 **So'ralgan slayd soni:** **${finalCount} ta** (5 tadan ko'p!)\n` +
+        `📌 **Mavzu:** ${finalTopic}\n` +
+        `👤 **Muallif:** ${finalAuthor}\n` +
+        `🎨 **Uslub:** ${styleKey}\n\n` +
+        `⚠️ *Ushbu odam va ID 5 tadan ko'p betlik slayd qilmoqchi va to'lov qilishi kerak. Ruxsat berasizmi?*`;
+
+      try {
+        await ctx.api.sendMessage(ownerTargetChatId, ownerAlert, {
+          parse_mode: 'Markdown',
+          reply_markup: ownerKb
+        });
+      } catch (err) {
+        console.error("Egaga slayd ruxsat so'rovi yuborishda xatolik:", err);
+      }
+      return;
+    }
+
+    // Standart <= 5 yoki Super Owner uchun to'g'ridan-to'g'ri yaratish
     return executePresentationGeneration(ctx, finalTopic, {
       authorName: finalAuthor,
       detailLevel: finalDetail,
       includeImages: finalImages,
-      styleName: styleKey
+      styleName: styleKey,
+      slideCount: finalCount
     });
+  }
+
+  // 5+ SLAYD RUXSAT BERISH VA RAD ETISH
+  if (data.startsWith('slide_appr_')) {
+    const reqId = data.replace('slide_appr_', '');
+    const req = pendingSlideApprovals.get(reqId);
+    if (!req) {
+      await ctx.answerCallbackQuery({ text: "So'rov topilmadi yoki allaqachon ko'rib chiqilgan." });
+      return;
+    }
+    pendingSlideApprovals.delete(reqId);
+    await ctx.answerCallbackQuery({ text: `Ruxsat berildi (${req.slideCount} ta)!` });
+
+    try {
+      await ctx.editMessageText(
+        `✅ **Ruxsat berildi!**\n\n` +
+        `👤 Foydalanuvchi: ${req.user?.first_name || ''} (@${req.user?.username || 'yoq'})\n` +
+        `🆔 Telegram ID: \`${req.userId}\`\n` +
+        `📄 Slaydlar soni: **${req.slideCount} ta**\n` +
+        `📌 Mavzu: ${req.topic}\n\n` +
+        `🚀 Foydalanuvchiga taqdimot tayyorlanib yuborilmoqda...`,
+        { parse_mode: 'Markdown' }
+      );
+    } catch(e) {}
+
+    // Foydalanuvchiga yuborish
+    try {
+      await ctx.api.sendMessage(
+        req.chatId,
+        `🎉 **Ajoyib yangilik! Admin ${req.slideCount} ta slayd yaratishga ruxsat berdi!**\n\n` +
+        `⏳ ${req.slideCount} betlik maxsus taqdimotingiz tayyorlanmoqda, iltimos ozgina kuting...`,
+        { parse_mode: 'Markdown' }
+      );
+
+      const buffer = await generateGammaPresentationBuffer(req.topic, {
+        authorName: req.authorName,
+        detailLevel: req.detailLevel,
+        includeImages: req.includeImages,
+        styleName: req.styleName,
+        slideCount: req.slideCount
+      });
+      const safeTopic = req.topic.slice(0, 25).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_');
+
+      await ctx.api.sendDocument(
+        req.chatId,
+        new InputFile(buffer, `EduAI_${safeTopic}_${req.slideCount}slayd.pptx`),
+        {
+          caption:
+            `🎨 **Maxsus ${req.slideCount} betlik Gamma AI taqdimotingiz tayyor!** (.pptx)\n\n` +
+            `📌 Mavzu: **${req.topic}**\n` +
+            `👤 Muallif: **${req.authorName}**\n` +
+            `📄 Slaydlar: **${req.slideCount} ta to'liq slayd**\n` +
+            `✨ 16:9 Widescreen, premium dizayn va chuqur darslik tahlili.`
+        }
+      );
+    } catch (err) {
+      console.error("Tasdiqlangan slaydni generatsiya qilishda xatolik:", err);
+      try {
+        await ctx.api.sendMessage(req.chatId, `❌ Taqdimotni yaratishda xatolik yuz berdi: ${err.message}`);
+      } catch(e) {}
+    }
+    return;
+  }
+
+  if (data.startsWith('slide_deny_')) {
+    const reqId = data.replace('slide_deny_', '');
+    const req = pendingSlideApprovals.get(reqId);
+    if (!req) {
+      await ctx.answerCallbackQuery({ text: "So'rov topilmadi yoki allaqachon ko'rib chiqilgan." });
+      return;
+    }
+    pendingSlideApprovals.delete(reqId);
+    await ctx.answerCallbackQuery({ text: "So'rov rad etildi." });
+
+    try {
+      await ctx.editMessageText(
+        `❌ **So'rov rad etildi.**\n\n` +
+        `👤 Foydalanuvchi: ${req.user?.first_name || ''} (@${req.user?.username || 'yoq'})\n` +
+        `🆔 Telegram ID: \`${req.userId}\`\n` +
+        `📄 Slaydlar soni: **${req.slideCount} ta**`,
+        { parse_mode: 'Markdown' }
+      );
+    } catch(e) {}
+
+    try {
+      await ctx.api.sendMessage(
+        req.chatId,
+        `❌ **${req.slideCount} ta slayd bo'yicha so'rovingiz tasdiqlanmadi.**\n\n` +
+        `To'lov amalga oshirilmagan yoki admin tomonidan rad etilgan bo'lishi mumkin. Standart 5 ta slaydli bepul taqdimotdan foydalanishingiz mumkin: /slayd`,
+        { parse_mode: 'Markdown' }
+      );
+    } catch(e) {}
+    return;
   }
 
   // GAMMA AI TAYYOR PRESET MAVZULAR
@@ -1991,9 +2228,19 @@ bot.on('message:text', async (ctx) => {
     }
     if (sw.step === 'awaiting_author') {
       sw.authorName = text.trim();
+      sw.step = 'awaiting_slide_count';
+      slideWizardState.set(userId, sw);
+      return sendWizardSlideCountStep(ctx, sw.topic, sw.authorName, false);
+    }
+    if (sw.step === 'awaiting_custom_count') {
+      const parsedNum = parseInt(text.trim(), 10);
+      if (!parsedNum || isNaN(parsedNum) || parsedNum < 1 || parsedNum > 100) {
+        return ctx.reply("⚠️ Iltimos, 1 dan 100 gacha bo'lgan to'g'ri raqam kiriting (masalan: `8` yoki `12`):", { parse_mode: 'Markdown' });
+      }
+      sw.slideCount = parsedNum;
       sw.step = 'awaiting_detail';
       slideWizardState.set(userId, sw);
-      return sendWizardDetailStep(ctx, sw.topic, sw.authorName, false);
+      return sendWizardDetailStep(ctx, sw.topic, sw.authorName, sw.slideCount, false);
     }
   }
 

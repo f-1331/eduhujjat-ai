@@ -255,19 +255,27 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
   const {
     authorName = "SmartOffice EduAI",
     detailLevel = "medium", // 'short' | 'medium' | 'detailed'
+    slideCount = null,
     includeImages = true
   } = (typeof options === 'string' ? { authorName: options } : options);
 
-  let detailGuideline = "MA'LUMOT HAJMI: O'RTACHA (Standart darslik va metodik me'yorda, 6-7 ta slayd, tushunarli va balanslangan tushuntirishlar bilan).";
+  const slideCountNum = parseInt(slideCount, 10);
+  let countGuideline = "";
+  if (slideCountNum && slideCountNum > 0) {
+    countGuideline = `\nQAT'IY SLAYD SONI: Aynan ${slideCountNum} ta slayd kartochkasi bo'lsin (1-slayd "hero" titul, keyingi ${Math.max(1, slideCountNum - 2)} ta slayd mavzuni bosqichma-bosqich yorituvchi xilma-xil layoutdagi slaydlar, oxirgi ${slideCountNum}-slayd "conclusion" xulosa slaydi).`;
+  }
+
+  let detailGuideline = "MA'LUMOT HAJMI: O'RTACHA (Standart darslik va metodik me'yorda, tushunarli va balanslangan tushuntirishlar bilan).";
   if (detailLevel === 'short') {
-    detailGuideline = "MA'LUMOT HAJMI: QISQA VA LO'NDA (5-6 ta slayd. Har bir slaydda 2-3 ta qisqa, yorqin tezislar va kalit faktlar. Uzoq paragraflar yozma, lo'nda va vizual bo'lsin).";
+    detailGuideline = "MA'LUMOT HAJMI: QISQA VA LO'NDA (Har bir slaydda 2-3 ta qisqa, yorqin tezislar va kalit faktlar. Uzoq paragraflar yozma, lo'nda va vizual bo'lsin).";
   } else if (detailLevel === 'detailed') {
-    detailGuideline = "MA'LUMOT HAJMI: TO'LIQ VA KENGAYTIRILGAN (7-9 ta slayd. Chuqur ilmiy ma'lumotlar, aniq raqamlar, kengaytirilgan tushuntirishlar va har bir slayd uchun ma'ruzachining batafsil nutqi (speakerNotes) bilan to'liq ma'ruza konspekti darajasida).";
+    detailGuideline = "MA'LUMOT HAJMI: TO'LIQ VA KENGAYTIRILGAN (Chuqur ilmiy ma'lumotlar, aniq raqamlar, kengaytirilgan tushuntirishlar va har bir slayd uchun ma'ruzachining batafsil nutqi (speakerNotes) bilan to'liq ma'ruza konspekti darajasida).";
   }
 
   const prompt = 
     `Mavzu: "${topic}"\n` +
     `Taqdimotchi / Muallif: "${authorName}"\n` +
+    `${countGuideline}\n` +
     `${detailGuideline}\n\n` +
     `Vazifa: Ushbu mavzuni to'liq, chuqur va professional yorituvchi ZAMONAVIY, XILMA-XIL va BETAKROR slayd kartochkalarini tuzib ber.\n` +
     `QAT'IY TALABLAR (Gamma.app va Genspark darajasida):\n` +
