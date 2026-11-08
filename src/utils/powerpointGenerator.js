@@ -166,30 +166,41 @@ export function getTopicImageUrl(topic = "") {
 }
 
 export function resolveCardImageUrl(card, topic = "", imageStyle = "realistic") {
-  const keyword = card?.imageKeyword || card?.title || topic;
-  const cleanKeyword = String(keyword).replace(/[^a-zA-Z0-9\s]/g, ' ').trim().slice(0, 50);
+  const keyword = card?.imageKeyword || card?.title || topic || "science technology education";
+  let cleanKeyword = String(keyword)
+    .replace(/[^\w\s-]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 60);
+
+  if (!cleanKeyword || cleanKeyword.length < 3) {
+    cleanKeyword = "modern science education research";
+  }
+
+  const seed = Math.floor(Math.random() * 999999);
 
   if (imageStyle === 'ai3d') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' 3d render clean modern isometric octane c4d presentation graphics')}?width=800&height=600&nologo=true`;
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' 3d isometric render octane presentation graphics high quality')}` +
+      `?width=800&height=600&nologo=true&seed=${seed}`;
   }
   if (imageStyle === 'vector') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' clean vector flat art educational illustration modern colorful')}?width=800&height=600&nologo=true`;
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' flat vector illustration clean graphic design colorful educational')}` +
+      `?width=800&height=600&nologo=true&seed=${seed}`;
   }
   if (imageStyle === 'infographic') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' scientific infographic schematic diagram clean presentation vector')}?width=800&height=600&nologo=true`;
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' scientific infographic chart diagram schematic presentation vector')}` +
+      `?width=800&height=600&nologo=true&seed=${seed}`;
   }
   if (imageStyle === 'abstract') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' modern abstract glassmorphism pastel gradient 3d aesthetic')}?width=800&height=600&nologo=true`;
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' abstract pastel gradient glassmorphism aesthetic 3d minimal')}` +
+      `?width=800&height=600&nologo=true&seed=${seed}`;
   }
-  // Realistic
-  const matchedUnsplash = getTopicImageUrl(cleanKeyword);
-  if (matchedUnsplash && matchedUnsplash !== EDUCATIONAL_TOPIC_IMAGES.default) {
-    return matchedUnsplash;
-  }
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' award winning photography national geographic 8k highly detailed')}?width=800&height=600&nologo=true`;
+  // Realistic (Default)
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' photography high quality national geographic 4k crisp detailed educational')}` +
+    `?width=800&height=600&nologo=true&seed=${seed}`;
 }
 
-export async function fetchImageAsBase64(imageUrl, timeoutMs = 3500) {
+export async function fetchImageAsBase64(imageUrl, timeoutMs = 7000) {
   if (!imageUrl) return null;
   try {
     const res = await fetch(imageUrl, { signal: AbortSignal.timeout(timeoutMs) });
@@ -422,7 +433,7 @@ export function resolveSlideArchitecture(card, index, totalSlides) {
 export function renderSlideArchitecture(slide, pres, card, style, index, totalSlides, topicImageBase64, authorName, topic) {
   const arch = resolveSlideArchitecture(card, index, totalSlides);
 
-  // 1. HERO ARCHITECTURE (1-Varoq: Muqova + Taqdimotchi ismi)
+  // 1. HERO ARCHITECTURE (1-Varoq: Muqova + Taqdimotchi ismi + HD Rasm)
   if (arch.startsWith('hero') || index === 0) {
     slide.addShape(pres.ShapeType.roundRect, {
       x: 0.8, y: 0.85, w: 8.4, h: 4.4,
@@ -431,18 +442,33 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
     slide.addShape(pres.ShapeType.roundRect, {
       x: 0.8, y: 0.85, w: 8.4, h: 0.08, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.04
     });
+
+    const hasHeroImg = !!topicImageBase64;
+    const textW = hasHeroImg ? 4.8 : 7.6;
+
     slide.addShape(pres.ShapeType.roundRect, {
-      x: 1.2, y: 1.25, w: 3.5, h: 0.42, fill: { color: style.bg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.08
+      x: 1.2, y: 1.2, w: 3.4, h: 0.4, fill: { color: style.bg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.08
     });
-    slide.addText(card.badge || "GAMMA AI TAQDIMOT", {
-      x: 1.2, y: 1.25, w: 3.5, h: 0.42, fontSize: 11, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial'
+    slide.addText(card.badge || "GAMMA & GENSPARK AI", {
+      x: 1.2, y: 1.2, w: 3.4, h: 0.4, fontSize: 10.5, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial'
     });
     slide.addText((card.title || topic).toUpperCase(), {
-      x: 1.2, y: 1.85, w: 7.6, h: 1.5, fontSize: 28, bold: true, color: style.text, fontFace: 'Arial'
+      x: 1.2, y: 1.7, w: textW, h: 1.5, fontSize: hasHeroImg ? 24 : 28, bold: true, color: style.text, fontFace: 'Arial'
     });
-    slide.addText(card.subtitle || "Zamonaviy ta'lim va tahliliy taqdimot", {
-      x: 1.2, y: 3.45, w: 7.6, h: 1.0, fontSize: 14.5, color: style.subtext, fontFace: 'Arial'
+    slide.addText(card.subtitle || "Zamonaviy ta'limiy va chuqur tahliliy taqdimot", {
+      x: 1.2, y: 3.3, w: textW, h: 0.95, fontSize: 13.5, color: style.subtext, fontFace: 'Arial'
     });
+
+    if (hasHeroImg) {
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: 6.2, y: 1.15, w: 2.8, h: 3.15, fill: { color: style.bg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.12
+      });
+      slide.addImage({
+        data: topicImageBase64,
+        x: 6.3, y: 1.25, w: 2.6, h: 2.95, sizing: { type: 'cover', w: 2.6, h: 2.95 }, round: true
+      });
+    }
+
     // Foydalanuvchi / Taqdimotchi ismi aks etadigan maxsus blok (Pastda katta, yorqin va aniq)
     slide.addShape(pres.ShapeType.roundRect, {
       x: 1.2, y: 4.45, w: 7.6, h: 0.58, fill: { color: style.bg }, line: { color: style.accent, width: 1.5 }, rectRadius: 0.1
@@ -458,19 +484,32 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
     slide.addText(card.title || "Asosiy Ilmiy Tushuncha va Mezonlar", {
       x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
     });
+    const hasSpotImg = !!topicImageBase64;
+    const bannerW = hasSpotImg ? 5.5 : 8.4;
+
     // Yuqori katta e'tibor bloki
     slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8, y: 1.2, w: 8.4, h: 1.35, fill: { color: style.cardBg }, line: { color: style.accent, width: 1.5 }, rectRadius: 0.1
+      x: 0.8, y: 1.2, w: bannerW, h: 1.35, fill: { color: style.cardBg }, line: { color: style.accent, width: 1.5 }, rectRadius: 0.1
     });
     slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8, y: 1.2, w: 8.4, h: 0.08, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.04
+      x: 0.8, y: 1.2, w: bannerW, h: 0.08, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.04
     });
     slide.addText(card.badge || "ASOSIY QONUNIYAT VA ILMIY TA'RIF", {
-      x: 1.05, y: 1.32, w: 7.9, h: 0.3, fontSize: 10, bold: true, color: style.accent, fontFace: 'Arial'
+      x: 1.05, y: 1.32, w: bannerW - 0.5, h: 0.3, fontSize: 10, bold: true, color: style.accent, fontFace: 'Arial'
     });
     slide.addText(card.mainConcept || card.explanation || "Mavzuning eng fundamental tayanch g'oyasi va darslik mezonlari.", {
-      x: 1.05, y: 1.65, w: 7.9, h: 0.8, fontSize: 12.5, color: style.text, fontFace: 'Arial'
+      x: 1.05, y: 1.65, w: bannerW - 0.5, h: 0.8, fontSize: 12.0, color: style.text, fontFace: 'Arial'
     });
+
+    if (hasSpotImg) {
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: 6.55, y: 1.2, w: 2.65, h: 1.35, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.1
+      });
+      slide.addImage({
+        data: topicImageBase64,
+        x: 6.62, y: 1.25, w: 2.5, h: 1.25, sizing: { type: 'cover', w: 2.5, h: 1.25 }, round: true
+      });
+    }
 
     // Pastdagi 3 ta tahliliy ustun
     const insights = (card.bullets || card.cards || [
@@ -1165,21 +1204,35 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
   slide.addShape(pres.ShapeType.roundRect, {
     x: 0.8, y: 0.85, w: 8.4, h: 0.08, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.04
   });
+
+  const hasSumImg = !!topicImageBase64;
+  const sumW = hasSumImg ? 5.2 : 7.6;
+
   slide.addText(card.title || "Yakuniy Xulosa va Natijalar", {
-    x: 1.2, y: 1.15, w: 7.6, h: 0.5, fontSize: 22, bold: true, color: style.accent, fontFace: 'Arial'
+    x: 1.2, y: 1.15, w: sumW, h: 0.5, fontSize: 22, bold: true, color: style.accent, fontFace: 'Arial'
   });
   if (card.quote) {
     slide.addShape(pres.ShapeType.roundRect, {
-      x: 1.2, y: 1.8, w: 7.6, h: 1.05, fill: { color: style.bg }, line: { color: style.accent2, width: 1 }, rectRadius: 0.08
+      x: 1.2, y: 1.75, w: sumW, h: 0.95, fill: { color: style.bg }, line: { color: style.accent2, width: 1 }, rectRadius: 0.08
     });
     slide.addText(`“ ${card.quote} ”`, {
-      x: 1.4, y: 1.9, w: 7.2, h: 0.85, fontSize: 12.5, italic: true, color: style.text, align: 'center', valign: 'middle', fontFace: 'Arial'
+      x: 1.35, y: 1.8, w: sumW - 0.3, h: 0.8, fontSize: 11.5, italic: true, color: style.text, align: 'center', valign: 'middle', fontFace: 'Arial'
     });
   }
   const takeawaysText = (card.takeaways || card.bullets || []).map(t => `★  ${t}`).join("\n\n");
   slide.addText(takeawaysText || "★ Mavzuning eng muhim ilmiy va amaliy xulosalari", {
-    x: 1.2, y: card.quote ? 3.0 : 1.9, w: 7.6, h: card.quote ? 2.1 : 3.2, fontSize: 11.5, color: style.subtext, fontFace: 'Arial'
+    x: 1.2, y: card.quote ? 2.85 : 1.75, w: sumW, h: card.quote ? 2.25 : 3.3, fontSize: 11.5, color: style.subtext, fontFace: 'Arial'
   });
+
+  if (hasSumImg) {
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 6.55, y: 1.15, w: 2.45, h: 3.8, fill: { color: style.bg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.12
+    });
+    slide.addImage({
+      data: topicImageBase64,
+      x: 6.65, y: 1.25, w: 2.25, h: 3.6, sizing: { type: 'cover', w: 2.25, h: 3.6 }, round: true
+    });
+  }
 }
 
 // ============================================================================
@@ -1212,25 +1265,44 @@ export async function generatePresentationPptx(config = {}) {
       const summaryCard = slideDeck[slideDeck.length - 1];
       const baseCards = slideDeck.slice(0, slideDeck.length - 1);
       const subtopics = [
-        "Ilmiy-Nazariy Asoslar va Mezonlar", "Laboratoriya va Amaliy Tajribalar", "Fanlararo Integratsiya va Qiyoslash",
-        "Tarixiy Rivojlanish va Kashfiyotlar", "Zamonaviy Texnologiyalar O'rni", "Xalqaro Mezonlar va DTS Talablari",
-        "Ekologik va Ijtimoiy Ta'siri", "Interaktiv Metodlar va Misollar", "Formula va Qonuniyatlar Tahlili",
-        "Statistik Ko'rsatkichlar Dinamikasi", "Muammolar va Ularning Ilmiy Yechimlari", "Innovatsion Yondashuvlar",
-        "Kelajak Istiqbollari va Xulosalar", "O'quvchilar Uchun Savol-Javoblar", "Metodik Tavsiyalar va Qo'llanma"
+        "Ilmiy-Nazariy Asoslar va Fundamental Qonuniyatlar", "Laboratoriya Tajribalari va Amaliy Tahlillar", 
+        "Fanlararo Integratsiya va Qiyosiy Solishtirish", "Tarixiy Rivojlanish Bosqichlari va Kashfiyotlar", 
+        "Zamonaviy Texnologiyalar va Raqamli Yondashuvlar", "Davlat Ta'lim Standartlari va DTS Mezonlari",
+        "Atrof-muhit, Ekologiya va Ijtimoiy Ahamiyat", "Interaktiv Metodlar, Savol-Javob va Masalalar", 
+        "Formulalar, Teoremalar va Miqdoriy Ko'rsatkichlar", "Statistik Ko'rsatkichlar va Qiyosiy Dinamika", 
+        "Dolzarb Muammolar va Ularning Innovatsion Yechimlari", "Zamonaviy Ilmiy Yondashuvlar va Yangiliklar",
+        "Kelajak Istiqbollari va Strategik Xulosalar", "O'quvchilar Mustaqil Bajarishi Uchun Keys-topshiriqlar", 
+        "O'qituvchi Uchun Metodik Tavsiyalar va Qo'llanma"
+      ];
+      const layoutTemplates = [
+        { type: "split_image", badge: "ILMIY AMALIYOT" },
+        { type: "pillars", badge: "3 TAYANCH YO'NALISH" },
+        { type: "bento_3", badge: "KOMPLEKS TAHLIL" },
+        { type: "grid4", badge: "TARKIBIY ELEMENTLAR" },
+        { type: "stats", badge: "STATISTIK PARAMETRLAR" },
+        { type: "timeline", badge: "BOSQICHMA-BOSQICH DASTUR" },
+        { type: "case_study", badge: "AMALIY KEYS" },
+        { type: "problem_solution", badge: "DOLZARB YECHIM" },
+        { type: "flow_diagram", badge: "SXEMATIK KETMA-KETLIK" }
       ];
       while (baseCards.length < targetCount - 1) {
         const i = baseCards.length;
         const subTitle = subtopics[i % subtopics.length];
+        const tmpl = layoutTemplates[i % layoutTemplates.length];
         baseCards.push({
+          type: tmpl.type,
           title: `${topic}: ${subTitle}`,
-          badge: `BO'LIM 0${i + 1}`,
-          mainConcept: `${topic} mavzusida ${subTitle.toLowerCase()} eng muhim tayanch o'rinlardan biridir.`,
-          explanation: `Ushbu slayd doirasida mavzuning chuqurlashtirilgan ilmiy asoslari, aniq raqamlar va amaliy tahlillari beriladi.`,
+          badge: `${tmpl.badge} • 0${i + 1}`,
+          mainConcept: `${topic} doirasida ${subTitle.toLowerCase()} chuqur pedagogik va ilmiy ahamiyat kasb etib, darslikning tayanch mezonlarini to'liq ochib beradi.`,
+          explanation: `Ushbu bosqichda o'quvchilar va mutaxassislar uchun mavzuning fundamental prinsiplari, miqdoriy formulalari, tajriba xulosalari hamda ta'limiy ko'nikmalari batafsil sharhlab o'tiladi.`,
+          imageKeyword: `${topic} ${subTitle} science education laboratory`,
           bullets: [
-            `Mavzuga oid fundamental mezonlar va ta'riflar`,
-            `Darslik dasturidagi asosiy qonuniyatlar`,
-            `Amaliyotda qo'llash va kutiladigan ilmiy natija`
-          ]
+            `${subTitle} yuzasidan eng muhim ta'riflar, tushunchalar va ilmiy aksiomalar`,
+            `Darslik dasturidagi formulalar, qoidalar va amaliy hisoblash algoritmlari`,
+            `Fanlararo amaliyot: nazariy bilimlarni hayotiy masalalarda qo'llash tajribasi`,
+            `Monitoring va o'zlashtirishni tekshirish uchun nazorat savollari majmuasi`
+          ],
+          speakerNotes: `Hurmatli ishtirokchilar, ushbu slaydda ${topic} mavzusining «${subTitle}» qismiga e'tibor qaratamiz. Bu yerda asosiy e'tibor ilmiy tahlil va darslik mezonlariga qaratilgan.`
         });
       }
       slideDeck = [...baseCards, summaryCard];
@@ -1245,13 +1317,13 @@ export async function generatePresentationPptx(config = {}) {
   const cardImages = [];
   if (includeImages) {
     try {
-      const imgUrl = getTopicImageUrl(topic);
-      topicImageBase64 = await fetchImageAsBase64(imgUrl, 2500);
+      const imgUrl = resolveCardImageUrl({ title: topic, imageKeyword: topic }, topic, imageStyle);
+      topicImageBase64 = await fetchImageAsBase64(imgUrl, 7000);
     } catch (e) {
       topicImageBase64 = null;
     }
 
-    const visualArchs = ['split_image', 'tri_gallery', 'case_study', 'bento_3', 'concept_spotlight'];
+    const visualArchs = ['split_image', 'tri_gallery', 'case_study', 'bento_3', 'concept_spotlight', 'hero_classic', 'pillars_3', 'problem_solution', 'summary_takeaways'];
     const fetchPromises = slideDeck.map(async (card, idx) => {
       if (idx === 0) return topicImageBase64;
       const arch = resolveSlideArchitecture(card, idx, slideDeck.length);
@@ -1269,7 +1341,7 @@ export async function generatePresentationPptx(config = {}) {
       if (shouldFetch) {
         try {
           const cardUrl = resolveCardImageUrl(card, topic, imageStyle);
-          const b64 = await fetchImageAsBase64(cardUrl, 2500);
+          const b64 = await fetchImageAsBase64(cardUrl, 7000);
           return b64 || topicImageBase64;
         } catch (err) {
           return topicImageBase64;

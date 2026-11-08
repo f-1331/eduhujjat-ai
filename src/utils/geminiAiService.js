@@ -267,7 +267,7 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
   const slideCountNum = parseInt(slideCount, 10);
   let countGuideline = "";
   if (slideCountNum && slideCountNum > 0) {
-    countGuideline = `\nQAT'IY SLAYD SONI: Aynan ${slideCountNum} ta slayd kartochkasi bo'lsin (1-slayd "hero" titul, keyingi ${Math.max(1, slideCountNum - 2)} ta slayd mavzuni bosqichma-bosqich yorituvchi xilma-xil layoutdagi slaydlar, oxirgi ${slideCountNum}-slayd "conclusion" xulosa slaydi).`;
+    countGuideline = `\nQAT'IY SLAYD SONI: Massivda QAT'IY ravishda roppa-rosa ${slideCountNum} ta slayd kartochkasi bo'lsin (1-slayd "hero" titul, oraliqdagi ${Math.max(1, slideCountNum - 2)} ta slayd turli xil layoutdagi slaydlar, oxirgi ${slideCountNum}-slayd "conclusion" xulosa). Hech qachon ${slideCountNum} tadan kam yoki ko'p qilma!`;
   }
 
   let detailGuideline = "MA'LUMOT HAJMI: O'RTACHA (Standart darslik va metodik me'yorda, tushunarli va balanslangan tushuntirishlar bilan).";
@@ -277,7 +277,7 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
     detailGuideline = "MA'LUMOT HAJMI: TO'LIQ VA KENGAYTIRILGAN (Chuqur ilmiy ma'lumotlar, aniq raqamlar, kengaytirilgan tushuntirishlar va har bir slayd uchun ma'ruzachining batafsil nutqi (speakerNotes) bilan to'liq ma'ruza konspekti darajasida).";
   }
 
-  const imageGuideline = `RASMLAR USLUBI: ${imageStyle} (Zichligi: ${imageDensity}). Vizual slaydlarda "imageKeyword" parametrini ingliz tilida professional fotolar uchun aniq kalit so'z bilan yozing.`;
+  const imageGuideline = `RASMLAR USLUBI: ${imageStyle} (Zichligi: ${imageDensity}). Har bir slayd uchun ingliz tilida aniq fotorealistik qidiruv so'zini "imageKeyword" parametri sifatida kiriting (masalan: "high school physics electric charges coulomb law laboratory experiment").`;
 
   const prompt = 
     `Mavzu: "${topic}"\n` +
@@ -288,7 +288,7 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
     `Vazifa: Ushbu mavzuni to'liq, chuqur va professional yorituvchi ZAMONAVIY, XILMA-XIL va BETAKROR slayd kartochkalarini tuzib ber.\n` +
     `QAT'IY TALABLAR (Gamma.app, Tome, Pitch va Genspark darajasida):\n` +
     `1. BIR XIL SHABLON TAKRORLANMASIN! Har bir slayd mavzuning ichki mantiqiga mos xilma-xil layout va elementlar joylashuviga ega bo'lsin.\n` +
-    `2. Matnlar mavzuning haqiqiy ilmiy terminlari, aniq raqamlari, misollari va darslikka xos faktlar bilan boyitilsin.\n` +
+    `2. Matnlar yuzaki yoki 3 ta qisqa so'z bilan cheklanmasin! Har bir slayd mavzuning haqiqiy ilmiy terminlari, formulalari, hayotiy misollari va darslikka xos faktlari bilan to'liq boyitilsin.\n` +
     `3. 1-slayd "hero" bo'lib, uning muallif qismida "${authorName}" ko'rsatilsin.\n` +
     `4. Hech qanday LaTeX yoki dollar ($) belgisidan foydalanmang! Kasrlarni 7/12, darajalarni x^2 yoki oddiy harflar bilan yozing.\n` +
     `5. Quyidagi boy slayd turlaridan mavzuga eng moslarini tanlab, xilma-xil ketma-ketlikda foydalaning (Har bir slayd uchun mos 2-3 so'zli inglizcha "imageKeyword" kiriting):\n` +

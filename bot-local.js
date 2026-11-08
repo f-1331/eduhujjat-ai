@@ -164,11 +164,18 @@ function loadDatabase() {
 }
 
 const memoryDb = loadDatabase();
+const initialUsersMap = new Map();
+for (const [k, v] of Object.entries(memoryDb.users || {})) {
+  initialUsersMap.set(String(k), v);
+  const n = parseInt(k, 10);
+  if (!isNaN(n)) initialUsersMap.set(n, v);
+}
+
 const db = {
   prices: memoryDb.prices,
   admins: new Set(memoryDb.admins),
   ownerChatId: memoryDb.ownerChatId || SUPER_OWNER_ID,
-  users: new Map(Object.entries(memoryDb.users).map(([k, v]) => [parseInt(k, 10), v])),
+  users: initialUsersMap,
   userSessions: new Map(),
   simulatedRoles: new Map(Object.entries(memoryDb.simulatedRoles).map(([k, v]) => [parseInt(k, 10), v])),
   deviceAuthorizations: memoryDb.deviceAuthorizations || {},
@@ -183,7 +190,10 @@ const pendingSlideApprovals = new Map();
 
 function startSlideWizard(ctx, initialTopic = '') {
   const userId = ctx.from.id;
-  if (!initialTopic || !initialTopic.trim()) {
+  const isGenericButton = /^(?:🎨|📊|💻)?\s*(?:Gamma AI(?: Taqdimot)?|Slayd Yasash|taqdimot|slayd)\s*$/i.test(String(initialTopic || '').trim());
+  const cleanTopic = isGenericButton ? '' : String(initialTopic || '').trim();
+
+  if (!cleanTopic) {
     slideWizardState.set(userId, {
       step: 'awaiting_topic',
       topic: '',
@@ -191,18 +201,20 @@ function startSlideWizard(ctx, initialTopic = '') {
       slideCount: 5,
       detailLevel: 'medium',
       includeImages: true,
+      imageDensity: 'medium',
+      imageStyle: 'realistic',
       styleName: 'auto'
     });
     return ctx.reply(
-      `🎨 **GAMMA & GENSPARK AI TAQDIMOT YARATUVCHISI**\n\n` +
+      `🎨 **GAMMA & GENSPARK AI TAQDIMOT YARATUVCHISI (1/6)**\n\n` +
       `📌 **Taqdimot mavzusini yozing:**\n` +
-      `Masalan: \`8-sinf biologiya Qon tarkibi va vazifalari\` yoki \`Amir Temur davlati\`\n\n` +
-      `*(Mavzuni to'g'ridan-to'g'ri xabar sifatida yuboring)*`,
+      `Masalan: \`8-sinf biologiya Qon tarkibi va vazifalari\` yoki \`8-sinf fizika Kulon qonuni\`\n\n` +
+      `*(Mavzuni to'g'ridan-to'g'ri xabar sifatida yozib yuboring)*`,
       { parse_mode: 'Markdown' }
     );
   }
 
-  const topic = initialTopic.trim();
+  const topic = cleanTopic;
   slideWizardState.set(userId, {
     step: 'awaiting_author',
     topic,
@@ -210,6 +222,8 @@ function startSlideWizard(ctx, initialTopic = '') {
     slideCount: 5,
     detailLevel: 'medium',
     includeImages: true,
+    imageDensity: 'medium',
+    imageStyle: 'realistic',
     styleName: 'auto'
   });
   return sendWizardAuthorStep(ctx, topic);
@@ -480,12 +494,20 @@ async function executePresentationGeneration(ctx, topic, options = {}) {
 function saveDatabase() {
   try {
     ensureDataDir();
+    const usersObj = {};
+    for (const [k, v] of db.users.entries()) {
+      usersObj[String(k)] = v;
+    }
+    const simulatedRolesObj = {};
+    for (const [k, v] of db.simulatedRoles.entries()) {
+      simulatedRolesObj[String(k)] = v;
+    }
     const serialized = {
       prices: db.prices,
       admins: Array.from(db.admins),
       ownerChatId: db.ownerChatId,
-      users: Object.fromEntries(db.users),
-      simulatedRoles: Object.fromEntries(db.simulatedRoles),
+      users: usersObj,
+      simulatedRoles: simulatedRolesObj,
       deviceAuthorizations: db.deviceAuthorizations || {},
       deviceBindings: db.deviceBindings || {}
     };
@@ -537,8 +559,26 @@ function getEffectiveRole(ctx) {
 
 function getUser(userId) {
   if (!userId) return null;
+  const strId = String(userId);
   const numId = parseInt(userId, 10);
-  return db.users.get(numId) || db.users.get(String(userId)) || null;
+  return db.users.get(strId) || (!isNaN(numId) ? db.users.get(numId) : null) || null;
+}
+
+function setUser(userId, userData) {
+  if (!userId) return;
+  const strId = String(userId);
+  const numId = parseInt(userId, 10);
+  db.users.set(strId, userData);
+  if (!isNaN(numId)) {
+    db.users.set(numId, userData);
+  }
+}
+
+function hasUser(userId) {
+  if (!userId) return false;
+  const strId = String(userId);
+  const numId = parseInt(userId, 10);
+  return db.users.has(strId) || (!isNaN(numId) && db.users.has(numId));
 }
 
 function isUserActive(userId, username) {
@@ -1503,10 +1543,10 @@ bot.command('start', async (ctx) => {
     saveDatabase();
   }
 
-  if (!db.users.has(userId)) {
+  if (!hasUser(userId)) {
     const isOwnerUser = isRealSuperOwner(ctx);
     // Yangi oddiy foydalanuvchi boshida HAR DOIM PENDING (yopiq) bo'ladi
-    db.users.set(userId, {
+    setUser(userId, {
       id: isOwnerUser ? 1 : userId,
       realId: userId,
       name: fullName,
@@ -1567,7 +1607,7 @@ bot.command('start', async (ctx) => {
     });
   }
 
-  const curUser = db.users.get(userId);
+  const curUser = getUser(userId);
   const remainingInfo = curUser?.remainingUses ? `(Qolgan imkoniyat: ${curUser.remainingUses} ta)` : '';
   const accessCode = getAccessCodeForUser(userId);
 
@@ -2188,7 +2228,7 @@ bot.on('callback_query:data', async (ctx) => {
     const [_, targetIdStr, planCode] = data.split('_');
     const targetId = resolveUserId(targetIdStr);
 
-    const user = db.users.get(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
+    const user = getUser(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
     user.status = 'ACTIVE';
 
     let label = 'Faollashtirildi';
@@ -2228,7 +2268,7 @@ bot.on('callback_query:data', async (ctx) => {
       label = '⭐ 1 Oylik Pro';
     }
 
-    db.users.set(targetId, user);
+    setUser(targetId, user);
     saveDatabase();
 
     const code = getAccessCodeForUser(targetId);
@@ -2265,9 +2305,10 @@ bot.on('callback_query:data', async (ctx) => {
     const role = getEffectiveRole(ctx);
     if (role !== 'OWNER' && role !== 'ADMIN') return;
     const targetId = resolveUserId(data.replace('block_', ''));
-    const user = db.users.get(targetId);
+    const user = getUser(targetId);
     if (user) {
       user.status = 'BLOCKED';
+      setUser(targetId, user);
       saveDatabase();
     }
     await ctx.answerCallbackQuery({ text: "Foydalanuvchi rad etildi." });
@@ -2708,7 +2749,22 @@ bot.on('message:text', async (ctx) => {
   if (isSpamming(userId)) return;
 
   // =========================================================================
-  // SLIDE WIZARD TEXT INPUT (Mavzu yoki muallif ismi kiritilganda)
+  // BUYRUQ VA MENYU TUGMALARI BOSILGANDA SLIDE WIZARDNI BEKOR QILISH
+  // =========================================================================
+  const knownMenuButtons = [
+    '🔑 Saytga Kirish Kodi', '🤖 EduAI Yordamchi', '📊 Gamma AI Taqdimot', '🎨 Gamma AI Taqdimot',
+    '💻 Slayd Yasash', '📊 Excel Jadvallar', '📜 Faxriy Yorliq', '💳 Litsenziya Sotib Olish',
+    '👥 Foydalanuvchilar', '⚡ Tezkor Yoqish', '🔍 Nazorat / Tekshirish', '📊 Tizim Statistikasi',
+    '👑 Boshqaruv Paneli', '🔙 Orqaga'
+  ];
+  const isCommandOrMenu = text.startsWith('/') || knownMenuButtons.includes(text);
+
+  if (slideWizardState.has(userId) && isCommandOrMenu) {
+    slideWizardState.delete(userId);
+  }
+
+  // =========================================================================
+  // SLIDE WIZARD TEXT INPUT (Faqat oddiy matn bo'lganda)
   // =========================================================================
   if (slideWizardState.has(userId)) {
     if (!isUserActive(userId, username)) {
@@ -2748,7 +2804,8 @@ bot.on('message:text', async (ctx) => {
   // =========================================================================
   // /slayd BUYRUG'I VA MENYU TUGMALARI
   // =========================================================================
-  if (text.startsWith('/slayd') || text.startsWith('/slide') || text.startsWith('/taqdimot') || text === '📊 Gamma AI Taqdimot' || text === '💻 Slayd Yasash') {
+  if (text.startsWith('/slayd') || text.startsWith('/slide') || text.startsWith('/taqdimot') || 
+      text === '📊 Gamma AI Taqdimot' || text === '🎨 Gamma AI Taqdimot' || text === '💻 Slayd Yasash') {
     if (!isUserActive(userId, username)) {
       return ctx.reply(
         `🔒 **Gamma AI Taqdimot yaratish uchun hisobingizni faollashtiring.**\n\n` +
@@ -2757,10 +2814,9 @@ bot.on('message:text', async (ctx) => {
         { reply_markup: getTariffInlineKeyboard(userId) }
       );
     }
+    const isButton = (text === '📊 Gamma AI Taqdimot' || text === '🎨 Gamma AI Taqdimot' || text === '💻 Slayd Yasash');
     const rawTopic = text.replace(/^\/(?:slayd|slide|taqdimot)\s*/i, '').trim();
-    const topic = rawTopic && rawTopic !== '📊 Gamma AI Taqdimot' && rawTopic !== '💻 Slayd Yasash' 
-      ? rawTopic 
-      : (db.userSessions.get(userId) || '');
+    const topic = (!isButton && rawTopic) ? rawTopic : '';
     return startSlideWizard(ctx, topic);
   }
 
@@ -2808,7 +2864,7 @@ bot.on('message:text', async (ctx) => {
     }
 
     let planLabel = '';
-    const user = db.users.get(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
+    const user = getUser(targetId) || { id: getDisplayUserId(targetId), realId: targetId, name: 'Foydalanuvchi' };
     user.status = 'ACTIVE';
 
     if (durationRaw === 'unlimited' || durationRaw === 'vip' || durationRaw === 'cheksiz' || durationRaw === 'abadiy') {
@@ -2854,7 +2910,7 @@ bot.on('message:text', async (ctx) => {
       );
     }
 
-    db.users.set(targetId, user);
+    setUser(targetId, user);
     saveDatabase();
 
     const code = getAccessCodeForUser(targetId);
@@ -2892,7 +2948,7 @@ bot.on('message:text', async (ctx) => {
   if (text === '🔑 Saytga Kirish Kodi' || text === '/code' || text === '/kod' || text === '/getcode') {
     if (isUserActive(userId, username)) {
       const code = getAccessCodeForUser(userId);
-      const userObj = db.users.get(userId);
+      const userObj = getUser(userId);
       const expiryText = userObj?.expiresAt || (userObj?.remainingUses ? `${userObj.remainingUses} ta hujjat` : 'Cheksiz');
       
       const openKb = new InlineKeyboard()
@@ -3129,7 +3185,7 @@ bot.on('message:text', async (ctx) => {
   }
 
   if (text === 'ℹ️ Mening Hisobim') {
-    const u = db.users.get(userId);
+    const u = getUser(userId);
     const displayId = getDisplayUserId(userId);
     const code = getAccessCodeForUser(userId);
     return ctx.reply(
