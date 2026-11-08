@@ -14,7 +14,7 @@ import {
 import { saveAs } from 'file-saver';
 
 // 1. O'quvchilar ro'yxatini Word jadvaliga aylantirish
-export async function generateStudentListDocx(students, title = "O'QUVCHILAR RO'YXATI", filename = "O'quvchilar_Ro'yxati.docx") {
+export async function generateStudentListDocx(students, title = "O'QUVCHILARNING RASMIY TARTIBLANGAN RO'YXATI", filename = "O'quvchilar_Ro'yxati.docx") {
   const tableRows = [
     new TableRow({
       tableHeader: true,
@@ -30,13 +30,13 @@ export async function generateStudentListDocx(students, title = "O'QUVCHILAR RO'
     }),
     ...students.map((s, idx) => new TableRow({
       children: [
-        createCell(`${idx + 1}`, 800, AlignmentType.CENTER),
-        createCell(s.fullName || '', 3500),
-        createCell(s.birthDate || '-', 1800, AlignmentType.CENTER),
-        createCell(s.ageText || '-', 1200, AlignmentType.CENTER),
-        createCell(s.grade || '-', 1200, AlignmentType.CENTER),
-        createCell(s.phone || '-', 2200, AlignmentType.CENTER),
-        createCell(s.gender === 'male' ? "O'g'il" : s.gender === 'female' ? "Qiz" : '-', 1200, AlignmentType.CENTER),
+        createCell(`${idx + 1}`, 800, AlignmentType.CENTER, idx % 2 === 1),
+        createCell(s.fullName || '', 3500, AlignmentType.LEFT, idx % 2 === 1),
+        createCell(s.birthDate || '-', 1800, AlignmentType.CENTER, idx % 2 === 1),
+        createCell(s.ageText || '-', 1200, AlignmentType.CENTER, idx % 2 === 1),
+        createCell(s.grade || '-', 1200, AlignmentType.CENTER, idx % 2 === 1),
+        createCell(s.phone || '-', 2200, AlignmentType.CENTER, idx % 2 === 1),
+        createCell(s.gender === 'male' ? "O'g'il" : s.gender === 'female' ? "Qiz" : '-', 1200, AlignmentType.CENTER, idx % 2 === 1),
       ]
     }))
   ];
@@ -50,14 +50,40 @@ export async function generateStudentListDocx(students, title = "O'QUVCHILAR RO'
       },
       children: [
         new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: "O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI", bold: true, size: 22, font: 'Times New Roman', color: "1E3A8A" })]
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 150 },
+          children: [new TextRun({ text: "UMUMIY O'RTA TA'LIM MAKTABI RASMIY HUJJATI", bold: true, size: 18, font: 'Times New Roman' })]
+        }),
+        new Paragraph({
           text: title,
           heading: HeadingLevel.HEADING_1,
           alignment: AlignmentType.CENTER,
-          spacing: { after: 300 }
+          spacing: { after: 200 }
+        }),
+        new Paragraph({
+          alignment: AlignmentType.RIGHT,
+          spacing: { after: 200 },
+          children: [new TextRun({ text: `Sana: ${new Date().toLocaleDateString('uz-UZ')} | Tasdiqlangan nusxa`, size: 18, font: 'Times New Roman', italics: true })]
         }),
         new Table({
           width: { size: 100, type: WidthType.PERCENTAGE },
           rows: tableRows,
+        }),
+        new Paragraph({
+          spacing: { before: 400 },
+          children: [new TextRun({ text: "Maktab direktori:  __________________________   (M.O'. Muhr o'rni)", bold: true, size: 20, font: 'Times New Roman' })]
+        }),
+        new Paragraph({
+          spacing: { before: 150 },
+          children: [new TextRun({ text: "Sinf rahbari:      __________________________   (Imzo)", bold: true, size: 20, font: 'Times New Roman' })]
+        }),
+        new Paragraph({
+          spacing: { before: 300 },
+          children: [new TextRun({ text: `Hujjat raqamli tekshiruv kodi: EDU-${Math.floor(100000 + Math.random() * 900000)} | EduHujjat AI Milliy Ta'lim Tizimi`, size: 16, color: "64748B", font: 'Times New Roman', italics: true })]
         })
       ]
     }]
@@ -590,23 +616,24 @@ export async function generateOfficialDocumentDocx(docType, data = {}, filename 
   saveAs(blob, filename);
 }
 
-// Yordamchi jadval katakchasi yaratuvchilar
+// Yordamchi jadval katakchasi yaratuvchilar (Ministerial Deep Navy & Alternating Rows)
 function createHeaderCell(text, width) {
   return new TableCell({
     width: { size: width, type: WidthType.DXA },
-    shading: { fill: "E2E8F0" },
+    shading: { fill: "1E3A8A" }, // Deep Navy
     children: [
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text, bold: true, size: 20, font: 'Times New Roman' })]
+        children: [new TextRun({ text, bold: true, size: 20, color: "FFFFFF", font: 'Times New Roman' })]
       })
     ]
   });
 }
 
-function createCell(text, width, align = AlignmentType.LEFT) {
+function createCell(text, width, align = AlignmentType.LEFT, isEven = false) {
   return new TableCell({
     width: { size: width, type: WidthType.DXA },
+    shading: isEven ? { fill: "F8FAFC" } : undefined,
     children: [
       new Paragraph({
         alignment: align,

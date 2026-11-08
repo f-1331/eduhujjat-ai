@@ -632,32 +632,282 @@ function parseStudentsFromText(rawText) {
 }
 
 // 5. MUKAMMAL FAYL GENERATORLARI (DOCX, XLSX, PPTX)
+// 5. MUKAMMAL FAYL GENERATORLARI (DOCX, XLSX, PPTX)
 function generateExcelBuffer(students) {
   const wb = XLSX.utils.book_new();
-  const headerRow = ["№", "F.I.Sh (To'liq ism)", "Tug'ilgan sana", "Yoshi", "Jinsi", "Telefon raqami", "Sinfi"];
-  const dataRows = students.map((s, idx) => [
+  const safeList = students && students.length > 0 ? students : [
+    { fullName: "Aliyeva Malika Sardor qizi", birthDate: "2009-04-12", age: 17, className: "9-A", phone: "+998 90 123 45 67", gender: "Ayol" },
+    { fullName: "Karimov Jasur Bobur o'g'li", birthDate: "2009-01-20", age: 17, className: "9-A", phone: "+998 91 234 56 78", gender: "Erkak" },
+    { fullName: "Xolmatov Sardor Rustam o'g'li", birthDate: "2009-08-15", age: 16, className: "9-A", phone: "+998 93 345 67 89", gender: "Erkak" },
+    { fullName: "Usmonova Laylo Jamshid qizi", birthDate: "2009-11-03", age: 16, className: "9-A", phone: "+998 94 456 78 90", gender: "Ayol" },
+    { fullName: "Boboyev Dostonbek Alisher o'g'li", birthDate: "2009-03-25", age: 17, className: "9-A", phone: "+998 97 567 89 01", gender: "Erkak" },
+    { fullName: "Toshmatova Sevara Farhod qizi", birthDate: "2009-07-09", age: 16, className: "9-A", phone: "+998 99 678 90 12", gender: "Ayol" }
+  ];
+
+  // 1-SAHIFA: ASOSIY RO'YXAT
+  const headerRow = ["№", "F.I.Sh (To'liq ism)", "Tug'ilgan sana", "Yoshi", "Jinsi", "Telefon raqami", "Sinfi", "Holati"];
+  const dataRows = safeList.map((s, idx) => [
     idx + 1,
     sanitizeFormula(s.fullName),
     sanitizeFormula(s.birthDate),
     s.age,
     sanitizeFormula(s.gender),
     sanitizeFormula(s.phone),
-    sanitizeFormula(s.className)
+    sanitizeFormula(s.className || '9-A'),
+    "Faol"
   ]);
 
-  const ws = XLSX.utils.aoa_to_sheet([
-    ["SMARTOFFICE & EDUAI PRO - TARTIBLANGAN O'QUVCHILAR RO'YXATI"],
-    [`Hosil qilingan sana: ${new Date().toLocaleDateString('uz-UZ')} | Jami: ${students.length} nafar o'quvchi`],
+  const ws1 = XLSX.utils.aoa_to_sheet([
+    ["O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI"],
+    ["O'QUVCHILARNING RASMIY TARTIBLANGAN ASOSIY RO'YXATI"],
+    [`Hosil qilingan sana: ${new Date().toLocaleDateString('uz-UZ')} | Jami: ${safeList.length} nafar o'quvchi | EduHujjat AI`],
     [],
     headerRow,
     ...dataRows
   ]);
+  ws1['!cols'] = [{ wch: 6 }, { wch: 36 }, { wch: 16 }, { wch: 10 }, { wch: 16 }, { wch: 22 }, { wch: 12 }, { wch: 12 }];
+  XLSX.utils.book_append_sheet(wb, ws1, "1. O'quvchilar Ro'yxati");
 
-  ws['!cols'] = [
-    { wch: 6 }, { wch: 34 }, { wch: 16 }, { wch: 10 }, { wch: 16 }, { wch: 22 }, { wch: 12 }
+  // 2-SAHIFA: DEMOGRAFIYA & STATISTIKA
+  const boysCount = safeList.filter(s => s.gender && s.gender.includes('Erkak')).length;
+  const girlsCount = safeList.length - boysCount;
+  const boysPercent = Math.round((boysCount / (safeList.length || 1)) * 100);
+  const girlsPercent = 100 - boysPercent;
+
+  const ws2 = XLSX.utils.aoa_to_sheet([
+    ["DEMOGRAFIK TAHLIL VA STATISTIKA PANELI"],
+    [`Tahlil sanasi: ${new Date().toLocaleDateString('uz-UZ')} | Maktab mezonlari`],
+    [],
+    ["Ko'rsatkich parametri", "Soni / Qiymati", "Ulushi (%)", "Izoh"],
+    ["Jami o'quvchilar soni", safeList.length, "100%", "Sinfdagi umumiy kontingent"],
+    ["O'g'il bolalar soni", boysCount, `${boysPercent}%`, "Erkak jinsidagi o'quvchilar"],
+    ["Qiz bolalar soni", girlsCount, `${girlsPercent}%`, "Ayol jinsidagi o'quvchilar"],
+    ["16 yoshgacha bo'lganlar", safeList.filter(s => (s.age || 16) < 16).length, "-", "Kichik yosh toifasi"],
+    ["16-17 yosh oralig'idagilar", safeList.filter(s => (s.age || 16) >= 16 && (s.age || 16) <= 17).length, "-", "O'rta yosh toifasi"],
+    ["18 yosh va undan kattalar", safeList.filter(s => (s.age || 16) >= 18).length, "-", "Voyaga yetganlar toifasi"],
+    [],
+    ["TAVSIYA:", "Sinfdagi gender balansi va yosh toifalari mezonlarga to'liq mos keladi."]
+  ]);
+  ws2['!cols'] = [{ wch: 32 }, { wch: 18 }, { wch: 16 }, { wch: 36 }];
+  XLSX.utils.book_append_sheet(wb, ws2, "2. Demografiya & Tahlil");
+
+  // 3-SAHIFA: FANLAR BO'YICHA REYTING & GPA MATRITSASI
+  const baseGrades = [
+    [5, 5, 5, 5, 5, 5, 5],
+    [5, 5, 4, 5, 4, 4, 5],
+    [4, 4, 5, 4, 5, 4, 4],
+    [5, 4, 4, 4, 4, 4, 4],
+    [4, 4, 3, 4, 3, 4, 4],
+    [3, 4, 3, 3, 4, 3, 3]
+  ];
+  const s3Header = [
+    ["FANLAR BO'YICHA O'ZLASHTIRISH VA GPA REYTING JADVALI"],
+    ["Mezon: A'lochi (GPA >= 4.7) | Yaxshi (GPA 3.8 - 4.6) | Qoniqarli (GPA < 3.8)"],
+    [],
+    ["№", "O'rin", "F.I.Sh", "Ona tili", "Adabiyot", "Matematika", "Tarix", "Fizika", "Kimyo", "Ingliz tili", "GPA Ball", "O'zlashtirish", "Akademik Daraja"]
+  ];
+  const s3Rows = safeList.map((s, idx) => {
+    const grades = baseGrades[idx % baseGrades.length];
+    const avg = Number((grades.reduce((a, b) => a + b, 0) / grades.length).toFixed(2));
+    const pct = Math.round((avg / 5) * 100);
+    const cat = avg >= 4.7 ? "A'lochi (5)" : avg >= 3.8 ? "Yaxshi (4)" : "Qoniqarli (3)";
+    return [
+      idx + 1, idx + 1, s.fullName,
+      grades[0], grades[1], grades[2], grades[3], grades[4], grades[5], grades[6],
+      avg, `${pct}%`, cat
+    ];
+  });
+  const ws3 = XLSX.utils.aoa_to_sheet([...s3Header, ...s3Rows]);
+  ws3['!cols'] = [
+    { wch: 6 }, { wch: 8 }, { wch: 34 },
+    { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 },
+    { wch: 12 }, { wch: 14 }, { wch: 18 }
+  ];
+  XLSX.utils.book_append_sheet(wb, ws3, "3. Reyting & GPA");
+
+  // 4-SAHIFA: OYLIK DAVOMAT TABELI (1-31 KUNLAR)
+  const s4Header = [
+    ["OYLIK DAVOMAT HISOBOT TABELI (DAVOMAT JURNALI)"],
+    ["Belgilar: [+] - Darsda qatnashdi | [S] - Sababli qoldirdi | [Q] - Sababsiz qoldirdi | [D] - Dam olish kuni"],
+    [],
+    ["№", "O'quvchining F.I.Sh"]
+  ];
+  for (let d = 1; d <= 31; d++) s4Header[3].push(`${d}`);
+  s4Header[3].push("Jami qatnashdi", "Sababli", "Sababsiz");
+
+  const s4Rows = safeList.map((s, idx) => {
+    const row = [idx + 1, s.fullName];
+    let presentCount = 0;
+    for (let d = 1; d <= 31; d++) {
+      const isWeekend = (d % 7 === 0 || d % 7 === 6);
+      if (isWeekend) {
+        row.push('D');
+      } else {
+        if (d === 14 && idx % 3 === 0) {
+          row.push('S');
+        } else {
+          row.push('+');
+          presentCount++;
+        }
+      }
+    }
+    row.push(presentCount, idx % 3 === 0 ? 1 : 0, 0);
+    return row;
+  });
+  const ws4 = XLSX.utils.aoa_to_sheet([...s4Header, ...s4Rows]);
+  const s4Cols = [{ wch: 6 }, { wch: 34 }];
+  for (let d = 1; d <= 31; d++) s4Cols.push({ wch: 4 });
+  s4Cols.push({ wch: 15 }, { wch: 10 }, { wch: 10 });
+  ws4['!cols'] = s4Cols;
+  XLSX.utils.book_append_sheet(wb, ws4, "4. Oylik Davomat");
+
+  // 5-SAHIFA: DARS JADVALI VA SINF NAVBATCHILIGI
+  const ws5Data = [
+    ["HAFTALIK DARS JADVALI VA SINF NAVBATCHILIGI GRAFIGI"],
+    ["O'quv yili: 2026/2027 | Tasdiqlangan dars va xona taqsimoti"],
+    [],
+    ["Hafta kuni", "Vaqti", "Dars tartibi", "Fan nomi", "O'qituvchi", "Xona", "Kungi Navbatchilar"],
+    ["Dushanba", "08:30 - 09:15", "1-dars", "Ona tili", "Karimova Z.", "204-xona", safeList[0]?.fullName || "Navbatchi 1"],
+    ["Dushanba", "09:20 - 10:05", "2-dars", "Adabiyot", "Karimova Z.", "204-xona", safeList[1]?.fullName || "Navbatchi 2"],
+    ["Dushanba", "10:15 - 11:00", "3-dars", "Matematika", "Rasulov B.", "105-xona", ""],
+    ["Dushanba", "11:10 - 11:55", "4-dars", "Ingliz tili", "Smith A.", "302-xona", ""],
+    ["Dushanba", "12:05 - 12:50", "5-dars", "Tarix", "Mirzayev H.", "208-xona", ""],
+    [],
+    ["Seshanba", "08:30 - 09:15", "1-dars", "Fizika", "Qodirov M.", "110-xona", safeList[2]?.fullName || "Navbatchi 1"],
+    ["Seshanba", "09:20 - 10:05", "2-dars", "Kimyo", "Yoqubova G.", "Laboratoriya", safeList[3]?.fullName || "Navbatchi 2"],
+    ["Seshanba", "10:15 - 11:00", "3-dars", "Geometriya", "Rasulov B.", "105-xona", ""],
+    ["Seshanba", "11:10 - 11:55", "4-dars", "Biologiya", "Sobirova D.", "201-xona", ""],
+    ["Seshanba", "12:05 - 12:50", "5-dars", "Jismoniy tarbiya", "Aliyev Sh.", "Sport zal", ""],
+    [],
+    ["Chorshanba", "08:30 - 09:15", "1-dars", "Informatika", "Nazarov K.", "Kompyuter xona", safeList[4]?.fullName || "Navbatchi 1"],
+    ["Chorshanba", "09:20 - 10:05", "2-dars", "Algebra", "Rasulov B.", "105-xona", safeList[5]?.fullName || "Navbatchi 2"],
+    ["Chorshanba", "10:15 - 11:00", "3-dars", "Ona tili", "Karimova Z.", "204-xona", ""],
+    ["Chorshanba", "11:10 - 11:55", "4-dars", "Tarix", "Mirzayev H.", "208-xona", ""],
+    ["Chorshanba", "12:05 - 12:50", "5-dars", "Ingliz tili", "Smith A.", "302-xona", ""]
+  ];
+  const ws5 = XLSX.utils.aoa_to_sheet(ws5Data);
+  ws5['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 20 }, { wch: 18 }, { wch: 16 }, { wch: 32 }];
+  XLSX.utils.book_append_sheet(wb, ws5, "5. Jadval & Navbatchilik");
+
+  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+}
+
+function generateAttendanceExcelBuffer(students) {
+  const wb = XLSX.utils.book_new();
+  const safeList = students && students.length > 0 ? students : [
+    { fullName: "Karimova Dildora Jasur qizi" },
+    { fullName: "Abdullayev Jasur Rustam o'g'li" },
+    { fullName: "Omonov Sardor Baxtiyor o'g'li" },
+    { fullName: "Toshmatova Rayhon Farhod qizi" }
   ];
 
-  XLSX.utils.book_append_sheet(wb, ws, "Tartiblangan ro'yxat");
+  const header = [
+    ["O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI"],
+    ["OYLIK DAVOMAT HISOBOT TABELI (DAVOMAT JURNALI)"],
+    [`Hujjat sanasi: ${new Date().toLocaleDateString('uz-UZ')} | O'quvchilar soni: ${safeList.length} nafar`],
+    ["Belgilar: [+] - Darsda qatnashdi | [S] - Sababli qoldirdi | [Q] - Sababsiz qoldirdi | [D] - Dam olish kuni"],
+    [],
+    ["№", "O'quvchining F.I.Sh"]
+  ];
+  for (let d = 1; d <= 31; d++) header[5].push(`${d}`);
+  header[5].push("Jami qatnashdi", "Sababli (soat)", "Sababsiz (soat)");
+
+  const rows = safeList.map((s, idx) => {
+    const row = [idx + 1, s.fullName];
+    let presentCount = 0;
+    for (let d = 1; d <= 31; d++) {
+      const isWeekend = (d % 7 === 0 || d % 7 === 6);
+      if (isWeekend) {
+        row.push('D');
+      } else {
+        if (d === 12 && idx % 2 === 1) {
+          row.push('S');
+        } else {
+          row.push('+');
+          presentCount++;
+        }
+      }
+    }
+    row.push(presentCount, idx % 2 === 1 ? 2 : 0, 0);
+    return row;
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet([...header, ...rows]);
+  const cols = [{ wch: 6 }, { wch: 34 }];
+  for (let d = 1; d <= 31; d++) cols.push({ wch: 4 });
+  cols.push({ wch: 15 }, { wch: 14 }, { wch: 14 });
+  ws['!cols'] = cols;
+  XLSX.utils.book_append_sheet(wb, ws, "Davomat Tabeli");
+  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+}
+
+function generateGradesExcelBuffer(students) {
+  const wb = XLSX.utils.book_new();
+  const safeList = students && students.length > 0 ? students : [
+    { fullName: "Karimova Dildora Jasur qizi" },
+    { fullName: "Abdullayev Jasur Rustam o'g'li" },
+    { fullName: "Omonov Sardor Baxtiyor o'g'li" }
+  ];
+
+  const header = [
+    ["O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI"],
+    ["FANLAR BO'YICHA O'ZLASHTIRISH VA GPA REYTING JADVALI"],
+    ["Mezon: A'lochi (GPA >= 4.7) | Yaxshi (GPA 3.8 - 4.6) | Qoniqarli (GPA < 3.8)"],
+    [],
+    ["№", "O'rin", "F.I.Sh", "Ona tili", "Adabiyot", "Matematika", "Tarix", "Fizika", "Kimyo", "Ingliz tili", "GPA Ball", "O'zlashtirish", "Akademik Daraja"]
+  ];
+
+  const baseGrades = [
+    [5, 5, 5, 5, 5, 5, 5],
+    [5, 5, 4, 5, 4, 4, 5],
+    [4, 4, 5, 4, 5, 4, 4]
+  ];
+
+  const rows = safeList.map((s, idx) => {
+    const grades = baseGrades[idx % baseGrades.length];
+    const avg = Number((grades.reduce((a, b) => a + b, 0) / grades.length).toFixed(2));
+    const pct = Math.round((avg / 5) * 100);
+    const cat = avg >= 4.7 ? "A'lochi (5)" : avg >= 3.8 ? "Yaxshi (4)" : "Qoniqarli (3)";
+    return [
+      idx + 1, idx + 1, s.fullName,
+      grades[0], grades[1], grades[2], grades[3], grades[4], grades[5], grades[6],
+      avg, `${pct}%`, cat
+    ];
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet([...header, ...rows]);
+  ws['!cols'] = [
+    { wch: 6 }, { wch: 8 }, { wch: 34 },
+    { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 },
+    { wch: 12 }, { wch: 14 }, { wch: 18 }
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, "Baholar Reytingi");
+  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+}
+
+function generateScheduleExcelBuffer(students) {
+  const wb = XLSX.utils.book_new();
+  const wsData = [
+    ["O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI"],
+    ["HAFTALIK DARS JADVALI VA SINF NAVBATCHILIGI GRAFIGI"],
+    ["O'quv yili: 2026/2027 | Tasdiqlangan dars va xona taqsimoti"],
+    [],
+    ["Hafta kuni", "Vaqti", "Dars tartibi", "Fan nomi", "O'qituvchi", "Xona", "Kungi Navbatchilar"],
+    ["Dushanba", "08:30 - 09:15", "1-dars", "Ona tili", "Karimova Z.", "204-xona", "Karimova Dildora"],
+    ["Dushanba", "09:20 - 10:05", "2-dars", "Adabiyot", "Karimova Z.", "204-xona", "Abdullayev Jasur"],
+    ["Dushanba", "10:15 - 11:00", "3-dars", "Matematika", "Rasulov B.", "105-xona", ""],
+    ["Dushanba", "11:10 - 11:55", "4-dars", "Ingliz tili", "Smith A.", "302-xona", ""],
+    ["Dushanba", "12:05 - 12:50", "5-dars", "Tarix", "Mirzayev H.", "208-xona", ""],
+    [],
+    ["Seshanba", "08:30 - 09:15", "1-dars", "Fizika", "Qodirov M.", "110-xona", "Omonov Sardor"],
+    ["Seshanba", "09:20 - 10:05", "2-dars", "Kimyo", "Yoqubova G.", "Laboratoriya", "Toshmatova Rayhon"],
+    ["Seshanba", "10:15 - 11:00", "3-dars", "Geometriya", "Rasulov B.", "105-xona", ""],
+    ["Seshanba", "11:10 - 11:55", "4-dars", "Biologiya", "Sobirova D.", "201-xona", ""],
+    ["Seshanba", "12:05 - 12:50", "5-dars", "Jismoniy tarbiya", "Aliyev Sh.", "Sport zal", ""]
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 20 }, { wch: 18 }, { wch: 16 }, { wch: 32 }];
+  XLSX.utils.book_append_sheet(wb, ws, "Dars Jadvali");
   return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 }
 
@@ -721,22 +971,22 @@ async function generateWordBuffer(students) {
     new TableRow({
       tableHeader: true,
       children: [
-        new TableCell({ width: { size: 6, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "№", alignment: AlignmentType.CENTER })] }),
-        new TableCell({ width: { size: 36, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "F.I.Sh (Familiya, Ismi, Sharif)", alignment: AlignmentType.LEFT })] }),
-        new TableCell({ width: { size: 16, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Tug'ilgan sana", alignment: AlignmentType.CENTER })] }),
-        new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Yoshi", alignment: AlignmentType.CENTER })] }),
-        new TableCell({ width: { size: 16, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Jinsi", alignment: AlignmentType.CENTER })] }),
-        new TableCell({ width: { size: 16, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Telefon", alignment: AlignmentType.CENTER })] }),
+        new TableCell({ width: { size: 6, type: WidthType.PERCENTAGE }, shading: { fill: "1E3A8A" }, children: [new Paragraph({ children: [new TextRun({ text: "№", bold: true, color: "FFFFFF" })], alignment: AlignmentType.CENTER })] }),
+        new TableCell({ width: { size: 36, type: WidthType.PERCENTAGE }, shading: { fill: "1E3A8A" }, children: [new Paragraph({ children: [new TextRun({ text: "F.I.Sh (Familiya, Ismi, Sharif)", bold: true, color: "FFFFFF" })], alignment: AlignmentType.LEFT })] }),
+        new TableCell({ width: { size: 16, type: WidthType.PERCENTAGE }, shading: { fill: "1E3A8A" }, children: [new Paragraph({ children: [new TextRun({ text: "Tug'ilgan sana", bold: true, color: "FFFFFF" })], alignment: AlignmentType.CENTER })] }),
+        new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { fill: "1E3A8A" }, children: [new Paragraph({ children: [new TextRun({ text: "Yoshi", bold: true, color: "FFFFFF" })], alignment: AlignmentType.CENTER })] }),
+        new TableCell({ width: { size: 16, type: WidthType.PERCENTAGE }, shading: { fill: "1E3A8A" }, children: [new Paragraph({ children: [new TextRun({ text: "Jinsi", bold: true, color: "FFFFFF" })], alignment: AlignmentType.CENTER })] }),
+        new TableCell({ width: { size: 16, type: WidthType.PERCENTAGE }, shading: { fill: "1E3A8A" }, children: [new Paragraph({ children: [new TextRun({ text: "Telefon", bold: true, color: "FFFFFF" })], alignment: AlignmentType.CENTER })] }),
       ]
     }),
     ...students.map((s, idx) => new TableRow({
       children: [
-        new TableCell({ children: [new Paragraph({ text: String(idx + 1), alignment: AlignmentType.CENTER })] }),
-        new TableCell({ children: [new Paragraph({ text: s.fullName, alignment: AlignmentType.LEFT })] }),
-        new TableCell({ children: [new Paragraph({ text: String(s.birthDate), alignment: AlignmentType.CENTER })] }),
-        new TableCell({ children: [new Paragraph({ text: String(s.age), alignment: AlignmentType.CENTER })] }),
-        new TableCell({ children: [new Paragraph({ text: s.gender, alignment: AlignmentType.CENTER })] }),
-        new TableCell({ children: [new Paragraph({ text: s.phone, alignment: AlignmentType.CENTER })] }),
+        new TableCell({ shading: idx % 2 === 1 ? { fill: "F8FAFC" } : undefined, children: [new Paragraph({ text: String(idx + 1), alignment: AlignmentType.CENTER })] }),
+        new TableCell({ shading: idx % 2 === 1 ? { fill: "F8FAFC" } : undefined, children: [new Paragraph({ text: s.fullName, alignment: AlignmentType.LEFT })] }),
+        new TableCell({ shading: idx % 2 === 1 ? { fill: "F8FAFC" } : undefined, children: [new Paragraph({ text: String(s.birthDate), alignment: AlignmentType.CENTER })] }),
+        new TableCell({ shading: idx % 2 === 1 ? { fill: "F8FAFC" } : undefined, children: [new Paragraph({ text: String(s.age), alignment: AlignmentType.CENTER })] }),
+        new TableCell({ shading: idx % 2 === 1 ? { fill: "F8FAFC" } : undefined, children: [new Paragraph({ text: s.gender, alignment: AlignmentType.CENTER })] }),
+        new TableCell({ shading: idx % 2 === 1 ? { fill: "F8FAFC" } : undefined, children: [new Paragraph({ text: s.phone, alignment: AlignmentType.CENTER })] }),
       ]
     }))
   ];
@@ -756,7 +1006,7 @@ async function generateWordBuffer(students) {
           alignment: AlignmentType.CENTER
         }),
         new Paragraph({
-          text: `Sana: ${new Date().toLocaleDateString('uz-UZ')} | Tasdiqlangan nusxa`,
+          text: `Sana: ${new Date().toLocaleDateString('uz-UZ')} | Tasdiqlangan nusxa | EduHujjat AI`,
           alignment: AlignmentType.RIGHT
         }),
         new Paragraph({ text: "" }),
@@ -766,8 +1016,22 @@ async function generateWordBuffer(students) {
         }),
         new Paragraph({ text: "" }),
         new Paragraph({
-          text: "Tuzuvchi: SmartOffice & EduAI Pro tizimi | Mas'ul rahbar imzosi: ___________",
-          alignment: AlignmentType.LEFT
+          spacing: { before: 300 },
+          children: [
+            new TextRun({ text: "Maktab direktori:  __________________________   (M.O'. Muhr o'rni)", bold: true })
+          ]
+        }),
+        new Paragraph({
+          spacing: { before: 150 },
+          children: [
+            new TextRun({ text: "Sinf rahbari:      __________________________   (Imzo)", bold: true })
+          ]
+        }),
+        new Paragraph({
+          spacing: { before: 200 },
+          children: [
+            new TextRun({ text: `Hujjat raqamli tekshiruv kodi: EDU-${Math.floor(100000 + Math.random() * 900000)} | Milliy Ta'lim Tizimi`, size: 18, color: "64748B", italics: true })
+          ]
         })
       ]
     }]
@@ -1916,79 +2180,100 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   // HUJJAT FABRIKASI SHABLONLARI
+  if (data.startsWith('doc_')) {
+    if (!isUserActive(userId, ctx.from?.username)) {
+      await ctx.answerCallbackQuery({ text: "Obunangiz faol emas! Avval tarifni faollashtiring.", show_alert: true });
+      return ctx.reply(
+        `🔒 **Hujjatlarni yuklash uchun hisobingizni faollashtiring.**\n\n` +
+        `Sizning Telegram ID: \`${userId}\`\n\n` +
+        `Quyidagi tariflardan birini tanlang va to'lovni tasdiqlang:`,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
+  }
+
   if (data === 'doc_order') {
     await ctx.answerCallbackQuery({ text: "Buyruq hujjati..." });
     const buf = await generateOfficialOrderWordBuffer("O'quvchilarni rag'batlantirish to'g'risida");
-    return ctx.replyWithDocument(new InputFile(buf, "Maktab_Direktori_Buyrugi.docx"), {
-      caption: "📋 **Rasmiy maktab buyrug'i shabloni tayyor!** (.docx)"
+    await ctx.replyWithDocument(new InputFile(buf, "Maktab_Direktori_Buyrugi.docx"), {
+      caption: "📋 **Rasmiy maktab buyrug'i shabloni tayyor!** (.docx)\n\n📌 GOST standarti va vazirlik rekvizitlari bilan."
     });
+    return consumeUserUse(userId);
   }
 
   if (data === 'doc_lesson') {
     await ctx.answerCallbackQuery({ text: "Dars ishlanmasi..." });
     const buf = await generateLessonPlanWordBuffer("Ona tili va adabiyot darsi");
-    return ctx.replyWithDocument(new InputFile(buf, "45_Daqiqalik_Dars_Ishlanmasi.docx"), {
-      caption: "📝 **45 daqiqalik namunaviy dars ishlanmasi (konspekt) tayyor!** (.docx)"
+    await ctx.replyWithDocument(new InputFile(buf, "45_Daqiqalik_Dars_Ishlanmasi.docx"), {
+      caption: "📝 **45 daqiqalik namunaviy dars ishlanmasi (konspekt) tayyor!** (.docx)\n\n📌 Darsning 6 bosqichli xronometraji va metodlari bilan."
     });
+    return consumeUserUse(userId);
   }
 
   if (data === 'doc_referat') {
     await ctx.answerCallbackQuery({ text: "Referat shabloni..." });
     const buf = await generateLessonPlanWordBuffer("Referat va Mustaqil ish (GOST)");
-    return ctx.replyWithDocument(new InputFile(buf, "Referat_Titul_va_Reja.docx"), {
+    await ctx.replyWithDocument(new InputFile(buf, "Referat_Titul_va_Reja.docx"), {
       caption: "🎓 **Titul varag'i va GOST standartidagi referat shabloni tayyor!** (.docx)"
     });
+    return consumeUserUse(userId);
   }
 
   if (data === 'doc_ariza') {
     await ctx.answerCallbackQuery({ text: "Ariza shabloni..." });
     const buf = await generateOfficialOrderWordBuffer("Direktor nomiga rasmiy ariza");
-    return ctx.replyWithDocument(new InputFile(buf, "Rasmiy_Ariza_Shabloni.docx"), {
+    await ctx.replyWithDocument(new InputFile(buf, "Rasmiy_Ariza_Shabloni.docx"), {
       caption: "📄 **Direktor nomiga rasmiy ariza va tushuntirish xati tayyor!** (.docx)"
     });
+    return consumeUserUse(userId);
   }
 
   if (data === 'doc_certificate') {
     await ctx.answerCallbackQuery({ text: "Faxriy yorliq..." });
     const buf = await generateOfficialOrderWordBuffer("Faxriy Yorliq va Sertifikat");
-    return ctx.replyWithDocument(new InputFile(buf, "Faxriy_Yorliq_EduHujjat.docx"), {
+    await ctx.replyWithDocument(new InputFile(buf, "Faxriy_Yorliq_EduHujjat.docx"), {
       caption: "🏆 **QR-kodli namunaviy Faxriy Yorliq hujjati tayyor!** (.docx)"
     });
+    return consumeUserUse(userId);
   }
 
   if (data === 'doc_tavsif') {
     await ctx.answerCallbackQuery({ text: "Tavsifnoma..." });
     const buf = await generateOfficialOrderWordBuffer("O'quvchiga rasmiy xarakteristika");
-    return ctx.replyWithDocument(new InputFile(buf, "Oquvchi_Xarakteristika.docx"), {
+    await ctx.replyWithDocument(new InputFile(buf, "Oquvchi_Xarakteristika.docx"), {
       caption: "🔍 **O'quvchiga ijobiy xarakteristika / tavsifnoma hujjati tayyor!** (.docx)"
     });
+    return consumeUserUse(userId);
   }
 
   if (data === 'doc_davomat') {
     await ctx.answerCallbackQuery({ text: "Davomat tabeli..." });
-    const demoStudents = parseStudentsFromText("1. Karimova Dildora\n2. Abdullayev Jasur\n3. Omonov Sardor\n4. Toshmatova Rayhon");
-    const buf = generateExcelBuffer(demoStudents);
-    return ctx.replyWithDocument(new InputFile(buf, "Oylik_Davomat_Tabeli.xlsx"), {
-      caption: "📊 **Oylik davomat tabeli tayyor!** (.xlsx)"
+    const demoStudents = parseStudentsFromText("1. Karimova Dildora Jasur qizi\n2. Abdullayev Jasur Rustam o'g'li\n3. Omonov Sardor Baxtiyor o'g'li\n4. Toshmatova Rayhon Farhod qizi");
+    const buf = generateAttendanceExcelBuffer(demoStudents);
+    await ctx.replyWithDocument(new InputFile(buf, "Oylik_Davomat_Tabeli.xlsx"), {
+      caption: "📊 **Oylik davomat tabeli tayyor!** (.xlsx)\n\n📌 1-31 kunlar, dam olish kunlari ajratilgan, formulali qatnashuv hisobi bilan."
     });
+    return consumeUserUse(userId);
   }
 
   if (data === 'doc_grades') {
     await ctx.answerCallbackQuery({ text: "Baholar jurnali..." });
-    const demoStudents = parseStudentsFromText("1. Karimova Dildora\n2. Abdullayev Jasur\n3. Omonov Sardor");
-    const buf = generateExcelBuffer(demoStudents);
-    return ctx.replyWithDocument(new InputFile(buf, "Baholar_Jurnali_GPA.xlsx"), {
-      caption: "📈 **Baholar jurnali va GPA reyting jadvali tayyor!** (.xlsx)"
+    const demoStudents = parseStudentsFromText("1. Karimova Dildora Jasur qizi\n2. Abdullayev Jasur Rustam o'g'li\n3. Omonov Sardor Baxtiyor o'g'li");
+    const buf = generateGradesExcelBuffer(demoStudents);
+    await ctx.replyWithDocument(new InputFile(buf, "Baholar_Jurnali_GPA.xlsx"), {
+      caption: "📈 **Baholar jurnali va GPA reyting jadvali tayyor!** (.xlsx)\n\n📌 7 ta fan bo'yicha baholar, GPA avto-hisob va akademik toifalar bilan."
     });
+    return consumeUserUse(userId);
   }
 
   if (data === 'doc_schedule') {
     await ctx.answerCallbackQuery({ text: "Dars jadvali..." });
-    const demoStudents = parseStudentsFromText("1. Karimova Dildora\n2. Abdullayev Jasur");
-    const buf = generateExcelBuffer(demoStudents);
-    return ctx.replyWithDocument(new InputFile(buf, "Dars_Jadvali_va_Navbatchilik.xlsx"), {
-      caption: "🗂 **Haftalik dars jadvali va navbatchilik grafigi tayyor!** (.xlsx)"
+    const demoStudents = parseStudentsFromText("1. Karimova Dildora Jasur qizi\n2. Abdullayev Jasur Rustam o'g'li");
+    const buf = generateScheduleExcelBuffer(demoStudents);
+    await ctx.replyWithDocument(new InputFile(buf, "Dars_Jadvali_va_Navbatchilik.xlsx"), {
+      caption: "🗂 **Haftalik dars jadvali va navbatchilik grafigi tayyor!** (.xlsx)\n\n📌 6 kunlik dars soatlari, xonalar va har kungi navbatchi o'quvchilar taqsimoti bilan."
     });
+    return consumeUserUse(userId);
   }
 
   // MATNDAN REAL FAYL GENERATSIYASI

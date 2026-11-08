@@ -355,11 +355,14 @@ export function resolveSlideArchitecture(card, index, totalSlides) {
   if (type === 'timeline' || type === 'roadmap' || type === 'process') return 'timeline_steps';
   if (type === 'quiz_slide' || type === 'quiz') return 'quiz_interactive';
   if (type === 'split' || type === 'versus') return 'split_versus';
-  if (type === 'quote') return 'quote_impact';
-  if (type === 'summary') return 'summary_takeaways';
+  if (type === 'pros_cons' || type === 'comparison') return 'pros_cons';
+  if (type === 'flow' || type === 'flow_diagram') return 'flow_diagram';
+  if (type === 'swot' || type === 'swot_analysis') return 'swot_analysis';
+  if (type === 'quote' || type === 'citation') return 'citation_quote';
+  if (type === 'summary' || type === 'conclusion') return 'summary_takeaways';
 
-  // Modular distribution across 10 distinct architectural families
-  const familyIndex = index % 8;
+  // Modular distribution across 12 distinct architectural families
+  const familyIndex = index % 12;
   switch (familyIndex) {
     case 1: return 'bento_3';
     case 2: return 'split_image';
@@ -368,6 +371,10 @@ export function resolveSlideArchitecture(card, index, totalSlides) {
     case 5: return 'stats_kpi';
     case 6: return 'timeline_steps';
     case 7: return 'split_versus';
+    case 8: return 'pros_cons';
+    case 9: return 'flow_diagram';
+    case 10: return 'swot_analysis';
+    case 11: return 'citation_quote';
     default: return 'concept_card';
   }
 }
@@ -719,6 +726,143 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
     });
     slide.addText(card.answer || "To'g'ri javob tahlili", {
       x: 1.05, y: 4.58, w: 7.9, h: 0.68, fontSize: 10.5, color: style.subtext, fontFace: 'Arial'
+    });
+    return;
+  }
+
+  // 10. PROS & CONS ARCHITECTURE (Afzalliklar va Kamchiliklar / Yutuqlar va Xatarlar)
+  if (arch === 'pros_cons') {
+    slide.addText(card.title || "Qiyosiy Afzalliklar va Xatarlar Tahlili", {
+      x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
+    });
+    // Chap: Afzalliklar (Green Tint)
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 0.8, y: 1.25, w: 4.0, h: 4.0, fill: { color: style.cardBg }, line: { color: "10B981", width: 1.5 }, rectRadius: 0.12
+    });
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 0.8, y: 1.25, w: 4.0, h: 0.08, fill: { color: "10B981" }, line: { color: "10B981", width: 0 }, rectRadius: 0.04
+    });
+    slide.addText(card.prosTitle || "✅ Afzalliklar va Imkoniyatlar", {
+      x: 1.05, y: 1.45, w: 3.5, h: 0.4, fontSize: 14, bold: true, color: "10B981", fontFace: 'Arial'
+    });
+    const prosBullets = (card.pros || card.leftBullets || ["Yuqori samaradorlik va tejamkorlik", "Tezkor joriy etish imkoniyati", "Ilmiy mezonlarga to'liq moslik"]).map(p => `✓  ${p}`).join("\n\n");
+    slide.addText(prosBullets, {
+      x: 1.05, y: 2.0, w: 3.5, h: 3.0, fontSize: 11, color: style.text, fontFace: 'Arial'
+    });
+
+    // O'ng: Kamchiliklar / Xatarlar (Rose / Coral Tint)
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 5.2, y: 1.25, w: 4.0, h: 4.0, fill: { color: style.cardBg }, line: { color: "F43F5E", width: 1.5 }, rectRadius: 0.12
+    });
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 5.2, y: 1.25, w: 4.0, h: 0.08, fill: { color: "F43F5E" }, line: { color: "F43F5E", width: 0 }, rectRadius: 0.04
+    });
+    slide.addText(card.consTitle || "⚠️ E'tibor Qaratiladigan Jihatlar", {
+      x: 5.45, y: 1.45, w: 3.5, h: 0.4, fontSize: 14, bold: true, color: "F43F5E", fontFace: 'Arial'
+    });
+    const consBullets = (card.cons || card.rightBullets || ["Dastlabki resurslar va vaqt talab etilishi", "Doimiy monitoring va nazorat zarurati", "Texnik va insoniy omillar hisobi"]).map(c => `✕  ${c}`).join("\n\n");
+    slide.addText(consBullets, {
+      x: 5.45, y: 2.0, w: 3.5, h: 3.0, fontSize: 11, color: style.subtext, fontFace: 'Arial'
+    });
+    return;
+  }
+
+  // 11. FLOW DIAGRAM (4 ta gorizontal ketma-ket qadam va ko'rsatkichlar)
+  if (arch === 'flow_diagram') {
+    slide.addText(card.title || "Bosqichma-Bosqich Jarayon Sxemasi", {
+      x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
+    });
+    const flowSteps = (card.flowSteps || card.steps || [
+      { step: "01", title: "Tashxis & Reja", desc: "Dastlabki tahlil va mezonlar" },
+      { step: "02", title: "Tadqiqot", desc: "Ilmiy manbalar va ma'lumotlar" },
+      { step: "03", title: "Amaliyot", desc: "Metodlarni darsda qo'llash" },
+      { step: "04", title: "Natija & Baholash", desc: "Xulosa va monitoring" }
+    ]).slice(0, 4);
+
+    flowSteps.forEach((st, idx) => {
+      const xPos = 0.8 + (idx * 2.15);
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: xPos, y: 1.5, w: 1.95, h: 3.6, fill: { color: style.cardBg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.1
+      });
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: xPos, y: 1.5, w: 1.95, h: 0.08, fill: { color: idx % 2 === 0 ? style.accent : style.accent2 }, line: { color: style.accent, width: 0 }, rectRadius: 0.04
+      });
+      slide.addShape(pres.ShapeType.ellipse, {
+        x: xPos + 0.65, y: 1.75, w: 0.65, h: 0.65, fill: { color: style.bg }, line: { color: style.accent, width: 1.5 }
+      });
+      slide.addText(st.step || `0${idx + 1}`, {
+        x: xPos + 0.65, y: 1.75, w: 0.65, h: 0.65, fontSize: 13, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial'
+      });
+      slide.addText(st.title, {
+        x: xPos + 0.1, y: 2.6, w: 1.75, h: 0.5, fontSize: 12, bold: true, color: style.text, align: 'center', fontFace: 'Arial'
+      });
+      slide.addText(st.desc, {
+        x: xPos + 0.1, y: 3.15, w: 1.75, h: 1.7, fontSize: 10, color: style.subtext, align: 'center', fontFace: 'Arial'
+      });
+      // Strelka pointer (oradagi qadamlar uchun)
+      if (idx < 3) {
+        slide.addText("➔", {
+          x: xPos + 1.95, y: 3.0, w: 0.25, h: 0.4, fontSize: 14, bold: true, color: style.accent2, align: 'center', valign: 'middle', fontFace: 'Arial'
+        });
+      }
+    });
+    return;
+  }
+
+  // 12. SWOT ANALYSIS (2x2 Strategik Matritsa)
+  if (arch === 'swot_analysis') {
+    slide.addText(card.title || "SWOT Strategik Tahlil Matritsasi", {
+      x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
+    });
+    const swotBoxes = [
+      { tag: "S", title: "KUCHLI TOMONLAR", col: "10B981", x: 0.8, y: 1.25, bullets: card.swotS || ["Yuqori ilmiy asoslanganlik", "Tizimli yondashuv", "Oson o'zlashtirish"] },
+      { tag: "W", title: "ZAIF TOMONLAR", col: "F59E0B", x: 5.2, y: 1.25, bullets: card.swotW || ["Qo'shimcha vaqt sarfi", "Tajriba yetishmasligi", "Texnik jihozlar ehtiyoji"] },
+      { tag: "O", title: "IMKONIYATLAR", col: "3B82F6", x: 0.8, y: 3.35, bullets: card.swotO || ["Yangi texnologiyalar integratsiyasi", "Samaradorlikni oshirish", "Innovatsion tajriba"] },
+      { tag: "T", title: "XAVF-XATARLAR", col: "EF4444", x: 5.2, y: 3.35, bullets: card.swotT || ["Tashqi mezonlarning o'zgarishi", "Talabchanlik darajasi", "Motivatsiya pasayishi"] }
+    ];
+    swotBoxes.forEach(box => {
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: box.x, y: box.y, w: 4.0, h: 1.95, fill: { color: style.cardBg }, line: { color: box.col, width: 1.2 }, rectRadius: 0.1
+      });
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: box.x, y: box.y, w: 4.0, h: 0.06, fill: { color: box.col }, line: { color: box.col, width: 0 }, rectRadius: 0.03
+      });
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: box.x + 0.15, y: box.y + 0.15, w: 0.45, h: 0.32, fill: { color: style.bg }, line: { color: box.col, width: 1 }, rectRadius: 0.05
+      });
+      slide.addText(box.tag, {
+        x: box.x + 0.15, y: box.y + 0.15, w: 0.45, h: 0.32, fontSize: 11, bold: true, color: box.col, align: 'center', valign: 'middle', fontFace: 'Arial'
+      });
+      slide.addText(box.title, {
+        x: box.x + 0.7, y: box.y + 0.15, w: 3.15, h: 0.32, fontSize: 11.5, bold: true, color: box.col, fontFace: 'Arial'
+      });
+      const lines = box.bullets.slice(0, 3).map(b => `• ${b}`).join("\n");
+      slide.addText(lines, {
+        x: box.x + 0.2, y: box.y + 0.55, w: 3.65, h: 1.3, fontSize: 10, color: style.text, fontFace: 'Arial'
+      });
+    });
+    return;
+  }
+
+  // 13. CITATION QUOTE (Keynote Iqtibos & Ilmiy Xulosa)
+  if (arch === 'citation_quote') {
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 0.8, y: 0.85, w: 8.4, h: 4.4, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1.5 }, rectRadius: 0.15
+    });
+    slide.addShape(pres.ShapeType.roundRect, {
+      x: 0.8, y: 0.85, w: 8.4, h: 0.08, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.04
+    });
+    slide.addText("“", {
+      x: 1.2, y: 1.0, w: 1.2, h: 1.0, fontSize: 72, bold: true, color: style.accent, fontFace: 'Georgia'
+    });
+    slide.addText(card.quote || card.mainConcept || "Ilm va tafakkur insoniyat taraqqiyotining eng buyuk qurolidir.", {
+      x: 1.5, y: 1.9, w: 7.0, h: 1.8, fontSize: 18, italic: true, color: style.text, align: 'center', valign: 'middle', fontFace: 'Georgia'
+    });
+    slide.addShape(pres.ShapeType.line, {
+      x: 3.5, y: 3.9, w: 3.0, h: 0, line: { color: style.accent2, width: 1.5 }
+    });
+    slide.addText(card.author || card.badge || authorName || "EduAI Ilmiy Kengashi", {
+      x: 1.5, y: 4.1, w: 7.0, h: 0.45, fontSize: 12.5, bold: true, color: style.accent2, align: 'center', fontFace: 'Arial'
     });
     return;
   }

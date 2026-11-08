@@ -63,7 +63,7 @@ function MainAppContent() {
     { id: 'certificate', label: t.modules.certificate, icon: Award, color: 'text-amber-500' },
   ];
 
-  if (activeRole === 'OWNER' || activeRole === 'ADMIN') {
+  if (isActualOwner) {
     navItems.unshift({
       id: 'admin_panel',
       label: "👑 Boshqaruv Markazi",

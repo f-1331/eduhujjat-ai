@@ -59,19 +59,16 @@ export function AuthProvider({ children }) {
         return window.Telegram.WebApp.initDataUnsafe.user;
       }
     } catch (e) {}
-    return {
-      id: 1,
-      realId: SUPER_OWNER_ID,
-      username: 'fayzbek1331',
-      first_name: 'Fayzbek',
-      last_name: 'Owner'
-    };
+    return null;
   });
 
-  const isActualOwner = 
-    currentUser?.id === 1 || 
-    currentUser?.id === SUPER_OWNER_ID || 
-    currentUser?.username?.toLowerCase() === OWNER_USERNAME.toLowerCase();
+  const isActualOwner = Boolean(
+    currentUser && (
+      currentUser.id === SUPER_OWNER_ID || 
+      currentUser.realId === SUPER_OWNER_ID || 
+      (currentUser.username && currentUser.username.toLowerCase() === OWNER_USERNAME.toLowerCase())
+    )
+  );
 
   const [activeRole, setActiveRole] = useState(() => {
     return isActualOwner ? 'OWNER' : 'USER';
@@ -450,8 +447,9 @@ export function AuthProvider({ children }) {
   };
 
   const hasAccess = () => {
-    if (activeRole === 'OWNER' || activeRole === 'ADMIN' || activeRole === 'INSPECTOR') return true;
-    return userAccessStatus === 'ACTIVE';
+    if (isActualOwner) return true;
+    if (accessCodeInfo?.code && userAccessStatus === 'ACTIVE') return true;
+    return false;
   };
 
   return (

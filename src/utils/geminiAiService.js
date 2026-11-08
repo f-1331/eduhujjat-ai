@@ -293,6 +293,10 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
     `   - "pillars": 3 ta ustun/yo'nalish (title, subtitle, cards: [{num: "01", title, desc}, {num: "02", title, desc}, {num: "03", title, desc}], speakerNotes)\n` +
     `   - "stats": Raqamlar, parametrlar va statistik ma'lumotlar (title, stats: [{value, label, desc}, ...], speakerNotes)\n` +
     `   - "timeline": Jarayon ketma-ketligi yoki bosqichlar (title, steps: [{step: "1-BOSQICH", title, desc}, ...], speakerNotes)\n` +
+    `   - "pros_cons": Afzalliklar va kamchiliklar/xatarlar (title, prosTitle, pros: ["..."], consTitle, cons: ["..."], speakerNotes)\n` +
+    `   - "flow_diagram": 4 ta qadamli gorizontal ketma-ket sxema (title, flowSteps: [{step: "01", title, desc}, ...], speakerNotes)\n` +
+    `   - "swot_analysis": SWOT strategik matritsa (title, swotS: ["..."], swotW: ["..."], swotO: ["..."], swotT: ["..."], speakerNotes)\n` +
+    `   - "citation_quote": Katta ta'sirchan ilmiy iqtibos (quote, author, speakerNotes)\n` +
     `   - "quiz_slide": Interaktiv nazorat/munozara savoli (title, question, options: ["A) ...", "B) ...", "C) ...", "D) ..."], answer, speakerNotes)\n` +
     `   - "conclusion": Xulosa va amaliy saboqlar (title, quote, takeaways: ["...", "..."], speakerNotes)\n\n` +
     `Faqat quyidagi JSON massiv formatida javob qaytar (boshqa hech qanday so'z yoki belgi yozma):\n` +
