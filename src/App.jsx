@@ -13,6 +13,7 @@ import ExamAnalyticsModule from './components/ExamAnalyticsModule';
 import AdminSuperPanel from './components/AdminSuperPanel';
 import PaywallGate from './components/PaywallGate';
 import EduAIModule from './components/EduAIModule';
+import DocumentEditorModule from './components/DocumentEditorModule';
 import { 
   Sparkles, 
   FileSpreadsheet, 
@@ -29,7 +30,8 @@ import {
   Crown,
   KeyRound,
   LogOut,
-  UserCog
+  UserCog,
+  FileEdit
 } from 'lucide-react';
 
 function MainAppContent() {
@@ -53,6 +55,7 @@ function MainAppContent() {
 
   const navItems = [
     { id: 'ai', label: "🤖 EduAI Yordamchi", icon: Bot, color: 'text-indigo-400 font-bold' },
+    { id: 'doc_editor', label: "⚡ AI Fayl & Hujjat Tahrirchisi", icon: FileEdit, color: 'text-purple-500 font-bold' },
     { id: 'cleaner', label: t.modules.cleaner, icon: Sparkles, color: 'text-indigo-500' },
     { id: 'excel', label: t.modules.excel, icon: FileSpreadsheet, color: 'text-emerald-500' },
     { id: 'powerpoint', label: "🎨 Gamma AI Slayd", icon: Presentation, color: 'text-sky-500 font-bold' },
@@ -210,6 +213,7 @@ function MainAppContent() {
           <>
             {activeModule === 'admin_panel' && <AdminSuperPanel />}
             {activeModule === 'ai' && <EduAIModule />}
+            {activeModule === 'doc_editor' && <DocumentEditorModule t={t} lang={lang} />}
             {activeModule === 'cleaner' && <CleanerModule t={t} lang={lang} />}
             {activeModule === 'excel' && <ExcelModule t={t} />}
             {activeModule === 'powerpoint' && <PowerPointModule t={t} />}

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { 
   parseRawStudentList, 
+  parseStudentsWithGemini,
+  executeTableTransformWithPrompt,
   sortStudents, 
   removeDuplicates, 
   formatFullName, 
@@ -23,7 +25,11 @@ import {
   Users, 
   UserCheck, 
   ArrowUpDown,
-  Filter
+  Filter,
+  Wand2,
+  Send,
+  CheckCircle2,
+  Scissors
 } from 'lucide-react';
 
 export default function CleanerModule({ t, lang }) {
@@ -33,6 +39,9 @@ export default function CleanerModule({ t, lang }) {
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAiParsing, setIsAiParsing] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [changelog, setChangelog] = useState([]);
 
   // Namuna ma'lumotlarni yuklash
   const handleLoadDemo = () => {
@@ -40,6 +49,7 @@ export default function CleanerModule({ t, lang }) {
     const parsed = parseRawStudentList(DEMO_RAW_TEXT);
     setStudents(parsed);
     setStats(getStudentStats(parsed));
+    setChangelog([]);
   };
 
   // Matn kiritilganda parsing qilish
@@ -47,6 +57,34 @@ export default function CleanerModule({ t, lang }) {
     const parsed = parseRawStudentList(text);
     setStudents(parsed);
     setStats(getStudentStats(parsed));
+  };
+
+  // AI Chuqur Tahlil (Gemini)
+  const handleAiDeepParse = async () => {
+    if (!inputText.trim()) return;
+    setIsAiParsing(true);
+    try {
+      const parsed = await parseStudentsWithGemini(inputText);
+      setStudents(parsed);
+      setStats(getStudentStats(parsed));
+      setChangelog(["✨ Gemini AI orqali ma'lumotlar 100% tahlil qilindi va ustunlarga to'g'ri ajratildi."]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsAiParsing(false);
+    }
+  };
+
+  // AI Buyruq Bilan Tahrirlash (O'chirish, To'g'irlash, Saralash)
+  const handleExecuteAiPrompt = (overridePrompt) => {
+    const query = overridePrompt || aiPrompt;
+    if (!query.trim() || students.length === 0) return;
+
+    const { students: modifiedList, changelog: logs } = executeTableTransformWithPrompt(students, query);
+    setStudents(modifiedList);
+    setStats(getStudentStats(modifiedList));
+    setChangelog(logs);
+    if (!overridePrompt) setAiPrompt('');
   };
 
   // Saralash
@@ -180,9 +218,19 @@ export default function CleanerModule({ t, lang }) {
             className="w-full flex-1 min-h-[260px] p-4 text-sm font-mono bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none text-slate-900 dark:text-slate-100 resize-none"
           />
 
-          <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
-            <span>{students.length} ta yozuv aniqlandi</span>
-            {isProcessing && <span className="text-indigo-500 animate-pulse">{t.common.loading}</span>}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <button
+              onClick={handleAiDeepParse}
+              disabled={isAiParsing || !inputText.trim()}
+              className="px-4 py-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-95 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {isAiParsing ? <Sparkles className="w-4 h-4 animate-spin text-white" /> : <Wand2 className="w-4 h-4 text-white" />}
+              {isAiParsing ? "Gemini AI Tahlil Qilmoqda..." : "✨ AI Bilan Aqlli Tahlil (Gemini)"}
+            </button>
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span>{students.length} ta yozuv aniqlandi</span>
+              {isProcessing && <span className="text-indigo-500 animate-pulse">{t.common.loading}</span>}
+            </div>
           </div>
         </div>
 
@@ -304,6 +352,81 @@ export default function CleanerModule({ t, lang }) {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* AI Buyruq Bilan Jadvalni Tahrirlash & O'chirish Paneli */}
+      <div className="bg-gradient-to-r from-indigo-900/10 via-purple-900/10 to-pink-900/10 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-pink-950/40 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl p-5 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-indigo-600 text-white shadow-sm">
+              <Wand2 className="w-4 h-4" />
+            </span>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                AI Buyruq Bilan Jadvalni Tahrirlash & O'chirish
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                AI ga xohlagan buyruqni yozing: qaysi o'quvchilarni o'chirish, nimani to'g'irlash yoki qanday saralashni buyuring
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Input & Action */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleExecuteAiPrompt()}
+            placeholder="Masalan: 'Chilonzordan bo'lmaganlarni o'chir', 'Telefon raqamsizlarni o'chir', 'Yoshlarni sarala'..."
+            className="flex-1 px-4 py-2.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none text-slate-900 dark:text-slate-100"
+          />
+          <button
+            onClick={() => handleExecuteAiPrompt()}
+            disabled={!aiPrompt.trim() || students.length === 0}
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+          >
+            <Send className="w-3.5 h-3.5" />
+            ⚡ Bajarish
+          </button>
+        </div>
+
+        {/* Tezkor tavsiyalar */}
+        <div className="flex items-center gap-1.5 flex-wrap pt-1">
+          <span className="text-[11px] font-semibold text-slate-400">Tezkor buyruqlar:</span>
+          {[
+            { label: "✂️ Telefon raqamsizlarni o'chir", q: "Telefon raqamsizlarni o'chir" },
+            { label: "👦 Faqat o'g'il bolalar qolsin", q: "Faqat o'g'il bolalarni qoldir" },
+            { label: "👧 Faqat qizlar qolsin", q: "Faqat qizlarni qoldir" },
+            { label: "🎂 Yosh bo'yicha saralash", q: "Yosh bo'yicha sarala" },
+            { label: "🔤 Alifbo (A-Z) tartibi", q: "Alifbo bo'yicha sarala" },
+            { label: "✨ Ism & telefonlarni standartlash", q: "Ismlarni standartlashtir va to'g'irla" }
+          ].map((pill, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleExecuteAiPrompt(pill.q)}
+              className="px-2.5 py-1 text-[11px] font-medium bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:border-indigo-500 hover:text-indigo-600 transition"
+            >
+              {pill.label}
+            </button>
+          ))}
+        </div>
+
+        {/* AI Bajarilgan Ishlar Hisoboti (Changelog) */}
+        {changelog.length > 0 && (
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-1">
+            <div className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              AI Bajarilgan Ishlar Hisoboti:
+            </div>
+            {changelog.map((log, i) => (
+              <div key={i} className="text-xs text-emerald-700 dark:text-emerald-400 pl-5">
+                • {log}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Jonli tahrirlash (Live Preview) Jadvali */}

@@ -642,3 +642,54 @@ function createCell(text, width, align = AlignmentType.LEFT, isEven = false) {
     ]
   });
 }
+
+
+// Ixtiyoriy tahrirlangan matndan professional A4 Word (.docx) yaratish
+export async function generateCustomDocumentDocx(text, title = "Tahrirlangan Hujjat", filename = "EduHujjat_Tahrirlangan.docx") {
+  const lines = (text || '').split(/\r?\n/);
+  const docParagraphs = lines.map(line => {
+    const trimmed = line.trim();
+    const isHeading = trimmed.startsWith('#') || (trimmed.toUpperCase() === trimmed && trimmed.length > 4 && trimmed.length < 70 && !trimmed.includes('.'));
+    const cleanLine = trimmed.replace(/^#+\s*/, '');
+    
+    return new Paragraph({
+      alignment: isHeading ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+      spacing: { before: isHeading ? 160 : 60, after: isHeading ? 120 : 60, line: 276 },
+      children: [
+        new TextRun({
+          text: cleanLine || " ",
+          bold: isHeading,
+          size: isHeading ? 26 : 24, // 13pt / 12pt
+          font: 'Times New Roman'
+        })
+      ]
+    });
+  });
+
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: { margin: { top: 1134, right: 1134, bottom: 1134, left: 1701 } } // 2cm / 3cm
+      },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 240 },
+          children: [
+            new TextRun({
+              text: title,
+              bold: true,
+              size: 28,
+              font: 'Times New Roman',
+              color: "1E3A8A"
+            })
+          ]
+        }),
+        ...docParagraphs
+      ]
+    }]
+  });
+
+  const blob = await Packer.toBlob(doc);
+  saveAs(blob, filename);
+}

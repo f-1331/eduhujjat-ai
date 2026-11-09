@@ -1036,8 +1036,9 @@ function parseStudentsFromText(rawText) {
   const students = [];
 
   lines.forEach((line, index) => {
-    let clean = line.replace(/^\s*\[?\d+[\.\)\-\]]\s*/, '').trim();
+    let clean = line.replace(/^\s*(?:№|\#)?\s*\[?\d+[\.\)\-\:\s\]]\s*/, '').replace(/^[\-\*•\>\s]+/, '').trim();
 
+    // 1. Telefon raqami
     let phone = '';
     const phoneMatch = clean.match(/(?:\+?998|8)?[\s\-]?(?:\(?\d{2}\)?|\d{2})[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}/);
     if (phoneMatch) {
@@ -1049,15 +1050,17 @@ function parseStudentsFromText(rawText) {
       clean = clean.replace(phoneMatch[0], ' ').trim();
     }
 
+    // 2. Tug'ilgan sana
     let birthDate = '';
-    let birthYear = 2008;
-    const dateMatch = clean.match(/\b(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{4})\b/);
+    let birthYear = null;
+    const dateMatch = clean.match(/\b(\d{4}[\.\/-]\d{1,2}[\.\/-]\d{1,2}|\d{1,2}[\.\/-]\d{1,2}[\.\/-]\d{4})\b/);
     if (dateMatch) {
-      birthDate = `${dateMatch[1].padStart(2, '0')}.${dateMatch[2].padStart(2, '0')}.${dateMatch[3]}`;
-      birthYear = parseInt(dateMatch[3], 10);
+      birthDate = dateMatch[0].replace(/-/g, '.');
+      const yearPart = birthDate.match(/\b(19\d{2}|20\d{2})\b/);
+      if (yearPart) birthYear = parseInt(yearPart[1], 10);
       clean = clean.replace(dateMatch[0], ' ').trim();
     } else {
-      const yearMatch = clean.match(/\b(19\d{2}|20\d{2})\b/);
+      const yearMatch = clean.match(/\b(19\d{2}|20\d{2})\s*(?:-yil|yil|y)?\b/);
       if (yearMatch) {
         birthDate = yearMatch[1];
         birthYear = parseInt(yearMatch[1], 10);
@@ -1065,40 +1068,85 @@ function parseStudentsFromText(rawText) {
       }
     }
 
+    // 3. Sinf (9-B, 10-A, 8-sinf)
     let className = '';
-    const classMatch = clean.match(/\b(\d{1,2})\s*[\-\.]?\s*([A-Za-zА-Яа-яЎўҒғҚқҲҳ])\b/);
+    const classRegex = /\b([1-9]|1[0-1])\s*(?:-|–|—)?\s*(?:sinf\b|["'«]?([a-zA-Zа-яА-ЯЎўҚқҒғҲҳ])["'»]?\b)(?!\s*(?:daha|mavze|maktab|uy|dom|bino|xonadon|kvartira|yil|yosh|qavat|oy|kun))/i;
+    const classMatch = clean.match(classRegex);
     if (classMatch) {
-      className = `${classMatch[1]}-${classMatch[2].toUpperCase()}`;
+      className = classMatch[0].trim().toUpperCase();
       clean = clean.replace(classMatch[0], ' ').trim();
     }
 
-    clean = clean.replace(/[,;]/g, ' ').replace(/\s+/g, ' ').trim();
+    // 4. Yoshi (13 yosh, 14 yoshda)
+    let explicitAge = null;
+    const ageRegex = /\b(\d{1,2})\s*(?:yoshda|yoshli|yosh|-yosh|y\b)/i;
+    const ageMatch = clean.match(ageRegex);
+    if (ageMatch) {
+      explicitAge = parseInt(ageMatch[1], 10);
+      clean = clean.replace(ageMatch[0], ' ').trim();
+    }
+
+    // 5. Jins (O'g'il bola, Qiz bola)
+    let explicitGender = null;
+    const genderRegex = /\b(o['ʻ`]?g['ʻ`]?il\s*bola|o['ʻ`]?g['ʻ`]?il|erkak\s*jinsi|erkak|boy|male|qiz\s*bola|qiz|ayol\s*jinsi|ayol|girl|female)\b/i;
+    const genderMatch = clean.match(genderRegex);
+    if (genderMatch) {
+      const gLower = genderMatch[0].toLowerCase().replace(/[ʻʼ`‘’]/g, "'");
+      if (gLower.includes('qiz') || gLower.includes('ayol') || gLower.includes('female') || gLower.includes('girl')) {
+        explicitGender = "Ayol (Qiz)";
+      } else {
+        explicitGender = "Erkak (O'g'il)";
+      }
+      clean = clean.replace(genderMatch[0], ' ').trim();
+    }
+
+    // 6. Manzil
+    let address = '';
+    const addrRegex = /(?:(?:\b(?:viloyat[ia]?|tuman[ia]?|shahar|shahr[ia]?|qishloq|qishlog'[ia]?|ko'cha|ko'chas[ia]?|k-si|tor\s*ko'cha|mavze|mavzes[ia]?|daha|dahas[ia]?|massiv|kvartal|uy|xonadon|kvartira|dom|bino|mfy|mfi|mahalla|mahallasi)\b)|(?:\b(?:chilonzor|yunusobod|sergeli|yashnobod|shayxontohur|uchtepa|yakkasaroy|bektemir|olmazor|mirobod|yangihayot|bekobod|chirchiq|olmaliq|angren|toshkent|samarqand|andijon|farg'ona|namangan|buxoro|xorazm|navoiy|qashqadaryo|surxondaryo|jizzax|sirdaryo)\b)).*$/i;
+    const addrMatch = clean.match(addrRegex);
+    if (addrMatch) {
+      address = addrMatch[0].trim().replace(/^[\-\,\.\s]+/, '').replace(/[\-\,\.\s]+$/, '');
+      clean = clean.replace(addrMatch[0], ' ').trim();
+    }
+
+    // 7. Qolgan toza ism-familiya
+    clean = clean.replace(/[,;\|\\\/]/g, ' ').replace(/\s+/g, ' ').trim();
+    clean = clean.replace(/^[\d\s\.\)\-\:\*•>]+/, '').replace(/[\d\s\.\)\-\:\*•>]+$/, '').trim();
     const words = clean.split(' ').map(w => {
-      if (w.toLowerCase() === "o'g'li" || w.toLowerCase() === "og'li") return "o'g'li";
-      if (w.toLowerCase() === "qizi") return "qizi";
+      const lw = w.toLowerCase().replace(/[ʻʼ`‘’]/g, "'");
+      if (lw === "o'g'li" || lw === "og'li") return "o'g'li";
+      if (lw === "qizi") return "qizi";
       return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
     });
     const fullName = words.join(' ') || `O'quvchi #${index + 1}`;
 
+    // Jinsni aniqlash
     const lower = fullName.toLowerCase();
-    let gender = "Noma'lum";
-    if (lower.includes('qizi') || lower.endsWith('ova') || lower.endsWith('yeva') || lower.endsWith('ovna') || lower.endsWith('yevna')) {
-      gender = "Ayol (Qiz)";
-    } else if (lower.includes("o'g'li") || lower.endsWith('ov') || lower.endsWith('yev') || lower.endsWith('ovich') || lower.endsWith('yevich')) {
-      gender = "Erkak (O'g'il)";
+    let gender = explicitGender || "Noma'lum";
+    if (!explicitGender) {
+      if (lower.includes('qizi') || lower.endsWith('ova') || lower.endsWith('yeva') || lower.endsWith('ovna') || lower.endsWith('yevna') || lower.endsWith('oy') || lower.endsWith('bonu') || lower.endsWith('xon')) {
+        gender = "Ayol (Qiz)";
+      } else if (lower.includes("o'g'li") || lower.endsWith('ov') || lower.endsWith('yev') || lower.endsWith('ovich') || lower.endsWith('yevich') || lower.endsWith('bek') || lower.endsWith('jon') || lower.endsWith('boy')) {
+        gender = "Erkak (O'g'il)";
+      }
     }
 
-    const age = birthYear ? (new Date().getFullYear() - birthYear) : '-';
+    let age = explicitAge ? `${explicitAge} yosh` : '-';
+    if (birthYear) {
+      const calc = new Date().getFullYear() - birthYear;
+      age = `${calc} yosh`;
+    }
 
     students.push({
       number: index + 1,
       fullName,
       birthDate: birthDate || '-',
-      birthYear,
+      birthYear: birthYear || 2010,
       age,
       gender,
       phone: phone || '-',
-      className: className || '10-A'
+      address: address || '-',
+      className: className || '9-B'
     });
   });
 

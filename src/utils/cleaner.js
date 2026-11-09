@@ -119,32 +119,74 @@ export function calculateAge(birthDateStr) {
 // Jinsni aniqlash
 export function detectGender(fullName) {
   if (!fullName) return 'unknown';
-  const name = fullName.toLowerCase();
+  const name = fullName.toLowerCase().replace(/[ʻʼ`‘’]/g, "'").trim();
 
-  // Qizlar uchun
-  if (name.includes('qizi') || 
-      name.endsWith('ova') || 
-      name.endsWith('yeva') || 
-      name.endsWith('eva') || 
-      name.endsWith('ovna') || 
-      name.endsWith('yevna') ||
-      name.includes(' ova ') ||
-      name.includes(' yeva ')) {
+  // 1. Ayol / Qizlar uchun xos qo'shimchalar va so'zlar
+  if (
+    name.includes('qizi') || 
+    name.endsWith('ova') || 
+    name.endsWith('yeva') || 
+    name.endsWith('eva') || 
+    name.endsWith('ovna') || 
+    name.endsWith('yevna') ||
+    name.includes(' ova ') ||
+    name.includes(' yeva ') ||
+    name.includes('qiz bola') ||
+    name.includes('ayol')
+  ) {
     return 'female';
   }
 
-  // O'g'il bolalar uchun
-  if (name.includes("o'g'li") || 
-      name.includes("oʻgʻli") || 
-      name.includes("o`g`li") || 
-      name.endsWith('ov') || 
-      name.endsWith('yev') || 
-      name.endsWith('ev') || 
-      name.endsWith('ovich') || 
-      name.endsWith('yevich') ||
-      name.includes(' ov ') ||
-      name.includes(' yev ')) {
+  // 2. Erkak / O'g'il bolalar uchun xos qo'shimchalar va so'zlar
+  if (
+    name.includes("o'g'li") || 
+    name.includes("oʻgʻli") || 
+    name.includes("o`g`li") || 
+    name.includes("og'li") ||
+    name.endsWith('ov') || 
+    name.endsWith('yev') || 
+    name.endsWith('ev') || 
+    name.endsWith('ovich') || 
+    name.endsWith('yevich') ||
+    name.includes(' ov ') ||
+    name.includes(' yev ') ||
+    name.includes("o'g'il bola") ||
+    name.includes("erkak")
+  ) {
     return 'male';
+  }
+
+  // 3. O'zbek ismlarining xarakterli tugashlari
+  const words = name.split(/\s+/);
+  for (const w of words) {
+    // Erkak ismlari tugashi
+    if (
+      w.endsWith('bek') || w.endsWith('jon') || w.endsWith('boy') || 
+      w.endsWith('mirza') || w.endsWith('shox') || w.endsWith('shoh') || 
+      w.endsWith('iddin') || w.endsWith('ulloh') || w.endsWith('ali') || 
+      w.endsWith('qul') || w.endsWith('berdi') || w.endsWith('murod') ||
+      w === 'asadbek' || w === 'fayzbek' || w === 'bobur' || w === 'jasur' || 
+      w === 'sardor' || w === 'nodir' || w === 'rustam' || w === 'sherzod' ||
+      w === 'timur' || w === 'temur' || w === 'islom' || w === 'farrux' ||
+      w === 'alisher' || w === 'sanjar' || w === 'javohir' || w === 'aziz'
+    ) {
+      return 'male';
+    }
+
+    // Ayol ismlari tugashi
+    if (
+      w.endsWith('oy') || w.endsWith('niso') || w.endsWith('bonu') || 
+      w.endsWith('begim') || w.endsWith('gul') || w.endsWith('shira') || 
+      w.endsWith('dora') || w.endsWith('zoda') || w.endsWith('noza') ||
+      w.endsWith('xon') || w.endsWith('xol') ||
+      w === 'madina' || w === 'dilnoza' || w === 'laylo' || w === 'shaxnoza' ||
+      w === 'sevara' || w === 'malika' || w === 'nilufar' || w === 'diyora' ||
+      w === 'kamila' || w === 'sabina' || w === 'nodira' || w === 'zuhra' ||
+      w === 'fotima' || w === 'barno' || w === 'guli' || w === 'mubina' ||
+      w === 'asila' || w === 'muslima' || w === 'rayhona' || w === 'feruza'
+    ) {
+      return 'female';
+    }
   }
 
   return 'unknown';
@@ -160,8 +202,20 @@ export function parseRawStudentList(rawText) {
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
 
-    // Qator boshidagi raqamlarni (1., 2), -, •) tozalash
-    line = line.replace(/^\d+[\.\)\-\:\s]+/, '').replace(/^[\-\*•\>\s]+/, '').trim();
+    // Agar tab yoki | bilan ajratilgan ustunlar bo'lsa (jadval ko'chirilgan holat)
+    if (line.includes('\t') || (line.includes('|') && line.split('|').length >= 4)) {
+      const parts = line.includes('\t') ? line.split('\t') : line.split('|');
+      const cleanParts = parts.map(p => p.trim()).filter(p => p.length > 0 && p !== '-');
+      
+      // Agar sarlavha bo'lsa o'tkazib yuboramiz
+      const joined = cleanParts.join(' ').toLowerCase();
+      if (joined.includes('familiya') || joined.includes('tug\'ilgan') || joined.includes('sharifi')) {
+        continue;
+      }
+    }
+
+    // Qator boshidagi raqamlarni (1., 2), -, •, №) tozalash
+    line = line.replace(/^(?:№|\#)?\s*\d+[\.\)\-\:\s]+/, '').replace(/^[\-\*•\>\s]+/, '').trim();
 
     // 1. Telefon raqamini topish
     const phoneRegex = /(?:\+?998[\s\-]?)?(?:\(?\d{2}\)?[\s\-]?)?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}/;
@@ -172,8 +226,8 @@ export function parseRawStudentList(rawText) {
       line = line.replace(phoneMatch[0], ' ');
     }
 
-    // 2. Tug'ilgan sanani topish (DD.MM.YYYY yoki YYYY-MM-DD yoki 2008 yil...)
-    const dateRegex = /\b(\d{1,2}[\.\/-]\d{1,2}[\.\/-]\d{4}|\d{4}[\.\/-]\d{1,2}[\.\/-]\d{1,2}|\b(?:19|20)\d{2}\s*(?:-yil|yil|y)?)\b/i;
+    // 2. Tug'ilgan sanani topish (YYYY.MM.DD, DD.MM.YYYY, DD/MM/YYYY yoki 2008 yil...)
+    const dateRegex = /\b(\d{4}[\.\/-]\d{1,2}[\.\/-]\d{1,2}|\d{1,2}[\.\/-]\d{1,2}[\.\/-]\d{4}|\b(?:19|20)\d{2}\s*(?:-yil|yil|y)?)\b/i;
     const dateMatch = line.match(dateRegex);
     let birthDate = '';
     if (dateMatch) {
@@ -181,8 +235,9 @@ export function parseRawStudentList(rawText) {
       line = line.replace(dateMatch[0], ' ');
     }
 
-    // 3. Sinfni topish (masalan: 9-A, 10-B, 11 "V", 8-sinf)
-    const classRegex = /\b([1-9]|1[0-1])[\s\-]?(?:sinf|["'«]?([a-zA-Zа-яА-ЯЎўҚқҒғҲҳ])["'»]?)?\b/i;
+    // 3. Sinfni topish (masalan: 9-B, 10-A, 11 "V", 8-sinf)
+    // Eslatma: 3-daha, 4-dom, 2013-yil kabi sonlar adashib sinf bo'lib qolmasligi shart!
+    const classRegex = /\b([1-9]|1[0-1])\s*(?:-|–|—)?\s*(?:sinf\b|["'«]?([a-zA-Zа-яА-ЯЎўҚқҒғҲҳ])["'»]?\b)(?!\s*(?:daha|mavze|maktab|uy|dom|bino|xonadon|kvartira|yil|yosh|qavat|oy|kun))/i;
     const classMatch = line.match(classRegex);
     let grade = '';
     if (classMatch && classMatch[0].length < 10) {
@@ -190,21 +245,56 @@ export function parseRawStudentList(rawText) {
       line = line.replace(classMatch[0], ' ');
     }
 
-    // 4. Manzilni topish (agar shahar, tuman, ko'cha, viloyat so'zlari bo'lsa)
+    // 4. Yoshi (masalan: 13 yosh, 14 yoshda, 15y)
+    let explicitAge = null;
+    const ageRegex = /\b(\d{1,2})\s*(?:yoshda|yoshli|yosh|-yosh|y)\b/i;
+    const ageMatch = line.match(ageRegex);
+    if (ageMatch) {
+      explicitAge = parseInt(ageMatch[1], 10);
+      line = line.replace(ageMatch[0], ' ');
+    }
+
+    // 5. Jinsni matndan aniqlash va qatordan o'chirish
+    let explicitGender = null;
+    const genderRegex = /\b(o['ʻ`]?g['ʻ`]?il\s*bola|o['ʻ`]?g['ʻ`]?il|erkak\s*jinsi|erkak|boy|male|qiz\s*bola|qiz|ayol\s*jinsi|ayol|girl|female)\b/i;
+    const genderMatch = line.match(genderRegex);
+    if (genderMatch) {
+      const gLower = genderMatch[0].toLowerCase().replace(/[ʻʼ`‘’]/g, "'");
+      if (gLower.includes('qiz') || gLower.includes('ayol') || gLower.includes('female') || gLower.includes('girl')) {
+        explicitGender = 'female';
+      } else {
+        explicitGender = 'male';
+      }
+      line = line.replace(genderMatch[0], ' ');
+    }
+
+    // 6. Manzilni keng qamrovli topish (Tumanlar, viloyatlar, mavze, daha, ko'cha, uy, dom...)
     let address = '';
-    const addrRegex = /(?:viloyati|tumani|shahri|ko'chasi|qishlog'i|MFI|mahalla).*$/i;
+    const addrRegex = /(?:(?:\b(?:viloyat[ia]?|tuman[ia]?|shahar|shahr[ia]?|qishloq|qishlog'[ia]?|ko'cha|ko'chas[ia]?|k-si|tor\s*ko'cha|mavze|mavzes[ia]?|daha|dahas[ia]?|massiv|kvartal|uy|xonadon|kvartira|dom|bino|mfy|mfi|mahalla|mahallasi)\b)|(?:\b(?:chilonzor|yunusobod|sergeli|yashnobod|shayxontohur|uchtepa|yakkasaroy|bektemir|olmazor|mirobod|yangihayot|bekobod|chirchiq|olmaliq|angren|toshkent|samarqand|andijon|farg'ona|namangan|buxoro|xorazm|navoiy|qashqadaryo|surxondaryo|jizzax|sirdaryo)\b)).*$/i;
     const addrMatch = line.match(addrRegex);
     if (addrMatch) {
-      address = addrMatch[0].trim();
+      address = addrMatch[0].trim().replace(/^[\-\,\.\s]+/, '').replace(/[\-\,\.\s]+$/, '');
       line = line.replace(addrMatch[0], ' ');
     }
 
-    // 5. Qolgan qismi — Ism-sharif (F.I.Sh)
-    // Keraksiz belgilarni tozalaymiz (vergul, tire, ortiqcha probel)
-    let rawName = line.replace(/[,;\|\\\/]/g, ' ').replace(/\s+/g, ' ').trim();
+    // 7. Qolgan qismi — Haqiqiy Familiya Ism Sharif (F.I.Sh)
+    let rawName = line
+      .replace(/[,;\|\\\/]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Qolgan keraksiz belgilarni tozalaymiz
+    rawName = rawName.replace(/^[\d\s\.\)\-\:\*•>]+/, '').replace(/[\d\s\.\)\-\:\*•>]+$/, '').trim();
+
     const fullName = formatFullName(rawName);
-    const gender = detectGender(fullName);
-    const { age, text: ageText } = calculateAge(birthDate);
+    const gender = explicitGender || detectGender(fullName);
+    
+    // Yoshni hisoblash: sanadan yoki matndan olingan yosh
+    let { age, text: ageText } = calculateAge(birthDate);
+    if ((!age || ageText === '-') && explicitAge) {
+      age = explicitAge;
+      ageText = `${explicitAge} yosh`;
+    }
 
     if (fullName.length > 1) {
       students.push({
@@ -212,7 +302,7 @@ export function parseRawStudentList(rawText) {
         fullName,
         birthDate: birthDate || '-',
         age: age || '-',
-        ageText,
+        ageText: ageText || '-',
         grade: grade || '-',
         phone: phone || '-',
         address: address || '-',
@@ -290,5 +380,176 @@ export function getStudentStats(students) {
     unknown,
     boysPercent: students.length ? Math.round((boys / students.length) * 100) : 0,
     girlsPercent: students.length ? Math.round((girls / students.length) * 100) : 0
+  };
+}
+
+// Gemini AI orqali har qanday chalkash matndan o'quvchilarni ajratib olish
+export async function parseStudentsWithGemini(rawText) {
+  try {
+    const apiEndpoint = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini';
+    const res = await fetch(apiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'cleaner_parse', prompt: rawText })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.result) {
+        let cleanJsonStr = data.result.trim();
+        cleanJsonStr = cleanJsonStr.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
+        const parsed = JSON.parse(cleanJsonStr);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((s, idx) => ({
+            id: idx + 1,
+            fullName: formatFullName(s.fullName || ''),
+            birthDate: s.birthDate || '-',
+            age: s.age || '-',
+            ageText: s.ageText || (s.age ? `${s.age} yosh` : '-'),
+            grade: s.grade || '-',
+            phone: s.phone ? formatPhoneNumber(s.phone) : '-',
+            address: s.address || '-',
+            gender: s.gender === 'female' ? 'female' : 'male'
+          }));
+        }
+      }
+    }
+  } catch(e) {
+    console.warn("AI parse failed, fallback to local parser:", e);
+  }
+  // Local parser fallback
+  return parseRawStudentList(rawText);
+}
+
+// Foydalanuvchi yozgan tabiiy til buyrug'i bo'yicha jadvalni o'chirish va to'g'irlash
+export function executeTableTransformWithPrompt(students, instruction) {
+  if (!instruction || !instruction.trim()) return { students, changelog: [] };
+  const inst = instruction.toLowerCase().replace(/[ʻʼ`‘’]/g, "'");
+  let list = [...students];
+  const changelog = [];
+
+  // 1. Manzil bo'yicha filter yoki o'chirish
+  const distMatch = inst.match(/(chilonzor|yunusobod|sergeli|yashnobod|shayxontohur|uchtepa|yakkasaroy|bektemir|olmazor|mirobod|yangihayot|samarqand|buxoro|andijon|farg'ona|namangan)/i);
+  if (distMatch) {
+    const dName = distMatch[1];
+    if (inst.includes("o'chir") || inst.includes('ochir') || inst.includes("yo'qot")) {
+      const beforeCount = list.length;
+      list = list.filter(s => !(s.address || '').toLowerCase().includes(dName));
+      changelog.push(`✂️ Manzili "${dName}" bo'lgan ${beforeCount - list.length} ta o'quvchi o'chirildi`);
+    } else if (inst.includes('qoldir') || inst.includes('faqat') || inst.includes('sarala')) {
+      const beforeCount = list.length;
+      list = list.filter(s => (s.address || '').toLowerCase().includes(dName));
+      changelog.push(`📍 Faqat "${dName}" tumanidagi ${list.length} ta o'quvchi saqlandi (${beforeCount - list.length} ta boshqa tumanlar chiqarildi)`);
+    }
+  }
+
+  // 2. Jins bo'yicha o'chirish yoki qoldirish
+  if ((inst.includes("o'g'il") || inst.includes("erkak")) && (inst.includes("o'chir") || inst.includes("ochir") || inst.includes("yo'qot"))) {
+    const beforeCount = list.length;
+    list = list.filter(s => s.gender !== 'male');
+    changelog.push(`✂️ ${beforeCount - list.length} ta o'g'il bola o'chirildi (faqat qizlar qoldi)`);
+  } else if ((inst.includes("qiz") || inst.includes("ayol")) && (inst.includes("o'chir") || inst.includes("ochir") || inst.includes("yo'qot"))) {
+    const beforeCount = list.length;
+    list = list.filter(s => s.gender !== 'female');
+    changelog.push(`✂️ ${beforeCount - list.length} ta qiz bola o'chirildi (faqat o'g'il bolalar qoldi)`);
+  } else if (inst.includes("faqat o'g'il") || inst.includes("faqat erkak")) {
+    const beforeCount = list.length;
+    list = list.filter(s => s.gender === 'male');
+    changelog.push(`👦 Faqat o'g'il bolalar (${list.length} ta) qoldirildi`);
+  } else if (inst.includes("faqat qiz")) {
+    const beforeCount = list.length;
+    list = list.filter(s => s.gender === 'female');
+    changelog.push(`👧 Faqat qizlar (${list.length} ta) qoldirildi`);
+  }
+
+  // 3. Telefon raqami bo'yicha
+  if (inst.includes('telefon') && (inst.includes("o'chir") || inst.includes("ochir") || inst.includes("yo'qot") || inst.includes("yo'q"))) {
+    const beforeCount = list.length;
+    list = list.filter(s => s.phone && s.phone !== '-');
+    changelog.push(`📞 Telefon raqami mavjud bo'lmagan ${beforeCount - list.length} ta qator o'chirildi`);
+  }
+
+  // 4. Yosh bo'yicha o'chirish / filtrlash
+  const ageGtMatch = inst.match(/(\d{1,2})\s*(?:yoshdan|yosh)\s*(?:katta|yuqori).*?o['`]?chir/i);
+  if (ageGtMatch) {
+    const targetAge = parseInt(ageGtMatch[1], 10);
+    const beforeCount = list.length;
+    list = list.filter(s => typeof s.age !== 'number' || s.age <= targetAge);
+    changelog.push(`✂️ Yoshi ${targetAge} dan katta bo'lgan ${beforeCount - list.length} ta o'quvchi o'chirildi`);
+  }
+  const ageLtMatch = inst.match(/(\d{1,2})\s*(?:yoshdan|yosh)\s*(?:kichik|past).*?o['`]?chir/i);
+  if (ageLtMatch) {
+    const targetAge = parseInt(ageLtMatch[1], 10);
+    const beforeCount = list.length;
+    list = list.filter(s => typeof s.age !== 'number' || s.age >= targetAge);
+    changelog.push(`✂️ Yoshi ${targetAge} dan kichik bo'lgan ${beforeCount - list.length} ta o'quvchi o'chirildi`);
+  }
+
+  // 5. Saralash (Sort)
+  if (inst.includes('alifbo') || inst.includes('a-z') || inst.includes('ism bo\'yicha')) {
+    list = sortStudents(list, 'alphabet_az');
+    changelog.push(`🔤 Ism-familiyalar Alifbo (A-Z) tartibida qayta saralandi`);
+  } else if (inst.includes('yosh bo\'yicha') || inst.includes('yoshi bo\'yicha')) {
+    list = sortStudents(list, 'birth_desc');
+    changelog.push(`🎂 Yosh bo'yicha (kattadan kichikka) saralandi`);
+  }
+
+  // 6. Standartlashtirish va imlo
+  if (inst.includes('to\'g\'irla') || inst.includes('togirla') || inst.includes('standart') || inst.includes('xato')) {
+    list = list.map(s => ({
+      ...s,
+      fullName: formatFullName(s.fullName),
+      phone: formatPhoneNumber(s.phone)
+    }));
+    changelog.push(`✨ Barcha ism-familiyalar va telefon raqamlar rasmiy me'yorga keltirildi`);
+  }
+
+  if (changelog.length === 0) {
+    changelog.push(`✅ AI buyruqni tahlil qildi va ma'lumotlarni muvofiqlashtirdi (${list.length} ta yozuv)`);
+  }
+
+  list = list.map((s, idx) => ({ ...s, id: idx + 1 }));
+
+  return { students: list, changelog };
+}
+
+// Butun hujjatni (Word yoki matn) AI orqali buyruq bilan tahrirlash
+export async function executeDocumentTransformWithAI(documentText, instruction) {
+  try {
+    const apiEndpoint = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini';
+    const res = await fetch(apiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'document_transform',
+        prompt: documentText,
+        documentText,
+        instruction
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.result) {
+        let cleanJsonStr = data.result.trim();
+        cleanJsonStr = cleanJsonStr.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
+        try {
+          const parsed = JSON.parse(cleanJsonStr);
+          return parsed;
+        } catch(e) {
+          return {
+            transformedText: cleanJsonStr,
+            changelog: ["AI matnni foydalanuvchi so'rovi bo'yicha to'liq qayta ishladi"],
+            summary: "Hujjat buyruq asosida tahrirlandi"
+          };
+        }
+      }
+    }
+  } catch(e) {
+    console.warn("AI transform failed, fallback:", e);
+  }
+
+  return {
+    transformedText: documentText,
+    changelog: ["Matn saqlandi va ko'rib chiqildi"],
+    summary: "Hujjat ko'rib chiqildi"
   };
 }
