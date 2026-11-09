@@ -31,7 +31,12 @@ import {
   KeyRound,
   LogOut,
   UserCog,
-  FileEdit
+  FileEdit,
+  User,
+  ChevronDown,
+  Smartphone,
+  ShieldCheck,
+  AlertOctagon
 } from 'lucide-react';
 
 function MainAppContent() {
@@ -47,8 +52,18 @@ function MainAppContent() {
     hasAccess, 
     accessCodeInfo,
     logoutCode,
-    OWNER_USERNAME 
+    kickCurrentDevice,
+    deviceInfo,
+    OWNER_USERNAME,
+    SUPER_OWNER_ID
   } = useAuth();
+
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const effectiveUserId = currentUser?.id || accessCodeInfo?.userId || (isActualOwner ? SUPER_OWNER_ID : null);
+  const effectiveUsername = currentUser?.username || accessCodeInfo?.username || (isActualOwner ? OWNER_USERNAME : null);
+  const effectiveName = currentUser?.first_name 
+    ? `${currentUser.first_name} ${currentUser.last_name || ''}`.trim()
+    : (accessCodeInfo?.name || (isActualOwner ? "Fayzbek (Super Owner)" : (effectiveUserId ? `Foydalanuvchi #${effectiveUserId}` : "Mehmon")));
 
   const t = translations[lang] || translations.uz;
   const isAccessible = hasAccess();
@@ -110,8 +125,137 @@ function MainAppContent() {
             </div>
           </div>
 
-          {/* O'ng tomon sozlamalar */}
+          {/* O'ng tomon sozlamalar va Telegram Profil Boshqaruvi */}
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Telegram Akkaunt & Foydalanuvchi ID Badge */}
+            {isAccessible && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-500/50 transition cursor-pointer text-left shadow-sm"
+                  title="Telegram Profil va Sessiya Boshqaruvi"
+                >
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
+                    {effectiveUsername ? effectiveUsername[0].toUpperCase() : (effectiveName ? effectiveName[0].toUpperCase() : 'U')}
+                  </div>
+                  <div className="flex flex-col text-left leading-tight">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[80px] sm:max-w-[120px]">
+                        {effectiveUsername ? `@${effectiveUsername}` : effectiveName}
+                      </span>
+                      {isActualOwner && (
+                        <span className="text-[8px] px-1 py-0.2 bg-amber-400 text-slate-950 font-black rounded hidden xs:inline-block">
+                          OWNER
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                      ID: <strong className="text-indigo-500 dark:text-indigo-400">{effectiveUserId || '—'}</strong>
+                    </span>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu / Owner Boshqaruv Popover */}
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-3.5 z-50 animate-in fade-in zoom-in-95">
+                    <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-500 flex items-center justify-center text-white font-bold text-base shrink-0 shadow-md">
+                        {effectiveUsername ? effectiveUsername[0].toUpperCase() : 'U'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                          {effectiveName}
+                        </div>
+                        <div className="text-xs text-sky-500 font-medium">
+                          {effectiveUsername ? `@${effectiveUsername}` : 'Telegram profil'}
+                        </div>
+                        <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">Telegram ID:</span>
+                          <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-bold text-indigo-500">
+                            {effectiveUserId || 'Noma\'lum'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="py-2.5 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5"><KeyRound className="w-3.5 h-3.5 text-emerald-500" /> Faol Kod:</span>
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          {accessCodeInfo?.code || '1331 (Master)'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5"><Smartphone className="w-3.5 h-3.5 text-slate-400" /> Qurilma:</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[150px]">
+                          {deviceInfo}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-sky-500" /> Holat:</span>
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-bold text-[10px]">
+                          Avtorizatsiyadan o'tgan
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Owner yoki Admin Boshqaruv Tugmalari */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+                      {isActualOwner && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setActiveModule('admin_panel');
+                              setShowUserMenu(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 font-bold text-xs transition"
+                          >
+                            <Crown className="w-4 h-4" />
+                            <span>👑 Boshqaruv Markazi (Super Panel)</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setActiveModule('admin_panel');
+                              setShowUserMenu(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 font-bold text-xs transition"
+                          >
+                            <ShieldCheck className="w-4 h-4" />
+                            <span>🔍 Foydalanuvchi Audit Tarixi (100 ta)</span>
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        onClick={async () => {
+                          setShowUserMenu(false);
+                          if (confirm("Ushbu qurilma sessiyasi darhol bekor qilinsinmi (Kick)?")) {
+                            await kickCurrentDevice();
+                          }
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 font-semibold text-xs transition"
+                      >
+                        <AlertOctagon className="w-4 h-4" />
+                        <span>🚫 Ushbu Qurilmani Chiqarish (Kick)</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          logoutCode();
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-xs transition"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>🔒 Sessiyadan Chiqish</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Chiqish tugmasi (Har doim faol, test qilish va sessiyani tugatish uchun) */}
             {isAccessible && (
               <button

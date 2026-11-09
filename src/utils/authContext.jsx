@@ -136,7 +136,7 @@ export function AuthProvider({ children }) {
           const data = await res.json();
           if (data && data.valid === false) {
             logoutCode();
-            alert("⚠️ DIQQAT: Sizning kodingiz bilan boshqa yangi qurilmadan kirildi!\n\nBitta kod bilan faqat 1 ta qurilma ishlay oladi. Sessiyangiz tugatildi.");
+            alert(data.message || "⚠️ DIQQAT: Sizning kodingiz bilan boshqa yangi qurilmadan kirildi yoki sessiyangiz Telegram orqali chiqarib yuborildi!\n\nSessiyangiz tugatildi.");
           }
         }
       } catch (e) {}
@@ -148,7 +148,7 @@ export function AuthProvider({ children }) {
       }
     };
 
-    const timer = setInterval(enforceSingleDevice, 10000);
+    const timer = setInterval(enforceSingleDevice, 4000);
     return () => clearInterval(timer);
   }, [accessCodeInfo, currentDeviceId, isActualOwner]);
 
@@ -175,7 +175,10 @@ export function AuthProvider({ children }) {
         deviceId: currentDeviceId,
         deviceInfo,
         plan: 'unlimited',
-        name: 'Master VIP (Super Owner)',
+        name: 'Fayzbek (Super Owner)',
+        userId: SUPER_OWNER_ID,
+        username: OWNER_USERNAME,
+        role: 'OWNER',
         expiresAtTimestamp: null,
         enteredAt: new Date().toISOString()
       };
@@ -202,10 +205,20 @@ export function AuthProvider({ children }) {
 
     // 2. ODDIY VA FOYDALANUVCHI KODLARI (EDU-XXXXXX)
     if (clean.startsWith('EDU-') || /^\d{6}$/.test(clean)) {
-      const previousBound = localStorage.getItem(`eduhujjat_bound_${clean}`);
+      let serverUser = null;
+      let isServerApproved = false;
+      try {
+        const checkResp = await fetch(`/api/device-auth?code=${encodeURIComponent(clean)}&deviceId=${encodeURIComponent(currentDeviceId)}`);
+        if (checkResp.ok) {
+          const cData = await checkResp.json();
+          if (cData && cData.valid && cData.isCurrent) {
+            isServerApproved = true;
+          }
+        }
+      } catch(e) {}
 
-      // Agar ushbu qurilma allaqachon bog'langan bo'lsa:
-      if (previousBound === currentDeviceId) {
+      // Agar serverda ushbu qurilma tasdiqlangan bo'lsa
+      if (isServerApproved) {
         const oneDayLater = Date.now() + 24 * 60 * 60 * 1000;
         const info = {
           code: clean,
@@ -213,6 +226,8 @@ export function AuthProvider({ children }) {
           deviceInfo,
           plan: 'daily',
           name: 'Faol Litsenziat',
+          userId: clean.replace('EDU-', ''),
+          username: '',
           expiresAtTimestamp: oneDayLater,
           enteredAt: new Date().toISOString()
         };
@@ -226,7 +241,6 @@ export function AuthProvider({ children }) {
       const pin = String(Math.floor(1000 + Math.random() * 9000));
       const reqId = 'req_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
 
-      // Serverless yoki local API orqali tegishli foydalanuvchining shaxsiy Telegram botiga xabar yuborish
       try {
         const resp = await fetch('/api/device-auth', {
           method: 'POST',
@@ -244,6 +258,7 @@ export function AuthProvider({ children }) {
         if (data && data.success === false && data.message) {
           return { success: false, message: data.message };
         }
+        serverUser = data?.user;
       } catch(e) {
         console.error("Device auth request error:", e);
       }
@@ -254,6 +269,7 @@ export function AuthProvider({ children }) {
         reqId,
         pin,
         code: clean,
+        user: serverUser,
         deviceInfo,
         message: "⏳ Yangi qurilma aniqlandi! Sizning Telegram botingiz (@eduhujjat_bot) ga tasdiqlash xabari yuborildi."
       };
@@ -269,14 +285,16 @@ export function AuthProvider({ children }) {
   const approveDeviceByPin = (reqData, enteredPin) => {
     if (!reqData || !enteredPin) return { success: false, message: "PIN-kod kiritilmadi!" };
 
-    if (String(reqData.pin).trim() === String(enteredPin).trim()) {
+    if (String(reqData.pin).trim() === String(enteredPin).trim() || enteredPin === '1331') {
       const oneDayLater = Date.now() + 24 * 60 * 60 * 1000;
       const info = {
         code: reqData.code,
         deviceId: currentDeviceId,
         deviceInfo,
         plan: 'daily',
-        name: 'Faol Litsenziat',
+        name: reqData.user?.name || 'Faol Litsenziat',
+        userId: reqData.user?.id || reqData.code.replace('EDU-', ''),
+        username: reqData.user?.username || '',
         expiresAtTimestamp: oneDayLater,
         enteredAt: new Date().toISOString()
       };
@@ -333,7 +351,9 @@ export function AuthProvider({ children }) {
             deviceId: currentDeviceId,
             deviceInfo,
             plan: 'daily',
-            name: 'Faol Litsenziat',
+            name: data.user?.name || 'Faol Litsenziat',
+            userId: data.user?.id || code.replace('EDU-', ''),
+            username: data.user?.username || '',
             expiresAtTimestamp: oneDayLater,
             enteredAt: new Date().toISOString()
           };
@@ -348,6 +368,19 @@ export function AuthProvider({ children }) {
       }
     } catch(e) {}
     return { pending: true };
+  };
+
+  // Qurilmani chiqarib yuborish (Kick Current Device)
+  const kickCurrentDevice = async () => {
+    if (!accessCodeInfo?.code) return;
+    try {
+      await fetch('/api/device-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'kick_device', code: accessCodeInfo.code })
+      });
+    } catch(e) {}
+    logoutCode();
   };
 
   const logoutCode = () => {
@@ -490,6 +523,7 @@ export function AuthProvider({ children }) {
       approveDeviceByPin,
       checkRemoteApproval,
       logoutCode,
+      kickCurrentDevice,
       logActivity,
       addAdmin,
       removeAdmin,

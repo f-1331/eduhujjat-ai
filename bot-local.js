@@ -2392,6 +2392,37 @@ bot.on('callback_query:data', async (ctx) => {
     return sendUserAuditLogs(ctx, targetId);
   }
 
+  // 0.2 QURILMANI TELEGRAMDAN DARHOL CHIQARIB YUBORISH (KICK)
+  if (data.startsWith('dev_kick_')) {
+    const targetCode = data.replace('dev_kick_', '');
+    db.deviceBindings = db.deviceBindings || {};
+    db.deviceBindings[targetCode] = {
+      kicked: true,
+      deviceId: null,
+      kickedAt: Date.now()
+    };
+    saveDatabase();
+
+    // Vercel serverless API ga ham xabar berish
+    try {
+      fetch('https://eduhujjat.vercel.app/api/device-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'kick_device', code: targetCode })
+      }).catch(() => {});
+    } catch(e) {}
+
+    await ctx.answerCallbackQuery({ text: "🚫 Qurilma chiqarib yuborildi!", show_alert: true });
+    try {
+      await ctx.editMessageText(
+        (ctx.callbackQuery.message?.text || '') +
+        `\n\n━━━━━━━━━━━━━━━━━━━━━━\n🚫 **QURILMA CHIQARIB YUBORILDI (KICKED)!**\nUshbu kodga ulangan qurilmaning saytdagi faol sessiyasi darhol bekor qilindi. Sayt u uchun yopildi.`,
+        { parse_mode: 'Markdown' }
+      );
+    } catch(e) {}
+    return;
+  }
+
   // =========================================================================
   // SLIDE WIZARD CALLBACK HANDLERS (INTERFAOL TAQDIMOT BOSQICHLARI)
   // =========================================================================
@@ -3833,6 +3864,62 @@ bot.on('message:text', async (ctx) => {
     if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'INSPECTOR') return ctx.reply("❌ Ruxsat yo'q!");
     const targetInput = text.replace(/^\/(?:userlog|audit|tarix)\s*/i, '').trim();
     return sendUserAuditLogs(ctx, targetInput);
+  }
+
+  // QURILMALAR VA SESSIYALARNI BOSHQARISH / CHIQARIB YUBORISH (KICK)
+  if (text === '/devices' || text === '/qurilmalar' || text === '/sessiyalar') {
+    if (role !== 'OWNER' && role !== 'ADMIN') return ctx.reply("❌ Ruxsat yo'q!");
+    db.deviceBindings = db.deviceBindings || {};
+    const entries = Object.entries(db.deviceBindings).filter(([k, v]) => v && v.deviceId && !v.kicked);
+    if (entries.length === 0) {
+      return ctx.reply("📱 **Hozirda hech qanday faol ulangan tashqi qurilmalar mavjud emas.**");
+    }
+    let msg = `📱 **FAOL QURILMALAR VA SESSIYALAR RO'YXATI (${entries.length} ta):**\n\n`;
+    const kb = new InlineKeyboard();
+    entries.forEach(([c, b], i) => {
+      msg += `**${i + 1}. Kod:** \`${c}\`\n` +
+        `   📱 Qurilma: ${b.deviceInfo || 'Veb'}\n` +
+        `   ⏰ Ulangan: ${new Date(b.boundAt).toLocaleTimeString('uz-UZ')}\n` +
+        `   👉 Chiqarib yuborish: \`/kick ${c}\`\n\n`;
+      kb.text(`🚫 Chiqarish: ${c}`, `dev_kick_${c}`);
+      if (i % 2 === 1) kb.row();
+    });
+    return ctx.reply(msg, { parse_mode: 'Markdown', reply_markup: kb });
+  }
+
+  if (text.startsWith('/kick ') || text.startsWith('/chiqar ')) {
+    if (role !== 'OWNER' && role !== 'ADMIN') return ctx.reply("❌ Ruxsat yo'q!");
+    const target = text.replace(/^\/(?:kick|chiqar)\s*/i, '').trim();
+    if (!target) return ctx.reply("⚠️ Foydalanuvchi IDsi yoki kodini kiriting: `/kick 9017407025` yoki `/kick EDU-150275`");
+
+    db.deviceBindings = db.deviceBindings || {};
+    let targetCode = target;
+    if (/^\d{6,}$/.test(target)) {
+      const uId = parseInt(target, 10);
+      targetCode = getAccessCodeForUser(uId);
+    }
+
+    db.deviceBindings[targetCode] = {
+      kicked: true,
+      deviceId: null,
+      kickedAt: Date.now()
+    };
+    saveDatabase();
+
+    try {
+      fetch('https://eduhujjat.vercel.app/api/device-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'kick_device', code: targetCode })
+      }).catch(() => {});
+    } catch(e) {}
+
+    return ctx.reply(
+      `🚫 **FOYDALANUVCHI / QURILMA CHIQARIB YUBORILDI (KICKED)!**\n\n` +
+      `Kod: \`${targetCode}\`\n` +
+      `Holat: Ushbu kodga ulangan qurilmaning saytdagi sessiyasi darhol bekor qilindi. U saytga boshqa kira olmaydi.`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
   if (text === '⚡ Tezkor Yoqish') {

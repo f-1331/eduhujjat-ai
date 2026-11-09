@@ -342,13 +342,6 @@ export default function PaywallGate() {
               >
                 👑 Master VIP (1331)
               </button>
-              <button
-                type="button"
-                onClick={() => { setInputCode('EDU-150275'); handleCodeSubmit(null, 'EDU-150275'); }}
-                className="px-2.5 py-1 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-medium transition"
-              >
-                📱 Namunaviy Foydalanuvchi (EDU-150275)
-              </button>
             </div>
 
             {codeMessage && (

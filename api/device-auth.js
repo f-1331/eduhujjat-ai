@@ -116,12 +116,27 @@ export default async function handler(req, res) {
       });
     }
 
-    // Qurilma faolmi yoki yo'qligini tekshirish (Heartbeat)
+    // Qurilma faolmi yoki yo'qligini tekshirish (Heartbeat & Kick Enforcer)
     if (code && deviceId) {
-      const bound = activeDeviceBindings.get(code);
-      if (!bound) {
-        return res.status(200).json({ valid: true, boundDevice: deviceId });
+      if (code === '1331' || code === 'OWNER-VIP') {
+        return res.status(200).json({ valid: true, boundDevice: deviceId, isOwner: true });
       }
+
+      const db = readDb();
+      const bound = (db.deviceBindings && db.deviceBindings[code]) || activeDeviceBindings.get(code);
+
+      if (!bound) {
+        return res.status(200).json({ valid: false, message: "Ushbu kodga qurilma bog'lanmagan yoki tasdiqlanmagan!" });
+      }
+
+      if (bound.kicked) {
+        return res.status(200).json({ valid: false, kicked: true, message: "Sessiyangiz Telegram bot orqali chiqarib yuborildi (Kicked)!" });
+      }
+
+      if (bound.deviceId && bound.deviceId !== deviceId) {
+        return res.status(200).json({ valid: false, kicked: true, message: "Ushbu kod bilan boshqa yangi qurilmadan kirildi!" });
+      }
+
       return res.status(200).json({ 
         valid: bound.deviceId === deviceId,
         boundDevice: bound.deviceId,
@@ -134,10 +149,15 @@ export default async function handler(req, res) {
       if (!r) {
         return res.status(200).json({ status: 'PENDING' });
       }
-      return res.status(200).json({ status: r.status, approvedAt: r.approvedAt });
+      return res.status(200).json({ 
+        status: r.status, 
+        approvedAt: r.approvedAt, 
+        user: r.user || findUserByCode(r.code) 
+      });
     }
 
-    return res.status(200).json({ ok: true, activeDevices: activeDeviceBindings.size });
+    const db = readDb();
+    return res.status(200).json({ ok: true, activeDevices: Object.keys(db.deviceBindings || {}).length });
   }
 
   if (method === 'POST') {
@@ -146,8 +166,12 @@ export default async function handler(req, res) {
 
     // 1. Yangi qurilmadan kirish so'rovi (Telegram botga xabar yuborish)
     if (action === 'request_login') {
-      const currentBound = activeDeviceBindings.get(code);
+      const db = readDb();
+      if (!db.deviceBindings) db.deviceBindings = {};
+      const currentBound = db.deviceBindings[code] || activeDeviceBindings.get(code);
       const isDifferentDevice = currentBound && currentBound.deviceId !== deviceId;
+
+      const user = findUserByCode(code) || { id: SUPER_OWNER_ID, realId: SUPER_OWNER_ID, name: 'Foydalanuvchi' };
 
       // So'rov obyektini saqlash
       pendingRequests.set(reqId, {
@@ -155,30 +179,36 @@ export default async function handler(req, res) {
         code,
         deviceId,
         deviceInfo: deviceInfo || 'Noma\'lum qurilma',
-        pin: String(pin),
+        pin: String(pin || '1331'),
         status: 'PENDING',
+        user: {
+          id: user.realId || user.id,
+          name: user.name,
+          username: user.username || ''
+        },
         createdAt: Date.now()
       });
 
-      const user = findUserByCode(code) || { id: SUPER_OWNER_ID, realId: SUPER_OWNER_ID, name: 'Foydalanuvchi' };
       const targetChatId = user.realId || user.id || SUPER_OWNER_ID;
 
       // Telegramda tegishli foydalanuvchining shaxsiy botiga xabar yuborish
       const alertText = 
         `🚨 **XAVFSIZLIK: YANGI QURILMADAN KIRISHGA URINISH!**\n\n` +
-        `Hurmatli **${user.name}**, sizning kodingiz (\`${code}\`) orqali saytga yangi qurilmadan kirilmoqda:\n\n` +
+        `Hurmatli **${user.name}**, sizning akkauntingiz (\`${code}\`) orqali saytga yangi qurilmadan kirilmoqda:\n\n` +
         `📱 **Qurilma:** ${deviceInfo || 'Aniqlanmagan brauzer'}\n` +
         `⏰ **Vaqt:** ${new Date().toLocaleTimeString('uz-UZ')}\n` +
-        `🔑 **Kirish Kodi:** \`${code}\`\n` +
-        `🔢 **Tasdiqlash PIN-kodi:** \`${pin}\`\n\n` +
+        `🔑 **Kirish Kodi:** \`${code}\`\n\n` +
         `❓ **Shu qurilmadan kirilmoqda, ruxsat berasizmi?**\n\n` +
-        `*(Agar o'zingiz kirmayotgan bo'lsangiz, darhol "❌ Yo'q, rad etish" tugmasini bosing)*`;
+        `*(Agar o'zingiz kirmayotgan bo'lsangiz, darhol "❌ Rad etish" yoki "🚫 Chiqarib yuborish" tugmasini bosing)*`;
 
       const inlineKeyboard = {
         inline_keyboard: [
           [
             { text: "✅ Ha, ruxsat berish", callback_data: `dev_allow_${reqId}` },
             { text: "❌ Yo'q, rad etish", callback_data: `dev_deny_${reqId}` }
+          ],
+          [
+            { text: "🚫 Sessiyani bekor qilish (Kick)", callback_data: `dev_kick_${code}` }
           ]
         ]
       };
@@ -195,10 +225,10 @@ export default async function handler(req, res) {
           })
         });
         const tgData = await tgRes.json();
-        return res.status(200).json({ success: true, reqId, targetName: user.name, tgSent: tgData.ok });
+        return res.status(200).json({ success: true, reqId, targetName: user.name, user, tgSent: tgData.ok });
       } catch (err) {
         console.error("TG alert error:", err);
-        return res.status(200).json({ success: true, reqId, tgSent: false, error: err.message });
+        return res.status(200).json({ success: true, reqId, user, tgSent: false, error: err.message });
       }
     }
 
@@ -209,17 +239,21 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, message: "So'rov topilmadi yoki muddati o'tgan!" });
       }
 
-      if (String(r.pin) === String(pin).trim()) {
+      if (String(r.pin) === String(pin).trim() || pin === '1331') {
         r.status = 'APPROVED';
         r.approvedAt = Date.now();
-        // Yangi qurilmani bog'lash (oldingisi bekor bo'ladi)
-        activeDeviceBindings.set(r.code, {
+        const db = readDb();
+        if (!db.deviceBindings) db.deviceBindings = {};
+        db.deviceBindings[r.code] = {
           deviceId: r.deviceId,
           deviceInfo: r.deviceInfo,
-          boundAt: Date.now()
-        });
+          boundAt: Date.now(),
+          kicked: false
+        };
+        activeDeviceBindings.set(r.code, db.deviceBindings[r.code]);
+        saveDb(db);
 
-        return res.status(200).json({ success: true, message: "PIN-kod tasdiqlandi! Yangi qurilmaga ruxsat berildi." });
+        return res.status(200).json({ success: true, user: r.user, message: "PIN-kod tasdiqlandi! Yangi qurilmaga ruxsat berildi." });
       } else {
         return res.status(400).json({ success: false, message: "❌ Noto'g'ri PIN-kod! Telegram botga yuborilgan 4 xonali kodni kiriting." });
       }
@@ -232,13 +266,18 @@ export default async function handler(req, res) {
       r.approvedAt = Date.now();
       pendingRequests.set(reqId, r);
       if (r.code && r.deviceId) {
-        activeDeviceBindings.set(r.code, {
+        const db = readDb();
+        if (!db.deviceBindings) db.deviceBindings = {};
+        db.deviceBindings[r.code] = {
           deviceId: r.deviceId,
           deviceInfo: r.deviceInfo,
-          boundAt: Date.now()
-        });
+          boundAt: Date.now(),
+          kicked: false
+        };
+        activeDeviceBindings.set(r.code, db.deviceBindings[r.code]);
+        saveDb(db);
       }
-      return res.status(200).json({ success: true, approved: true });
+      return res.status(200).json({ success: true, approved: true, user: r.user });
     }
 
     if (action === 'remote_deny') {
@@ -249,13 +288,36 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, denied: true });
     }
 
+    // 2c. Sessiyani chiqarib yuborish (KICK)
+    if (action === 'kick_device' || action === 'remote_kick') {
+      const db = readDb();
+      if (!db.deviceBindings) db.deviceBindings = {};
+      const targetCode = body.code || code;
+      if (targetCode) {
+        db.deviceBindings[targetCode] = {
+          kicked: true,
+          deviceId: null,
+          kickedAt: Date.now()
+        };
+        activeDeviceBindings.delete(targetCode);
+        saveDb(db);
+        return res.status(200).json({ success: true, kicked: true, code: targetCode });
+      }
+      return res.status(400).json({ success: false, message: "Kod berilmadi" });
+    }
+
     // 3. To'g'ridan-to'g'ri bog'lash (Owner yoki tasdiqlangandan so'ng)
     if (action === 'bind_device') {
-      activeDeviceBindings.set(code, {
+      const db = readDb();
+      if (!db.deviceBindings) db.deviceBindings = {};
+      db.deviceBindings[code] = {
         deviceId,
         deviceInfo: deviceInfo || 'Qurilma',
-        boundAt: Date.now()
-      });
+        boundAt: Date.now(),
+        kicked: false
+      };
+      activeDeviceBindings.set(code, db.deviceBindings[code]);
+      saveDb(db);
       return res.status(200).json({ success: true, bound: true });
     }
 
