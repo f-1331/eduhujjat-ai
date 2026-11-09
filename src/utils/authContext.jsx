@@ -342,9 +342,9 @@ export function AuthProvider({ children }) {
           localStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
           setAccessCodeInfo(info);
           setUserAccessStatus('ACTIVE');
-          return { approved: true };
+          return { approved: true, status: 'APPROVED' };
         } else if (data.status === 'DENIED') {
-          return { denied: true };
+          return { denied: true, status: 'DENIED' };
         }
       }
     } catch(e) {}

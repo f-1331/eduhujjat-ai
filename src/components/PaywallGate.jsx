@@ -46,10 +46,10 @@ export default function PaywallGate() {
 
     const interval = setInterval(async () => {
       const res = await checkRemoteApproval(pendingAuth.reqId, pendingAuth.code);
-      if (res.approved) {
+      if (res && (res.approved || res.status === 'APPROVED')) {
         setPendingAuth(null);
         setCodeMessage({ success: true, message: "✅ Telegram orqali ruxsat berildi! Tizimga xush kelibsiz." });
-      } else if (res.denied) {
+      } else if (res && (res.denied || res.status === 'DENIED')) {
         setPendingAuth(null);
         setCodeMessage({ success: false, message: "❌ Ushbu qurilmadan kirish Telegram orqali rad etildi!" });
       }

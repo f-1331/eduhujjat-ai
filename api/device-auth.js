@@ -46,6 +46,34 @@ export default async function handler(req, res) {
   }
 
   const { method } = req;
+  const RENDER_BASE = process.env.RENDER_API_URL || 'https://eduhujjat-bot.onrender.com';
+
+  // 1. Render bulut serveridagi jonli 24/7 bot va foydalanuvchilar bazasiga uzatish
+  try {
+    let renderUrl = `${RENDER_BASE}/api/device-auth`;
+    if (method === 'GET') {
+      const qs = new URLSearchParams(req.query || {}).toString();
+      if (qs) renderUrl += `?${qs}`;
+      const renderRes = await fetch(renderUrl, { method: 'GET', signal: AbortSignal.timeout(4500) });
+      if (renderRes.ok) {
+        const data = await renderRes.json();
+        return res.status(200).json(data);
+      }
+    } else if (method === 'POST') {
+      const renderRes = await fetch(renderUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {}),
+        signal: AbortSignal.timeout(4500)
+      });
+      if (renderRes.ok) {
+        const data = await renderRes.json();
+        return res.status(200).json(data);
+      }
+    }
+  } catch (proxyErr) {
+    // Agar Render vaqtincha javob bermasa, zaxira lokal mantiq ishlaydi
+  }
 
   if (method === 'GET') {
     const { reqId, code, deviceId } = req.query;
