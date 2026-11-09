@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const BOT_TOKEN = process.env.BOT_TOKEN || '9001772632:AAEe8hXmKAhWwE7VHK1Vd8FMia6TcqYI0Mk';
+const BOT_TOKEN = process.env.BOT_TOKEN || '9001772632:AAE913k5Mhzna5qU2PcezbYnWErPxgn0zp8';
 const SUPER_OWNER_ID = 6707839718;
 
 function findUserByCode(code) {

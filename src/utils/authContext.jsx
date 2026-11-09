@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const OWNER_USERNAME = 'fayzbek1331';
 const SUPER_OWNER_ID = 6707839718;
-const BOT_TOKEN = '9001772632:AAEe8hXmKAhWwE7VHK1Vd8FMia6TcqYI0Mk';
+const BOT_TOKEN = '9001772632:AAE913k5Mhzna5qU2PcezbYnWErPxgn0zp8';
 
 export const DEFAULT_PRICES = {
   oneTime: 2000,

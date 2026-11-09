@@ -13,7 +13,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: BOT_TOKEN
-        value: 9001772632:AAEe8hXmKAhWwE7VHK1Vd8FMia6TcqYI0Mk
+        value: 9001772632:AAE913k5Mhzna5qU2PcezbYnWErPxgn0zp8
       - key: OWNER_USERNAME
         value: fayzbek1331
       - key: GEMINI_API_KEY
