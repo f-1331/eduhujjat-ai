@@ -4517,11 +4517,14 @@ async function startBotWithRetry() {
       });
     } catch (err) {
       console.error("Bot polling error:", err.message);
+      try {
+        await bot.stop();
+      } catch (e) {}
       if (err.message?.includes('409') || err.message?.includes('Conflict')) {
-        console.log("Telegram 409 Conflict aniqlandi. 5 soniya kutilmoqda va avtomatik qayta ulanmoqda...");
-        await new Promise(r => setTimeout(r, 5000));
+        console.log("Telegram 409 Conflict aniqlandi. 10 soniya kutilmoqda va avtomatik qayta ulanmoqda...");
+        await new Promise(r => setTimeout(r, 10000));
       } else {
-        await new Promise(r => setTimeout(r, 3000));
+        await new Promise(r => setTimeout(r, 5000));
       }
     }
   }

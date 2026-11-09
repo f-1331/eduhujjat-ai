@@ -40,7 +40,19 @@
     }
   },
   "simulatedRoles": {},
-  "deviceAuthorizations": {},
+  "deviceAuthorizations": {
+    "test_req_123": {
+      "reqId": "test_req_123",
+      "code": "EDU-150275",
+      "deviceId": "test_device_pc_chrome",
+      "deviceInfo": "Windows 11 / Chrome (Test)",
+      "pin": "7788",
+      "status": "PENDING",
+      "userId": 9017407025,
+      "userName": "Tony Stark",
+      "time": 1794145733642
+    }
+  },
   "deviceBindings": {},
   "activityLogs": []
 }
