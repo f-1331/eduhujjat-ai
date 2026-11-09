@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { useAuth } from '../utils/authContext';
 import { 
   calculateGradesRanking, 
   exportGradesToExcel, 
@@ -31,6 +32,7 @@ import {
 } from 'lucide-react';
 
 export default function ExcelModule({ t }) {
+  const { logActivity } = useAuth();
   const [activeTab, setActiveTab] = useState('editor'); // 'editor', 'templates'
   const [templateTab, setTemplateTab] = useState('grades'); // 'grades', 'attendance', 'schedule'
 
@@ -169,6 +171,10 @@ export default function ExcelModule({ t }) {
     setChangelog(logs);
     if (!overridePrompt) setAiPrompt('');
     setIsProcessing(false);
+
+    if (typeof logActivity === 'function') {
+      logActivity('EXCEL_AI_PROMPT', '📈 Excel AI Buyruq', `Buyruq: "${q}" (${newRows.length} ta qator yangilandi)`);
+    }
   };
 
   // Katakcha qiymatini o'zgartirish
@@ -204,7 +210,12 @@ export default function ExcelModule({ t }) {
     XLSX.utils.book_append_sheet(wb, ws, "Tahrirlangan Jadval");
     const outBuffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
     const blob = new Blob([outBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, fileName ? `Tahrirlangan_${fileName.replace(/\.[^/.]+$/, '')}.xlsx` : "Tahrirlangan_Jadval.xlsx");
+    const finalName = fileName ? `Tahrirlangan_${fileName.replace(/\.[^/.]+$/, '')}.xlsx` : "Tahrirlangan_Jadval.xlsx";
+    saveAs(blob, finalName);
+
+    if (typeof logActivity === 'function') {
+      logActivity('EXCEL_EXPORT', '📥 Excel (.xlsx) Yuklab Olish', `${finalName} (${rows.length} ta qator, ${headers.length} ta ustun)`);
+    }
   };
 
   // Nusxalash

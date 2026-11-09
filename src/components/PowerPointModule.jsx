@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../utils/authContext';
 import { 
   GAMMA_THEMES, 
   generatePresentationPptx 
@@ -28,6 +29,7 @@ import {
 } from 'lucide-react';
 
 export default function PowerPointModule() {
+  const { logActivity } = useAuth();
   const [promptInput, setPromptInput] = useState("Amir Temur davlati va Movarounnahr yuksalishi");
   const [authorName, setAuthorName] = useState("");
   const [slideCount, setSlideCount] = useState(10);
@@ -114,6 +116,10 @@ export default function PowerPointModule() {
     setCards(generated);
     setActiveSlideIndex(0);
     setIsGenerating(false);
+
+    if (typeof logActivity === 'function') {
+      logActivity('SLIDE_GENERATE', '📊 AI Taqdimot (Slayd)', `${promptInput.trim()} (${generated.length} ta slayd, ${themeKey})`);
+    }
   };
 
   // PowerPoint (.pptx) yuklab olish
@@ -135,6 +141,10 @@ export default function PowerPointModule() {
         imageDensity,
         filename: `${cleanName}_${cards.length}slayd_Gamma_AI.pptx`
       });
+
+      if (typeof logActivity === 'function') {
+        logActivity('SLIDE_EXPORT', '📥 PPTX Taqdimot Yuklab Olish', `${promptInput.trim()} (${cards.length} ta slayd)`);
+      }
     } catch (err) {
       console.error(err);
       alert("Taqdimotni eksport qilishda xatolik yuz berdi!");

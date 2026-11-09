@@ -89,25 +89,20 @@ function MainAppContent() {
     <div className={`min-h-screen ${currentTheme.bgLight} ${currentTheme.bgDark} text-slate-900 dark:text-slate-100 transition-colors duration-200`}>
       {/* Yuqori Header */}
       <header className={`sticky top-0 z-50 backdrop-blur-md ${currentTheme.cardLight}/85 ${currentTheme.cardDark}/85 border-b border-slate-200 dark:border-slate-800`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-1 sm:gap-2">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/25 text-white font-black text-xl">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/25 text-white font-black text-lg sm:text-xl shrink-0">
               E
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-indigo-500 to-sky-400 bg-clip-text text-transparent">
-                  EduHujjat AI
+              <div className="flex items-center gap-1">
+                <span className="font-extrabold text-sm sm:text-lg tracking-tight bg-gradient-to-r from-indigo-500 to-sky-400 bg-clip-text text-transparent">
+                  EduHujjat
                 </span>
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-400 text-slate-950 uppercase">
+                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-400 text-slate-950 uppercase hidden xs:inline-block">
                   {activeRole}
                 </span>
-                {accessCodeInfo && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hidden sm:inline-block">
-                    Kod: {accessCodeInfo.code}
-                  </span>
-                )}
               </div>
               <p className="text-[10px] text-slate-400 hidden sm:block">
                 SmartOffice & EduAI Pro • Owner: @{OWNER_USERNAME}
@@ -116,13 +111,13 @@ function MainAppContent() {
           </div>
 
           {/* O'ng tomon sozlamalar */}
-          <div className="flex items-center gap-2">
-            {/* Kod bilan kirgan bo'lsa Chiqish tugmasi */}
-            {accessCodeInfo && (
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Chiqish tugmasi (Har doim faol, test qilish va sessiyani tugatish uchun) */}
+            {isAccessible && (
               <button
                 onClick={logoutCode}
-                className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 text-xs font-semibold flex items-center gap-1 transition"
-                title="Kodni bekor qilish / Chiqish"
+                className="px-2 sm:px-2.5 py-1.5 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 text-xs font-semibold flex items-center gap-1 transition"
+                title="Kodni bekor qilish / Boshqa kod kiritish"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Chiqish</span>
@@ -131,7 +126,7 @@ function MainAppContent() {
 
             {/* Role Simulator */}
             {isActualOwner && (
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              <div className="hidden sm:flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                 <UserCog className="w-3.5 h-3.5 text-slate-400 ml-1.5 mr-0.5" />
                 <select
                   value={activeRole}
@@ -216,7 +211,7 @@ function MainAppContent() {
       </header>
 
       {/* Asosiy qism */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-8 w-full max-w-full">
         {!isAccessible ? (
           <PaywallGate />
         ) : (

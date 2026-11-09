@@ -4,6 +4,24 @@ import path from 'path';
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '9001772632:AAE913k5Mhzna5qU2PcezbYnWErPxgn0zp8';
 const SUPER_OWNER_ID = 6707839718;
+const DB_FILE = path.join(process.cwd(), 'data', 'database.json');
+
+function readDb() {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    }
+  } catch(e) {}
+  return { users: {}, activityLogs: [], deviceBindings: {}, deviceAuthorizations: {} };
+}
+
+function saveDb(data) {
+  try {
+    const dir = path.dirname(DB_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch(e) {}
+}
 
 function findUserByCode(code) {
   const clean = String(code || '').trim().toUpperCase();
@@ -11,16 +29,13 @@ function findUserByCode(code) {
     return { id: SUPER_OWNER_ID, realId: SUPER_OWNER_ID, name: 'Super Owner' };
   }
   try {
-    const dbPath = path.join(process.cwd(), 'data', 'database.json');
-    if (fs.existsSync(dbPath)) {
-      const data = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-      const users = Object.values(data.users || {});
-      for (const u of users) {
-        const uId = u.realId || u.id;
-        const uCode = `EDU-${Math.abs((uId * 1331) % 900000) + 100000}`;
-        if (uCode === clean || uCode.replace('EDU-', '') === clean || String(uId) === clean) {
-          return u;
-        }
+    const data = readDb();
+    const users = Object.values(data.users || {});
+    for (const u of users) {
+      const uId = u.realId || u.id;
+      const uCode = `EDU-${Math.abs((uId * 1331) % 900000) + 100000}`;
+      if (uCode === clean || uCode.replace('EDU-', '') === clean || String(uId) === clean) {
+        return u;
       }
     }
   } catch(e) {}
@@ -76,7 +91,30 @@ export default async function handler(req, res) {
   }
 
   if (method === 'GET') {
-    const { reqId, code, deviceId } = req.query;
+    const { reqId, code, deviceId, action, targetUserId, userId } = req.query;
+
+    // Foydalanuvchining oxirgi 100 ta audit amalini olish (Owner uchun)
+    if (action === 'get_user_logs' || action === 'user_history' || targetUserId || (action === 'audit' && userId)) {
+      const target = String(userId || targetUserId || '').trim();
+      const db = readDb();
+      const allLogs = Array.isArray(db.activityLogs) ? db.activityLogs : [];
+      let userLogs = allLogs;
+      if (target) {
+        userLogs = allLogs.filter(l => 
+          String(l.userId) === target || 
+          String(l.code).toUpperCase() === target.toUpperCase() ||
+          (l.userName && l.userName.toLowerCase().includes(target.toLowerCase()))
+        );
+      }
+      const last100 = userLogs.slice(-100).reverse();
+      return res.status(200).json({ 
+        success: true, 
+        count: last100.length, 
+        totalInDb: allLogs.length, 
+        target, 
+        logs: last100 
+      });
+    }
 
     // Qurilma faolmi yoki yo'qligini tekshirish (Heartbeat)
     if (code && deviceId) {
@@ -219,6 +257,29 @@ export default async function handler(req, res) {
         boundAt: Date.now()
       });
       return res.status(200).json({ success: true, bound: true });
+    }
+
+    // 4. Foydalanuvchi faoliyatini audit qilish (Real-time Audit Logger)
+    if (action === 'log_activity') {
+      const { userId: aUserId, userName: aUserName, actionType, actionLabel, details: aDetails } = body;
+      const db = readDb();
+      if (!Array.isArray(db.activityLogs)) db.activityLogs = [];
+      const entry = {
+        id: `act_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        userId: aUserId || SUPER_OWNER_ID,
+        userName: aUserName || 'Foydalanuvchi',
+        code: code || '',
+        action: actionType || 'GENERAL_ACTION',
+        actionLabel: actionLabel || 'Amal',
+        details: String(aDetails || '').slice(0, 300),
+        deviceInfo: deviceInfo || 'Veb Brauzer',
+        timestamp: Date.now(),
+        timeFormatted: new Date().toLocaleString('uz-UZ')
+      };
+      db.activityLogs.push(entry);
+      if (db.activityLogs.length > 5000) db.activityLogs = db.activityLogs.slice(-5000);
+      saveDb(db);
+      return res.status(200).json({ success: true, entry });
     }
 
     return res.status(400).json({ error: "Noma'lum amal" });

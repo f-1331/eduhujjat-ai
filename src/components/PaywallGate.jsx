@@ -27,6 +27,7 @@ export default function PaywallGate() {
     requestDeviceAccess, 
     approveDeviceByPin, 
     checkRemoteApproval,
+    logActivity,
     deviceInfo 
   } = useAuth();
 
@@ -140,15 +141,18 @@ export default function PaywallGate() {
 
   const currentSelected = plans.find(p => p.id === selectedPlan) || plans[1];
 
-  const handleCodeSubmit = async (e) => {
-    e.preventDefault();
-    if (!inputCode.trim()) return;
+  const handleCodeSubmit = async (e, directCode = null) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const codeToTest = directCode || inputCode;
+    if (!codeToTest.trim()) return;
     setIsLoading(true);
     setCodeMessage(null);
-    setPinMessage(null);
 
     try {
-      const res = await requestDeviceAccess(inputCode);
+      const res = await requestDeviceAccess(codeToTest);
+      if (typeof logActivity === 'function') {
+        logActivity('LOGIN_ATTEMPT', '🔑 Kirish Kodi Tekshirildi', `Kod: ${codeToTest.trim()} (${res.success ? 'Muvaffaqiyatli' : (res.requiresApproval ? 'Yangi qurilma so\'rovi' : 'Rad etildi')})`);
+      }
       if (res.requiresApproval) {
         setPendingAuth(res);
       } else {
@@ -184,8 +188,8 @@ export default function PaywallGate() {
   const tgDirectLink = `https://t.me/${OWNER_USERNAME}?text=${encodeURIComponent(paymentMessage)}`;
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center p-4">
-      <div className="max-w-4xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden space-y-8">
+    <div className="min-h-[85vh] flex items-center justify-center p-2 sm:p-4 w-full max-w-full">
+      <div className="max-w-4xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-10 shadow-2xl relative overflow-hidden space-y-6 sm:space-y-8">
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-sky-500 via-emerald-500 via-indigo-500 to-amber-500" />
 
         {/* 1. YANGI QURILMADAN KIRISHNI TASDIQLASH (DEVICE APPROVAL MODAL / PANEL) */}
@@ -321,12 +325,31 @@ export default function PaywallGate() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-emerald-500 hover:opacity-95 text-slate-950 font-black text-sm rounded-2xl shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
+                className="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-emerald-500 hover:opacity-95 text-slate-950 font-black text-sm rounded-2xl shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50 shrink-0"
               >
                 {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                 Tekshirish va Kirish
               </button>
             </form>
+
+            {/* Tezkor kiritish yordamchilari */}
+            <div className="mt-3 flex items-center gap-2 flex-wrap text-[11px]">
+              <span className="text-slate-400">Tezkor:</span>
+              <button
+                type="button"
+                onClick={() => { setInputCode('1331'); handleCodeSubmit(null, '1331'); }}
+                className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold transition flex items-center gap-1"
+              >
+                👑 Master VIP (1331)
+              </button>
+              <button
+                type="button"
+                onClick={() => { setInputCode('EDU-150275'); handleCodeSubmit(null, 'EDU-150275'); }}
+                className="px-2.5 py-1 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-medium transition"
+              >
+                📱 Namunaviy Foydalanuvchi (EDU-150275)
+              </button>
+            </div>
 
             {codeMessage && (
               <div className={`mt-3 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${

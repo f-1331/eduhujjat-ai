@@ -859,6 +859,79 @@ function formatActivityReport(targetUserId = null) {
   );
 }
 
+// 2.2 FOYDALANUVCHINING OXIRGI 100 TA AMALINI AUDIT QILISH VA CHIQARISH (Super Owner uchun)
+async function sendUserAuditLogs(ctx, targetIdInput) {
+  const targetId = resolveUserId(targetIdInput);
+  if (!targetId || isNaN(targetId)) {
+    return ctx.reply(
+      "⚠️ Iltimos, to'g'ri foydalanuvchi Telegram ID raqamini kiriting!\n" +
+      "Misol: `/userlog 9017407025` yoki `/audit 9017407025`", 
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  const user = getUser(targetId);
+  const logs = Array.isArray(db.activityLogs) ? db.activityLogs : [];
+  const userLogs = logs.filter(l => Number(l.userId) === Number(targetId) || String(l.userId) === String(targetId)).slice(-100).reverse();
+
+  const userName = user?.name || (user?.username ? `@${user.username}` : `Foydalanuvchi ${targetId}`);
+  const userCode = getAccessCodeForUser(targetId);
+  const userPlan = user?.plan || (user?.status === 'ACTIVE' ? 'Faol' : 'Yopiq');
+  const userDevice = user?.deviceInfo || (userLogs[0]?.deviceInfo) || "Telegram WebApp / Veb";
+
+  let msg = `🔍 **FOYDALANUVCHI AUDIT TARIXI (OXIRGI 100 TA AMAL)**\n\n` +
+    `👤 **Foydalanuvchi:** ${userName}\n` +
+    `🆔 **Telegram ID:** \`${targetId}\`\n` +
+    `🔑 **Kirish Kodi:** \`${userCode}\`\n` +
+    `📱 **Qurilma:** ${userDevice}\n` +
+    `💳 **Tarif:** ${userPlan} | **Holati:** ${user?.status || 'PENDING'}\n` +
+    `📊 **Jami qayd etilgan amallar:** ${userLogs.length} ta\n\n`;
+
+  if (userLogs.length === 0) {
+    msg += `ℹ️ *Ushbu foydalanuvchi hali tizimda hech qanday hujjat yoki amal bajarmagan (0 ta faollik).*`;
+    return ctx.reply(msg, { parse_mode: 'Markdown' });
+  }
+
+  msg += `🕒 **Oxirgi amallar ketma-ketligi:**\n`;
+  const previewList = userLogs.slice(0, 15);
+  previewList.forEach((l, idx) => {
+    const timeStr = new Date(l.timestamp).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date(l.timestamp).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit' });
+    const label = l.actionLabel || l.typeLabel || l.type || 'Amal';
+    const detail = l.details || l.topic || '';
+    msg += `**${idx + 1}.** [${timeStr}] ${label}: *${detail.slice(0, 45)}*\n`;
+  });
+
+  if (userLogs.length > 15) {
+    msg += `\n📄 *... va yana ${userLogs.length - 15} ta amal (Jami: ${userLogs.length} ta).* To'liq 100 ta amal fayl sifatida yuklandi:`;
+  }
+
+  await ctx.reply(msg, { parse_mode: 'Markdown' });
+
+  // Agar 15 tadan ko'p bo'lsa yoki to'liq 100 ta hisobot kerak bo'lsa, TXT fayl yaratib jo'natamiz
+  if (userLogs.length > 15) {
+    let fileContent = `========================================================\n` +
+      `EduHujjat AI & SmartOffice Pro\n` +
+      `FOYDALANUVCHI AUDIT HISOBOTI (OXIRGI ${userLogs.length} TA AMAL)\n` +
+      `Foydalanuvchi: ${userName} (ID: ${targetId})\n` +
+      `Kirish Kodi: ${userCode}\n` +
+      `Sana: ${new Date().toLocaleString('uz-UZ')}\n` +
+      `========================================================\n\n`;
+
+    userLogs.forEach((l, i) => {
+      const dt = new Date(l.timestamp).toLocaleString('uz-UZ');
+      fileContent += `${i + 1}. [${dt}] [${l.actionLabel || l.typeLabel || l.type || 'Amal'}]\n` +
+        `   Mavzu/Tafsilot: ${l.details || l.topic || '-'}\n` +
+        `   Qurilma: ${l.deviceInfo || '-'}\n` +
+        `   Amal ID: ${l.id || '-'}\n\n`;
+    });
+
+    const buf = Buffer.from(fileContent, 'utf-8');
+    await ctx.replyWithDocument(new InputFile(buf, `Audit_User_${targetId}_100_Amallar.txt`), {
+      caption: `📁 Foydalanuvchi ${targetId} ning to'liq ${userLogs.length} ta amallar jurnali`
+    });
+  }
+}
+
 function cutUserTime(targetUserId, ms) {
   const targetId = resolveUserId(targetUserId);
   const user = getUser(targetId);
@@ -1872,7 +1945,7 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
   if (role === 'OWNER') {
     return new Keyboard()
       .text("⚡ Tezkor Yoqish").text("🔑 Saytga Kirish Kodi").row()
-      .text("🤖 EduAI Yordamchi").text("👥 Foydalanuvchilar").row()
+      .text("🔍 Foydalanuvchi Tarixi (100 ta)").text("👥 Foydalanuvchilar").row()
       .text("📈 Faollik Tahlili").text("📊 Statistika").row()
       .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
       .text("📊 Excel Jadvallar").text("🎨 Gamma AI Taqdimot").row()
@@ -1888,7 +1961,7 @@ function getReplyKeyboardForRole(role, isRegisteredActive = false) {
   if (role === 'ADMIN') {
     return new Keyboard()
       .text("⚡ Tezkor Yoqish").text("🔑 Saytga Kirish Kodi").row()
-      .text("🤖 EduAI Yordamchi").text("👥 Foydalanuvchilar").row()
+      .text("🔍 Foydalanuvchi Tarixi (100 ta)").text("👥 Foydalanuvchilar").row()
       .text("📈 Faollik Tahlili").text("📊 Statistika").row()
       .text("📑 Hujjat Fabrikasi").text("🎲 Test Generatori").row()
       .text("📊 Excel Jadvallar").text("🎨 Gamma AI Taqdimot").row()
@@ -2310,6 +2383,13 @@ bot.on('callback_query:data', async (ctx) => {
       );
     } catch(e){}
     return;
+  }
+
+  // 0.1 FOYDALANUVCHI AUDIT TARIXINI CALLBACK QUERY BILAN OCHISH
+  if (data.startsWith('audit_user_')) {
+    const targetId = data.replace('audit_user_', '');
+    await ctx.answerCallbackQuery({ text: "Hisobot tayyorlanmoqda..." });
+    return sendUserAuditLogs(ctx, targetId);
   }
 
   // =========================================================================
@@ -3728,6 +3808,31 @@ bot.on('message:text', async (ctx) => {
   if (text === '📈 Faollik Tahlili' || text === '/activity' || text === '/monitoring' || text === '📈 Faollik') {
     if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'INSPECTOR') return ctx.reply("❌ Ruxsat yo'q!");
     return ctx.reply(formatActivityReport(), { parse_mode: 'Markdown' });
+  }
+
+  // FOYDALANUVCHI AUDIT TARIXI (OXIRGI 100 TA AMAL)
+  if (text === '🔍 Foydalanuvchi Tarixi (100 ta)' || text === '/userlog' || text === '/audit' || text === '/tarix') {
+    if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'INSPECTOR') return ctx.reply("❌ Ruxsat yo'q!");
+    const allUsers = getAllUniqueUsers().filter(u => u.realId !== SUPER_OWNER_ID);
+    let msg = `🔍 **FOYDALANUVCHINING OXIRGI 100 TA AMALINI KO'RISH:**\n\n` +
+      `Foydalanuvchining ID raqami bilan buyruq yuboring:\n` +
+      `Masalan: \`/userlog 9017407025\` yoki \`/audit 9017407025\`\n\n` +
+      `Yoki quyidagi foydalanuvchilardan birini bosing:`;
+
+    const kb = new InlineKeyboard();
+    allUsers.slice(0, 8).forEach((u, idx) => {
+      kb.text(`👤 ${u.name.slice(0, 14)} (${u.id})`, `audit_user_${u.realId || u.id}`);
+      if (idx % 2 === 1) kb.row();
+    });
+    if (allUsers.length % 2 === 1) kb.row();
+
+    return ctx.reply(msg, { parse_mode: 'Markdown', reply_markup: kb });
+  }
+
+  if (text.startsWith('/userlog ') || text.startsWith('/audit ') || text.startsWith('/tarix ')) {
+    if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'INSPECTOR') return ctx.reply("❌ Ruxsat yo'q!");
+    const targetInput = text.replace(/^\/(?:userlog|audit|tarix)\s*/i, '').trim();
+    return sendUserAuditLogs(ctx, targetInput);
   }
 
   if (text === '⚡ Tezkor Yoqish') {

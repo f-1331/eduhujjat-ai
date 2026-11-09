@@ -82,6 +82,36 @@ bot.on('message:text', async (ctx) => {
     );
   }
 
+  if (text.startsWith('/userlog') || text.startsWith('/audit') || text.startsWith('/tarix')) {
+    if (userId !== SUPER_OWNER_ID) return ctx.reply("❌ Ruxsat yo'q!");
+    const targetInput = text.replace(/^\/(?:userlog|audit|tarix)\s*/i, '').trim();
+    if (!targetInput) {
+      return ctx.reply("⚠️ Foydalanuvchi ID sini kiriting: `/userlog 9017407025`", { parse_mode: 'Markdown' });
+    }
+    try {
+      const res = await fetch(`https://eduhujjat.vercel.app/api/device-auth?action=get_user_logs&userId=${encodeURIComponent(targetInput)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const logs = data.logs || [];
+        if (logs.length === 0) {
+          return ctx.reply(`ℹ️ Foydalanuvchi \`${targetInput}\` uchun amallar topilmadi (0 ta).`, { parse_mode: 'Markdown' });
+        }
+        let msg = `🔍 **FOYDALANUVCHI AUDIT TARIXI (OXIRGI ${logs.length} TA AMAL)**\n\n` +
+          `🆔 **ID:** \`${targetInput}\`\n` +
+          `📊 **Jami qayd etilgan amallar:** ${logs.length} ta\n\n`;
+        logs.slice(0, 15).forEach((l, idx) => {
+          msg += `**${idx + 1}.** [${l.timeFormatted || new Date(l.timestamp).toLocaleTimeString('uz-UZ')}] ${l.actionLabel || l.action}: *${(l.details || '').slice(0, 50)}*\n`;
+        });
+        if (logs.length > 15) {
+          msg += `\n📄 *... va yana ${logs.length - 15} ta amal.*`;
+        }
+        return ctx.reply(msg, { parse_mode: 'Markdown' });
+      }
+    } catch(e) {
+      return ctx.reply(`Xatolik: ${e.message}`);
+    }
+  }
+
   // Real Gemini AI /ai va mavzular handleri
   if (text.startsWith('/ai') || text === '🤖 EduAI Yordamchi' || !text.startsWith('/')) {
     const prompt = text.replace(/^\/ai\s*/i, '').replace('🤖 EduAI Yordamchi', '').trim();

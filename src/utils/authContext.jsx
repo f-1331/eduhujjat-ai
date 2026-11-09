@@ -111,7 +111,6 @@ export function AuthProvider({ children }) {
   });
 
   const [userAccessStatus, setUserAccessStatus] = useState(() => {
-    if (isActualOwner) return 'ACTIVE';
     if (accessCodeInfo) return 'ACTIVE';
     return 'PENDING';
   });
@@ -354,9 +353,63 @@ export function AuthProvider({ children }) {
   const logoutCode = () => {
     localStorage.removeItem('eduhujjat_active_code');
     setAccessCodeInfo(null);
-    if (!isActualOwner) {
-      setUserAccessStatus('PENDING');
-    }
+    setUserAccessStatus('PENDING');
+  };
+
+  // Har bir foydalanuvchi amalini real-time audit qilish (Audit Logger)
+  const logActivity = (actionType, actionLabel, details) => {
+    try {
+      const activeCode = accessCodeInfo?.code || localStorage.getItem('eduhujjat_active_code');
+      let code = '';
+      let userName = currentUser?.first_name || 'Veb Foydalanuvchi';
+      let userId = currentUser?.id || SUPER_OWNER_ID;
+      if (activeCode) {
+        if (typeof activeCode === 'string' && activeCode.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(activeCode);
+            code = parsed.code || '';
+            userName = parsed.name || userName;
+            userId = parsed.userId || parsed.code || userId;
+          } catch(e) {}
+        } else if (typeof activeCode === 'string') {
+          code = activeCode;
+        }
+      }
+      const entry = {
+        id: `act_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        userId: String(userId),
+        userName,
+        code,
+        action: actionType,
+        actionLabel,
+        details: String(details || '').slice(0, 300),
+        deviceInfo,
+        timestamp: Date.now(),
+        timeFormatted: new Date().toLocaleString('uz-UZ')
+      };
+
+      // 1. Mahalliy xotiraga saqlash
+      const saved = localStorage.getItem('eduhujjat_recent_activities');
+      const list = saved ? JSON.parse(saved) : [];
+      list.unshift(entry);
+      localStorage.setItem('eduhujjat_recent_activities', JSON.stringify(list.slice(0, 500)));
+
+      // 2. Serverless bazaga uzatish
+      fetch('/api/device-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'log_activity',
+          userId: String(userId),
+          userName,
+          code,
+          actionType,
+          actionLabel,
+          details,
+          deviceInfo
+        })
+      }).catch(() => {});
+    } catch(e) {}
   };
 
   const addAdmin = (newAdmin) => {
@@ -415,7 +468,7 @@ export function AuthProvider({ children }) {
   };
 
   const hasAccess = () => {
-    if (isActualOwner) return true;
+    // Saytga kirish uchun faol litsenziya kodi yoki Master kod (1331) bo'lishi shart!
     if (accessCodeInfo?.code && userAccessStatus === 'ACTIVE') return true;
     return false;
   };
@@ -437,6 +490,7 @@ export function AuthProvider({ children }) {
       approveDeviceByPin,
       checkRemoteApproval,
       logoutCode,
+      logActivity,
       addAdmin,
       removeAdmin,
       updatePrices,

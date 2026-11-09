@@ -192,7 +192,14 @@ body {
   background-color: var(--bg-main) !important;
   color: var(--text-main);
   overflow-x: hidden;
+  max-width: 100vw;
+  -webkit-overflow-scrolling: touch;
   transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+#root {
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .dark .dark\:bg-slate-900,

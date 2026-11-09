@@ -54,5 +54,78 @@
     }
   },
   "deviceBindings": {},
-  "activityLogs": []
+  "activityLogs": [
+    {
+      "id": "act_101",
+      "userId": 9017407025,
+      "userName": "Tony Stark",
+      "code": "EDU-150275",
+      "action": "LOGIN_ATTEMPT",
+      "actionLabel": "🔑 Yangi Qurilmadan Kirish",
+      "details": "Litsenziya kodi bilan Windows PC (Chrome) qurilmasidan tizimga kirdi (Tasdiqlangan)",
+      "deviceInfo": "Windows PC (Chrome)",
+      "timestamp": 1794145740000,
+      "timeFormatted": "09.11.2026, 18:20"
+    },
+    {
+      "id": "act_102",
+      "userId": 9017407025,
+      "userName": "Tony Stark",
+      "code": "EDU-150275",
+      "action": "POWERPOINT_GENERATE",
+      "actionLabel": "📊 AI Taqdimot (Slayd)",
+      "details": "Mavzu: «Fotosintez va yashil o'simliklar biologiyasi» (10 ta slayd, Emerald mavzu)",
+      "deviceInfo": "Windows PC (Chrome)",
+      "timestamp": 1794147540000,
+      "timeFormatted": "09.11.2026, 18:50"
+    },
+    {
+      "id": "act_103",
+      "userId": 9017407025,
+      "userName": "Tony Stark",
+      "code": "EDU-150275",
+      "action": "EXCEL_AI_PROMPT",
+      "actionLabel": "📈 Excel AI Muharrir",
+      "details": "Buyruq: «Past baholarni o'chirib, o'quvchilarni alifbo bo'yicha saralash» (32 ta qator)",
+      "deviceInfo": "Windows PC (Chrome)",
+      "timestamp": 1794151140000,
+      "timeFormatted": "09.11.2026, 19:45"
+    },
+    {
+      "id": "act_104",
+      "userId": 9017407025,
+      "userName": "Tony Stark",
+      "code": "EDU-150275",
+      "action": "WORD_GENERATE",
+      "actionLabel": "📑 Word Dars Konspekti",
+      "details": "Mavzu: «Nyutonning ikkinchi qonuni va dinamika asoslari» (45 daqiqalik namunaviy dars)",
+      "deviceInfo": "Windows PC (Chrome)",
+      "timestamp": 1794154740000,
+      "timeFormatted": "09.11.2026, 20:15"
+    },
+    {
+      "id": "act_105",
+      "userId": 9017407025,
+      "userName": "Tony Stark",
+      "code": "EDU-150275",
+      "action": "POWERPOINT_EXPORT",
+      "actionLabel": "📥 PPTX Yuklab Olish",
+      "details": "Fotosintez_va_yashil_o_simliklar_10slayd_Gamma_AI.pptx",
+      "deviceInfo": "Windows PC (Chrome)",
+      "timestamp": 1794158340000,
+      "timeFormatted": "09.11.2026, 20:45"
+    },
+    {
+      "id": "act_106",
+      "userId": 6707839718,
+      "userName": "Fayzbek (Super Owner)",
+      "code": "1331",
+      "action": "LOGIN_ATTEMPT",
+      "actionLabel": "👑 Super Owner Kirishi",
+      "details": "Master VIP kod (1331) orqali boshqaruv markaziga kirdi",
+      "deviceInfo": "Android Qurilma (Telegram WebApp)",
+      "timestamp": 1794160000000,
+      "timeFormatted": "09.11.2026, 21:00"
+    }
+  ]
 }
