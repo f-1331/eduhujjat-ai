@@ -193,19 +193,19 @@ export default async function handler(req, res) {
 
       // Telegramda tegishli foydalanuvchining shaxsiy botiga xabar yuborish
       const alertText = 
-        `🚨 **XAVFSIZLIK: YANGI QURILMADAN KIRISHGA URINISH!**\n\n` +
-        `Hurmatli **${user.name}**, sizning akkauntingiz (\`${code}\`) orqali saytga yangi qurilmadan kirilmoqda:\n\n` +
+        `🔐 **TEZKOR TASDIQLASH (PIN-KODSIZ)**\n\n` +
+        `Hurmatli **${user.name}**, sizning akkauntingiz (\`${code}\`) orqali saytga yangi qurilmadan kirish so'ralmoqda:\n\n` +
         `📱 **Qurilma:** ${deviceInfo || 'Aniqlanmagan brauzer'}\n` +
         `⏰ **Vaqt:** ${new Date().toLocaleTimeString('uz-UZ')}\n` +
         `🔑 **Kirish Kodi:** \`${code}\`\n\n` +
-        `❓ **Shu qurilmadan kirilmoqda, ruxsat berasizmi?**\n\n` +
-        `*(Agar o'zingiz kirmayotgan bo'lsangiz, darhol "❌ Rad etish" yoki "🚫 Chiqarib yuborish" tugmasini bosing)*`;
+        `❓ **Ushbu qurilmaga kirishga ruxsat berasizmi?**\n\n` +
+        `*(Agar o'zingiz kirmayotgan bo'lsangiz, darhol "❌ Ruxsat Bermaslik" yoki "🚫 Chiqarish" tugmasini bosing)*`;
 
       const inlineKeyboard = {
         inline_keyboard: [
           [
-            { text: "✅ Ha, ruxsat berish", callback_data: `dev_allow_${reqId}` },
-            { text: "❌ Yo'q, rad etish", callback_data: `dev_deny_${reqId}` }
+            { text: "✅ Ruxsat Berish", callback_data: `dev_allow_${reqId}` },
+            { text: "❌ Ruxsat Bermaslik", callback_data: `dev_deny_${reqId}` }
           ],
           [
             { text: "🚫 Sessiyani bekor qilish (Kick)", callback_data: `dev_kick_${code}` }

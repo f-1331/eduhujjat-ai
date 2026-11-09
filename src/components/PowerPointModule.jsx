@@ -550,7 +550,7 @@ export default function PowerPointModule() {
 
           {/* HAQIQIY GAMMA SLAYD DISPLAY (Widescreen 16:9 Canvas) */}
           <div 
-            className="w-full aspect-video rounded-3xl p-6 sm:p-10 shadow-2xl relative flex flex-col justify-between border transition-all duration-300 overflow-hidden"
+            className="w-full min-h-[360px] sm:min-h-0 sm:aspect-video rounded-3xl p-3.5 sm:p-6 md:p-10 shadow-2xl relative flex flex-col justify-between border transition-all duration-300 overflow-hidden"
             style={{ 
               backgroundColor: `#${activeTheme.bg}`,
               borderColor: `#${activeTheme.cardBorder}`
@@ -587,7 +587,7 @@ export default function PowerPointModule() {
               {/* 1. HERO SLAYDI */}
               {currentCard.type === 'hero' && (
                 <div 
-                  className="p-6 sm:p-8 rounded-2xl border shadow-xl flex flex-col md:flex-row items-center gap-6"
+                  className="p-4 sm:p-8 rounded-2xl border shadow-xl flex flex-col sm:flex-row items-center gap-4 sm:gap-6"
                   style={{ 
                     backgroundColor: `#${activeTheme.cardBg}`,
                     borderColor: `#${activeTheme.cardBorder}`
@@ -608,7 +608,7 @@ export default function PowerPointModule() {
                       rows={2}
                       value={currentCard.title || ''}
                       onChange={(e) => updateCurrentCard({ title: e.target.value })}
-                      className="w-full bg-transparent text-2xl sm:text-4xl font-extrabold tracking-tight focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg resize-none"
+                      className="w-full bg-transparent text-xl sm:text-3xl md:text-4xl font-extrabold tracking-tight focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg resize-none"
                       style={{ color: `#${activeTheme.text}` }}
                     />
                     <textarea

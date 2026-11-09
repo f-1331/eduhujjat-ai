@@ -4629,18 +4629,19 @@ const apiServer = http.createServer((req, res) => {
           // Foydalanuvchining shaxsiy Telegram botiga ruxsat so'rovini yuborish
           try {
             const authKb = new InlineKeyboard()
-              .text("✅ Ha, ruxsat berish", `dev_allow_${reqId}`)
-              .text("❌ Yo'q, rad etish", `dev_deny_${reqId}`);
+              .text("✅ Ruxsat Berish", `dev_allow_${reqId}`)
+              .text("❌ Ruxsat Bermaslik", `dev_deny_${reqId}`)
+              .row()
+              .text("🚫 Sessiyani bekor qilish (Kick)", `dev_kick_${code}`);
 
             const alertMsg = 
-              `🚨 **XAVFSIZLIK: YANGI QURILMADAN KIRISHGA URINISH!**\n\n` +
-              `Hurmatli **${user.name}**, sizning shaxsiy kodingiz (\`${code}\`) orqali saytga yangi qurilmadan kirilmoqda:\n\n` +
+              `🔐 **TEZKOR TASDIQLASH (PIN-KODSIZ)**\n\n` +
+              `Hurmatli **${user.name}**, sizning shaxsiy hisobingiz (\`${code}\`) orqali saytga yangi qurilmadan kirish so'ralmoqda:\n\n` +
               `📱 **Qurilma:** ${deviceInfo || 'Aniqlanmagan brauzer'}\n` +
               `⏰ **Vaqt:** ${new Date().toLocaleTimeString('uz-UZ')}\n` +
-              `🔑 **Kirish Kodi:** \`${code}\`\n` +
-              `🔢 **Tasdiqlash PIN-kodi:** \`${pin}\`\n\n` +
-              `❓ **Shu qurilmadan kirilmoqda, ruxsat berasizmi?**\n\n` +
-              `*(Agar o'zingiz kirmayotgan bo'lsangiz, darhol "❌ Yo'q, rad etish" tugmasini bosing)*`;
+              `🔑 **Kirish Kodi:** \`${code}\`\n\n` +
+              `❓ **Ushbu qurilmaga kirishga ruxsat berasizmi?**\n\n` +
+              `*(Agar o'zingiz kirmayotgan bo'lsangiz, darhol "❌ Ruxsat Bermaslik" yoki "🚫 Chiqarish" tugmasini bosing)*`;
 
             await bot.api.sendMessage(targetChatId, alertMsg, {
               parse_mode: 'Markdown',

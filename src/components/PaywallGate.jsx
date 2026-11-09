@@ -39,25 +39,6 @@ export default function PaywallGate() {
   // Yangi qurilma tasdiqlash holati (Device Authorization State)
   const [pendingAuth, setPendingAuth] = useState(null);
 
-  // Bir bosishda Ruxsat Berish (Owner va Tezkor tasdiqlash uchun PIN so'ralmaydi)
-  const handleDirectApprove = () => {
-    if (!pendingAuth) return;
-    const res = approveDeviceByPin(pendingAuth, pendingAuth.pin || '1331');
-    if (res.success) {
-      setPendingAuth(null);
-      setCodeMessage(res);
-    } else {
-      // Direct access bypass
-      setPendingAuth(null);
-      setCodeMessage({ success: true, message: "✅ Ruxsat berildi! Tizimga xush kelibsiz." });
-    }
-  };
-
-  const handleDirectDeny = () => {
-    setPendingAuth(null);
-    setCodeMessage({ success: false, message: "❌ Kirish rad etildi." });
-  };
-
   // Telegram inline button bosilganini avtomatik polling qilish (har 2 soniyada)
   useEffect(() => {
     if (!pendingAuth?.reqId) return;
@@ -192,157 +173,106 @@ export default function PaywallGate() {
       <div className="max-w-4xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-10 shadow-2xl relative overflow-hidden space-y-6 sm:space-y-8">
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-sky-500 via-emerald-500 via-indigo-500 to-amber-500" />
 
-        {/* 1. YANGI QURILMADAN KIRISHNI TASDIQLASH (DEVICE APPROVAL MODAL / PANEL) */}
+        {/* 1. YANGI QURILMADAN KIRISHNI TASDIQLASH (FAQAT TELEGRAM BOT ORQALI) */}
         {pendingAuth ? (
-          <div className="bg-gradient-to-br from-amber-950/80 via-slate-900 to-indigo-950 p-6 sm:p-8 rounded-3xl text-white shadow-2xl border-2 border-amber-500/40 animate-in fade-in zoom-in duration-300">
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
-                <Smartphone className="w-7 h-7 animate-bounce" />
+          <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-950 p-5 sm:p-8 rounded-3xl text-white shadow-2xl border-2 border-indigo-500/40 animate-in fade-in zoom-in duration-300">
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-sky-400 shrink-0 shadow-lg shadow-indigo-500/20">
+                <Smartphone className="w-7 h-7 sm:w-8 sm:h-8 animate-bounce text-sky-400" />
               </div>
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950">
-                    Xavfsizlik Talabi
-                  </span>
-                  <span className="text-xs text-amber-300 font-mono">1 Kod = 1 Qurilma</span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-black text-white">
-                  Yangi Qurilma Aniqlanmoqda...
+                <span className="text-[10px] font-black uppercase tracking-wider px-3 py-0.5 rounded-full bg-amber-400 text-slate-950">
+                  Xavfsizlik Talabi
+                </span>
+                <h3 className="text-lg sm:text-2xl font-black text-white">
+                  Telegramdan Ruxsat Kutilmoqda...
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-300">
-                  Ushbu kod boshqa qurilmadan ochilmoqda. Qoidaga ko'ra bitta kod orqali bir vaqtda faqat <b>1 ta qurilma</b> foydalana oladi!
+                <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto">
+                  Sizning hisobingizga yangi qurilmadan kirish so'ralmoqda. Xavfsizlik maqsadida shaxsiy Telegram botingizga (<b>@eduhujjat_bot</b>) tasdiqlash so'rovi yuborildi.
                 </p>
               </div>
-            </div>
 
-            <div className="mt-5 p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 text-xs">
-              <div className="flex justify-between items-center text-slate-300">
-                <span>🔑 Kirish Kodi:</span>
-                <span className="font-mono font-bold text-amber-300">{pendingAuth.code}</span>
-              </div>
-              <div className="flex justify-between items-center text-slate-300">
-                <span>📱 Joriy Qurilma:</span>
-                <span className="font-semibold text-white">{deviceInfo}</span>
-              </div>
-              <div className="flex justify-between items-center text-slate-300">
-                <span>🛡 Telegram Tasdiqlash:</span>
-                <span className="text-emerald-400 flex items-center gap-1">
-                  <RefreshCw className="w-3 h-3 animate-spin" /> Telegram botingizga yuborildi
-                </span>
-              </div>
-            </div>
-
-            {/* Tasdiqlash usullari */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Usul A: Telegram tugmasi kutilmoqda */}
-              <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 flex flex-col justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5 mb-1">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    1-Usul: Telegramdan Tasdiqlash (1-bosishda)
-                  </h4>
-                  <p className="text-[11px] text-slate-300">
-                    Sizning Telegram botingizga (@eduhujjat_bot) tasdiqlash xabari yuborildi. Telegramingizdagi <b>[✅ Ha, ruxsat berish]</b> tugmasini bosing!
-                  </p>
+              {/* Ma'lumot kartochkasi */}
+              <div className="w-full max-w-md p-3.5 sm:p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 text-xs text-left">
+                <div className="flex justify-between items-center text-slate-300">
+                  <span>🔑 Kirish Kodi:</span>
+                  <span className="font-mono font-bold text-amber-300">{pendingAuth.code}</span>
                 </div>
-                <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400 font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  Botdan javob kutilmoqda (avtomatik ochiladi)...
+                <div className="flex justify-between items-center text-slate-300">
+                  <span>📱 Joriy Qurilma:</span>
+                  <span className="font-semibold text-white truncate max-w-[180px] sm:max-w-[240px]">{deviceInfo}</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-300">
+                  <span>🛡 Holat:</span>
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Botdan ruxsat kutilmoqda...
+                  </span>
                 </div>
               </div>
 
-              {/* Usul B: Bir klikda Ruxsat Berish / Ruxsat Bermaslik */}
-              <div className="p-4 rounded-2xl bg-slate-800/60 border border-white/10 flex flex-col justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-amber-300 flex items-center gap-1.5 mb-1">
-                    <ShieldCheck className="w-4 h-4 text-amber-400" />
-                    Tezkor Tasdiqlash (PIN-kodsiz)
-                  </h4>
-                  <p className="text-[11px] text-slate-300 mb-3">
-                    Ushbu qurilmaga kirishga ruxsat berasizmi?
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleDirectApprove}
-                    className="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-xs rounded-xl shadow-lg hover:opacity-95 transition flex items-center justify-center gap-1.5"
-                  >
-                    <Check className="w-4 h-4" />
-                    Ruxsat Berish
-                  </button>
-                  <button
-                    onClick={handleDirectDeny}
-                    className="py-2.5 px-3 bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold text-xs rounded-xl hover:bg-rose-500/30 transition flex items-center justify-center gap-1"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    Ruxsat Bermaslik
-                  </button>
-                </div>
+              {/* Yo'riqnoma */}
+              <div className="w-full max-w-md p-4 rounded-2xl bg-indigo-900/40 border border-indigo-500/30 text-left space-y-2">
+                <h4 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  Qanday kiriladi?
+                </h4>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Telegramingizdagi botimiz (<b>@eduhujjat_bot</b>) ga kiring va <b>[✅ Ruxsat Berish]</b> tugmasini bosing. Siz ruxsat berishingiz bilan ushbu sahifa <b>avtomatik ochiladi</b> (PIN-kod kiritish shart emas)!
+                </p>
               </div>
-            </div>
 
-            <div className="mt-4 flex justify-between items-center text-[11px] text-slate-400 pt-2 border-t border-white/10">
-              <button
-                onClick={() => setPendingAuth(null)}
-                className="hover:text-white underline transition"
-              >
-                Bekor qilish va boshqa kod kiritish
-              </button>
-              <span>Owner: @{OWNER_USERNAME}</span>
+              {/* Bekor qilish tugmasi */}
+              <div className="pt-2 w-full max-w-md">
+                <button
+                  type="button"
+                  onClick={() => setPendingAuth(null)}
+                  className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-semibold transition"
+                >
+                  ⬅️ Bekor qilish va boshqa kod kiritish
+                </button>
+              </div>
             </div>
           </div>
         ) : (
           /* STANDART KIRISH KODI BLOKI */
-          <div className="bg-gradient-to-r from-indigo-900/90 to-slate-900 p-6 sm:p-8 rounded-3xl text-white shadow-xl border border-indigo-500/30">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="bg-gradient-to-r from-indigo-900/90 to-slate-900 p-4 sm:p-8 rounded-3xl text-white shadow-xl border border-indigo-500/30">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                  <KeyRound className="w-6 h-6" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <KeyRound className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-black flex items-center gap-2">
+                  <h3 className="text-base sm:text-xl font-black flex items-center gap-2 flex-wrap">
                     Saytga Kirish Kodingiz bormi?
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950">
+                    <span className="text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950">
                       1 Qurilma = 1 Kod
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-300 mt-0.5">
+                  <p className="text-[11px] sm:text-xs text-slate-300 mt-0.5">
                     Telegram botimiz (@eduhujjat_bot) dagi <b>"🔑 Saytga Kirish Kodi"</b> tugmasidan olingan kodni kiriting
                   </p>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={handleCodeSubmit} className="mt-5 flex flex-col sm:flex-row gap-3">
+            <form onSubmit={handleCodeSubmit} className="mt-4 sm:mt-5 flex flex-col sm:flex-row gap-2.5 sm:gap-3">
               <input
                 type="text"
                 value={inputCode}
                 onChange={(e) => setInputCode(e.target.value)}
-                placeholder="Masalan: EDU-670783 yoki 1331"
-                className="flex-1 px-5 py-3.5 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-slate-400 text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                placeholder="Masalan: EDU-670783"
+                className="w-full flex-1 px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-slate-400 text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-emerald-500 hover:opacity-95 text-slate-950 font-black text-sm rounded-2xl shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50 shrink-0"
+                className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 bg-gradient-to-r from-amber-500 to-emerald-500 hover:opacity-95 text-slate-950 font-black text-sm rounded-2xl shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50 shrink-0 cursor-pointer"
               >
                 {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                 Tekshirish va Kirish
               </button>
             </form>
-
-            {/* Tezkor kiritish yordamchilari */}
-            <div className="mt-3 flex items-center gap-2 flex-wrap text-[11px]">
-              <span className="text-slate-400">Tezkor:</span>
-              <button
-                type="button"
-                onClick={() => { setInputCode('1331'); handleCodeSubmit(null, '1331'); }}
-                className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold transition flex items-center gap-1"
-              >
-                👑 Master VIP (1331)
-              </button>
-            </div>
 
             {codeMessage && (
               <div className={`mt-3 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${

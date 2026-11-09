@@ -36,7 +36,8 @@ import {
   ChevronDown,
   Smartphone,
   ShieldCheck,
-  AlertOctagon
+  AlertOctagon,
+  Palette
 } from 'lucide-react';
 
 function MainAppContent() {
@@ -158,7 +159,7 @@ function MainAppContent() {
 
                 {/* Dropdown Menu / Owner Boshqaruv Popover */}
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-3.5 z-50 animate-in fade-in zoom-in-95">
+                  <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-20px)] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-3.5 z-50 animate-in fade-in zoom-in-95">
                     <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-500 flex items-center justify-center text-white font-bold text-base shrink-0 shadow-md">
                         {effectiveUsername ? effectiveUsername[0].toUpperCase() : 'U'}
@@ -179,7 +180,7 @@ function MainAppContent() {
                       </div>
                     </div>
 
-                    <div className="py-2.5 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                    <div className="py-2.5 space-y-2 text-xs text-slate-600 dark:text-slate-400">
                       <div className="flex items-center justify-between">
                         <span className="flex items-center gap-1.5"><KeyRound className="w-3.5 h-3.5 text-emerald-500" /> Faol Kod:</span>
                         <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
@@ -198,6 +199,55 @@ function MainAppContent() {
                           Avtorizatsiyadan o'tgan
                         </span>
                       </div>
+
+                      {/* Dizayn Mavzusi (Telefonda ham qulay) */}
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
+                        <span className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-indigo-500" /> Mavzu:</span>
+                        <select
+                          value={themeId}
+                          onChange={(e) => setThemeId(e.target.value)}
+                          className="bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 border-none focus:outline-none cursor-pointer max-w-[140px] truncate"
+                        >
+                          {Object.values(themes).map(th => (
+                            <option key={th.id} value={th.id}>{th.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Til Tanlash */}
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-sky-500" /> Til:</span>
+                        <select
+                          value={lang}
+                          onChange={(e) => setLang(e.target.value)}
+                          className="bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 border-none focus:outline-none cursor-pointer"
+                        >
+                          <option value="uz">O'zbek (Lotin)</option>
+                          <option value="uz_cyrl">Ўзбек (Кирилл)</option>
+                          <option value="kaa">Qaraqalpaqsha</option>
+                          <option value="kz">Қазақша</option>
+                          <option value="ru">Русский</option>
+                          <option value="tr">Türkçe</option>
+                          <option value="en">English</option>
+                        </select>
+                      </div>
+
+                      {/* Owner uchun Role almashtirish */}
+                      {isActualOwner && (
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5"><UserCog className="w-3.5 h-3.5 text-amber-500" /> Rol:</span>
+                          <select
+                            value={activeRole}
+                            onChange={(e) => setActiveRole(e.target.value)}
+                            className="bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 border-none focus:outline-none cursor-pointer"
+                          >
+                            <option value="OWNER">👑 Owner</option>
+                            <option value="ADMIN">🛡️ Admin</option>
+                            <option value="INSPECTOR">🔍 Tekshiruvchi</option>
+                            <option value="USER">👤 Oddiy (Yopiq)</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     {/* Owner yoki Admin Boshqaruv Tugmalari */}
@@ -256,21 +306,21 @@ function MainAppContent() {
               </div>
             )}
 
-            {/* Chiqish tugmasi (Har doim faol, test qilish va sessiyani tugatish uchun) */}
+            {/* Chiqish tugmasi (Katta ekranlar uchun) */}
             {isAccessible && (
               <button
                 onClick={logoutCode}
-                className="px-2 sm:px-2.5 py-1.5 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 text-xs font-semibold flex items-center gap-1 transition"
+                className="hidden sm:flex px-2 sm:px-2.5 py-1.5 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 text-xs font-semibold items-center gap-1 transition"
                 title="Kodni bekor qilish / Boshqa kod kiritish"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Chiqish</span>
+                <span>Chiqish</span>
               </button>
             )}
 
-            {/* Role Simulator */}
+            {/* Role Simulator (Katta ekranlar uchun) */}
             {isActualOwner && (
-              <div className="hidden sm:flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              <div className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                 <UserCog className="w-3.5 h-3.5 text-slate-400 ml-1.5 mr-0.5" />
                 <select
                   value={activeRole}
@@ -286,12 +336,12 @@ function MainAppContent() {
               </div>
             )}
 
-            {/* Mavzu */}
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+            {/* Mavzu (Katta ekranlar uchun) */}
+            <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
               <select
                 value={themeId}
                 onChange={(e) => setThemeId(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 border-none focus:outline-none pr-1 cursor-pointer"
+                className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 border-none focus:outline-none pr-1 cursor-pointer max-w-[130px] truncate"
                 title="Dizayn Mavzusi"
               >
                 {Object.values(themes).map(th => (
@@ -300,8 +350,8 @@ function MainAppContent() {
               </select>
             </div>
 
-            {/* Til */}
-            <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+            {/* Til (Katta ekranlar uchun) */}
+            <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
               <Globe className="w-3.5 h-3.5 text-slate-400 ml-1.5 mr-1" />
               <select
                 value={lang}
@@ -311,7 +361,7 @@ function MainAppContent() {
                 <option value="uz">O'zbek (Lotin)</option>
                 <option value="uz_cyrl">Ўзбек (Кирилл)</option>
                 <option value="kaa">Qaraqalpaqsha</option>
-                <option value="kz">Қазақша</option>
+                <option value="kz">Қазақsha</option>
                 <option value="ru">Русский</option>
                 <option value="tr">Türkçe</option>
                 <option value="en">English</option>
