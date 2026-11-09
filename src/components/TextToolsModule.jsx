@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { latinToCyrillic, cyrillicToLatin, detectScript } from '../utils/transliterator';
+import { analyzeUzbekSpelling } from '../utils/uzbekSpellChecker';
 import { 
   Languages, 
   ArrowRightLeft, 
@@ -9,15 +10,21 @@ import {
   Check, 
   Trash2, 
   Sparkles,
-  Send
+  Send,
+  AlertTriangle,
+  Wand2,
+  CheckCircle2,
+  HelpCircle
 } from 'lucide-react';
 
 export default function TextToolsModule({ t }) {
   const [inputText, setInputText] = useState(
-    "Maktab ta'limida raqamli texnologiyalar va sun'iy intellekt vositalaridan unumli foydalanish dolzarb vazifadir. O'quvchilar dars jarayonida faol ishtirok etishi zarur."
+    "Maktab talimida xato va kamchiliklarni bartaraf etish xamda malumotlar almashinuvi muhim masuliyat hisoblanadi. O'quvchilar dars jarayonida faol ishtirok etishi kere."
   );
   const [outputText, setOutputText] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [spellReport, setSpellReport] = useState(null);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiHistory, setAiHistory] = useState([
     { role: 'assistant', text: "Assalomu alaykum! Matn yoki ro'yxat bo'yicha istalgan buyrug'ingizni bajara olaman. Masalan: 'Matndagi barcha raqamlarni olib tashla' yoki 'So'zlarni alifbo tartibida ro'yxat qil'." }
@@ -27,21 +34,70 @@ export default function TextToolsModule({ t }) {
   const handleToLatin = () => {
     const res = cyrillicToLatin(inputText);
     setOutputText(res);
+    setSpellReport(null);
   };
 
   // Kirillga o'girish
   const handleToCyrillic = () => {
     const res = latinToCyrillic(inputText);
     setOutputText(res);
+    setSpellReport(null);
   };
 
-  // Imlo va probellarni to'g'rilash
+  // Aniq O'zbek tili imlo tahlili va to'g'rilash
   const handleFixSpelling = () => {
-    let text = inputText.replace(/[ʻʼ`‘’]/g, "'");
-    text = text.replace(/\s+/g, ' ').trim();
-    // Vergul va nuqtalardan keyin probel qo'yish
-    text = text.replace(/([,\.\?!;:])([^\s\d])/g, '$1 $2');
-    setOutputText(text);
+    const report = analyzeUzbekSpelling(inputText);
+    setSpellReport(report);
+    setOutputText(report.correctedText);
+  };
+
+  // AI Chuqur Imlo va Uslubiy Tahlil
+  const handleAiDeepProofread = async () => {
+    if (!inputText.trim()) return;
+    setIsAiLoading(true);
+
+    try {
+      const apiEndpoint = window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini';
+      const prompt = `Quyidagi o'zbekcha matnni imlo, tinish belgilari, grammatik va uslubiy qoidalar bo'yicha to'liq tekshirib to'g'rilab ber. 
+Faqat to'g'rilangan yakuniy toza matnni qaytar (qo'shimcha tushuntirishlarsiz, sof matn):
+
+${inputText}`;
+
+      const res = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'reference', prompt })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.result) {
+          setOutputText(data.result.trim());
+          const report = analyzeUzbekSpelling(inputText);
+          setSpellReport({
+            ...report,
+            aiEnhanced: true
+          });
+        }
+      } else {
+        // Fallback to local rule engine
+        handleFixSpelling();
+      }
+    } catch (e) {
+      handleFixSpelling();
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  // Bitta aniq xatoni to'g'rilash
+  const handleApplySingleFix = (original, suggestion) => {
+    const regex = new RegExp(`\\b${original}\\b`, 'g');
+    const updatedInput = inputText.replace(regex, suggestion);
+    setInputText(updatedInput);
+    const updatedReport = analyzeUzbekSpelling(updatedInput);
+    setSpellReport(updatedReport);
+    setOutputText(updatedReport.correctedText);
   };
 
   // Nusxalash
@@ -59,7 +115,6 @@ export default function TextToolsModule({ t }) {
     setAiHistory(prev => [...prev, { role: 'user', text: userCmd }]);
     setAiPrompt('');
 
-    // Aqlli tahlil mexanizmi (Local Rule Engine)
     setTimeout(() => {
       let reply = "";
       const lowerCmd = userCmd.toLowerCase();
@@ -85,7 +140,6 @@ export default function TextToolsModule({ t }) {
         setOutputText(inputText.toLowerCase());
         reply = "Barcha harflar kichik (lowercase) formatiga o'tkazildi.";
       } else {
-        // Universal tahlil
         const words = inputText.split(/\s+/).filter(w => w.length > 0);
         reply = `Buyrug'ingiz qabul qilindi. Matn hajmi: ${words.length} ta so'z, ${inputText.length} ta belgi. Matn tartibga keltirildi.`;
         setOutputText(inputText);
@@ -98,81 +152,143 @@ export default function TextToolsModule({ t }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
               <Languages className="w-6 h-6 text-purple-500" />
-              {t.textTools.title}
+              O'zbek Tili Imlo, Grammatika va Matn Studiyasi
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              {t.textTools.sub}
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Xatolar, tutuq belgilari (ʼ), X/H harflari, tinish belgilari va Lotin/Kirill transliteratsiyasini 1 soniyada mukammal to'g'rilang!
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs px-3 py-1 bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 font-mono rounded-lg">
-              Aniqlangan yozuv: {detectScript(inputText) === 'cyrillic' ? 'Кирилл' : 'Lotin'}
+            <span className="text-xs px-3 py-1.5 bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 font-mono font-bold rounded-xl border border-purple-200/50">
+              Yozuv: {detectScript(inputText) === 'cyrillic' ? 'Кирилл' : 'Lotin'}
             </span>
           </div>
         </div>
       </div>
 
+      {/* Imlo xatolari diagnostika paneli (Topilgan bo'lsa) */}
+      {spellReport && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {spellReport.errorCount > 0 ? (
+                <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+              ) : (
+                <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+              )}
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                {spellReport.errorCount > 0 
+                  ? `Matnda ${spellReport.errorCount} ta imlo xatosi aniqlandi va to'g'rilandi:` 
+                  : "Ajoyib! Matnda hech qanday imlo xatosi topilmadi."}
+              </h3>
+            </div>
+            {spellReport.errorCount > 0 && (
+              <button
+                onClick={() => setInputText(spellReport.correctedText)}
+                className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold rounded-lg shadow transition flex items-center gap-1"
+              >
+                <Check className="w-3.5 h-3.5" />
+                Asl matnga ham tatbiq etish
+              </button>
+            )}
+          </div>
+
+          {/* Xatolar va tavsiyalar ro'yxati */}
+          {spellReport.errorCount > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+              {spellReport.errors.map((err, i) => (
+                <div 
+                  key={i}
+                  className="p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 flex flex-col justify-between space-y-1 text-xs"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="line-through text-rose-500 font-mono font-semibold">{err.original}</span>
+                    <span className="text-slate-400">➔</span>
+                    <span className="text-emerald-500 font-mono font-bold">{err.suggestion}</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+                    {err.reason}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 2 Oyna: Asl matn va Natija */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Asl matn */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-3">
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
               Kiritilgan matn:
             </label>
             <button
-              onClick={() => { setInputText(''); setOutputText(''); }}
-              className="text-xs text-slate-400 hover:text-red-500 transition"
+              onClick={() => { setInputText(''); setOutputText(''); setSpellReport(null); }}
+              className="text-xs text-slate-400 hover:text-red-500 transition flex items-center gap-1"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-3.5 h-3.5" /> Tozalash
             </button>
           </div>
           <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            className="w-full flex-1 min-h-[220px] p-4 text-sm font-sans bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none"
+            className="w-full flex-1 min-h-[240px] p-4 text-sm font-sans bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none"
             placeholder="Matnni shu yerga yozing yoki nusxalang..."
           />
 
           <div className="flex flex-wrap gap-2 mt-4">
             <button
+              onClick={handleFixSpelling}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-95 text-slate-950 font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5"
+            >
+              <CheckCheck className="w-4 h-4 text-slate-950" />
+              Tezkor Imlo Tekshirish
+            </button>
+            <button
+              onClick={handleAiDeepProofread}
+              disabled={isAiLoading || !inputText.trim()}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {isAiLoading ? <Sparkles className="w-4 h-4 animate-spin text-white" /> : <Wand2 className="w-4 h-4 text-white" />}
+              {isAiLoading ? "AI Tekshirmoqda..." : "✨ AI Chuqur Tahrir"}
+            </button>
+            <button
               onClick={handleToLatin}
-              className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
+              className="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
             >
               <ArrowRightLeft className="w-3.5 h-3.5" />
-              {t.textTools.toLatin}
+              Lotin
             </button>
             <button
               onClick={handleToCyrillic}
-              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
+              className="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
             >
               <ArrowRightLeft className="w-3.5 h-3.5" />
-              {t.textTools.toCyrillic}
-            </button>
-            <button
-              onClick={handleFixSpelling}
-              className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
-            >
-              <CheckCheck className="w-3.5 h-3.5 text-emerald-500" />
-              {t.textTools.fixSpelling}
+              Kirill
             </button>
           </div>
         </div>
 
         {/* Natija oynasi */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-3">
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-              Qayta ishlangan natija:
+            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+              To'g'rilangan yakuniy natija:
             </label>
             <button
               onClick={handleCopy}
-              className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
+              className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? t.common.copied : t.common.copy}
@@ -181,8 +297,8 @@ export default function TextToolsModule({ t }) {
           <textarea
             readOnly
             value={outputText}
-            placeholder="Natija shu yerda ko'rinadi..."
-            className="w-full flex-1 min-h-[220px] p-4 text-sm font-sans bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none resize-none text-slate-900 dark:text-slate-100"
+            className="w-full flex-1 min-h-[240px] p-4 text-sm font-sans bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none resize-none text-slate-800 dark:text-slate-200"
+            placeholder="To'g'rilangan yoki o'girilgan matn shu yerda paydo bo'ladi..."
           />
           <div className="mt-4 text-xs text-slate-400">
             {outputText.length} ta belgi, {outputText.split(/\s+/).filter(Boolean).length} ta so'z

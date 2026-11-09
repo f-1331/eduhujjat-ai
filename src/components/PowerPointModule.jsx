@@ -28,9 +28,22 @@ import {
 
 export default function PowerPointModule() {
   const [promptInput, setPromptInput] = useState("Amir Temur davlati va Movarounnahr yuksalishi");
+  const [authorName, setAuthorName] = useState("");
+  const [slideCount, setSlideCount] = useState(10);
+  const [includeImages, setIncludeImages] = useState(true);
+  const [imageStyle, setImageStyle] = useState("realistic");
+  const [imageDensity, setImageDensity] = useState("high");
+  const [detailLevel, setDetailLevel] = useState("deep");
   const [themeKey, setThemeKey] = useState("obsidian");
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-  const [cards, setCards] = useState(() => generateRealAIGammaCards("Amir Temur davlati va Movarounnahr yuksalishi"));
+  const [showConfig, setShowConfig] = useState(true);
+  const [cards, setCards] = useState(() => generateRealAIGammaCards("Amir Temur davlati va Movarounnahr yuksalishi", {
+    slideCount: 10,
+    authorName: "",
+    includeImages: true,
+    imageStyle: "realistic",
+    detailLevel: "deep"
+  }));
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSpeakerNotes, setShowSpeakerNotes] = useState(true);
@@ -46,13 +59,31 @@ export default function PowerPointModule() {
     if (!promptInput.trim()) return;
     setIsGenerating(true);
 
+    const targetSlideCount = Math.max(1, Math.min(30, parseInt(slideCount, 10) || 10));
+    const genOpts = {
+      slideCount: targetSlideCount,
+      authorName: authorName.trim(),
+      includeImages,
+      imageStyle,
+      imageDensity,
+      detailLevel
+    };
+
     let generated = null;
     try {
       const apiEndpoint = window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini';
       const res = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'cards', prompt: promptInput.trim() })
+        body: JSON.stringify({ 
+          type: 'cards', 
+          prompt: promptInput.trim(),
+          count: targetSlideCount,
+          authorName: authorName.trim(),
+          includeImages,
+          imageStyle,
+          detailLevel
+        })
       });
       if (res.ok) {
         const data = await res.json();
@@ -65,7 +96,7 @@ export default function PowerPointModule() {
     }
 
     if (!generated || !Array.isArray(generated) || generated.length === 0) {
-      generated = generateRealAIGammaCards(promptInput.trim());
+      generated = generateRealAIGammaCards(promptInput.trim(), genOpts);
     }
 
     setCards(generated);
@@ -85,7 +116,12 @@ export default function PowerPointModule() {
         topic: promptInput,
         styleName: themeKey,
         cards,
-        filename: `${cleanName}_Gamma_AI.pptx`
+        slideCount: cards.length || slideCount,
+        authorName: authorName.trim(),
+        includeImages,
+        imageStyle,
+        imageDensity,
+        filename: `${cleanName}_${cards.length}slayd_Gamma_AI.pptx`
       });
     } catch (err) {
       console.error(err);
@@ -205,7 +241,7 @@ export default function PowerPointModule() {
           </div>
 
           {/* Prompt kiritish va Generatsiya qilish maydoni */}
-          <div className="pt-2">
+          <div className="pt-2 space-y-3">
             <div className="flex flex-col sm:flex-row gap-3">
               <textarea
                 rows={2}
@@ -222,6 +258,122 @@ export default function PowerPointModule() {
                 {isGenerating ? <Sparkles className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
                 {isGenerating ? "AI Yaratmoqda..." : "Haqiqiy Slayd Yaratish"}
               </button>
+            </div>
+
+            {/* INTERAKTIV PARAMETRLAR VA SOZLAMALAR PANEL (Slayd soni, Muallif, Rasmlar, Chuqurlik) */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
+                <span className="text-xs font-bold text-sky-300 flex items-center gap-1.5">
+                  <Palette className="w-3.5 h-3.5" />
+                  Maxsus Sozlamalar va Taqdimot Parametrlari:
+                </span>
+                <span className="text-[11px] text-slate-300">
+                  Joriy: <b>{cards.length} ta slayd</b> • Muallif: <b>{authorName || "Belgilanmagan"}</b>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                {/* 1. Muallif Ism-sharifi */}
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-semibold flex items-center gap-1">
+                    👤 Muallif (Titul varaqqa):
+                  </label>
+                  <input
+                    type="text"
+                    value={authorName}
+                    onChange={(e) => setAuthorName(e.target.value)}
+                    placeholder="Masalan: Aziza Karimova (10-maktab)"
+                    className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 text-xs focus:outline-none focus:ring-1 focus:ring-sky-400"
+                  />
+                </div>
+
+                {/* 2. Slaydlar soni (1 dan 30 gacha) */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-slate-300 font-semibold">
+                    <span>📄 Slaydlar soni (1-30):</span>
+                    <span className="font-mono font-bold text-amber-300">{slideCount} ta</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min={1}
+                      max={30}
+                      value={slideCount}
+                      onChange={(e) => setSlideCount(parseInt(e.target.value, 10))}
+                      className="w-full accent-amber-400 cursor-pointer"
+                    />
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={slideCount}
+                      onChange={(e) => setSlideCount(Math.max(1, Math.min(30, parseInt(e.target.value, 10) || 1)))}
+                      className="w-12 px-1.5 py-1 text-center font-bold bg-white/10 border border-white/20 rounded-lg text-white text-xs"
+                    />
+                  </div>
+                  {/* Tezkor tanlov tugmalari */}
+                  <div className="flex gap-1 pt-0.5 overflow-x-auto">
+                    {[5, 8, 10, 15, 20, 25, 30].map(cnt => (
+                      <button
+                        key={cnt}
+                        onClick={() => setSlideCount(cnt)}
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition ${
+                          slideCount === cnt 
+                            ? 'bg-amber-400 text-slate-950 font-black' 
+                            : 'bg-white/10 hover:bg-white/20 text-slate-300'
+                        }`}
+                      >
+                        {cnt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Rasmlar va vizualizatsiya */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-slate-300 font-semibold">
+                    <span>🖼 Rasmlar:</span>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeImages}
+                        onChange={(e) => setIncludeImages(e.target.checked)}
+                        className="rounded accent-sky-400"
+                      />
+                      <span className={includeImages ? "text-emerald-400 font-bold" : "text-slate-400"}>
+                        {includeImages ? "Bor" : "Yo'q"}
+                      </span>
+                    </label>
+                  </div>
+                  <select
+                    disabled={!includeImages}
+                    value={imageStyle}
+                    onChange={(e) => setImageStyle(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 disabled:opacity-40 cursor-pointer"
+                  >
+                    <option value="realistic" className="bg-slate-900 text-white">📸 Realistik Fotosuratlar</option>
+                    <option value="ai3d" className="bg-slate-900 text-white">🔮 3D Render & Octane Art</option>
+                    <option value="vector" className="bg-slate-900 text-white">📐 Minimal Vektor Sxemalar</option>
+                    <option value="abstract" className="bg-slate-900 text-white">🎨 Pastel Gradient San'at</option>
+                  </select>
+                </div>
+
+                {/* 4. Axborot chuqurligi */}
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-semibold flex items-center gap-1">
+                    🎓 Axborot chuqurligi:
+                  </label>
+                  <select
+                    value={detailLevel}
+                    onChange={(e) => setDetailLevel(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer"
+                  >
+                    <option value="deep" className="bg-slate-900 text-white">🎓 Chuqur Darslik & Faktlar</option>
+                    <option value="balanced" className="bg-slate-900 text-white">⚡ Balansli & Ko'rgazmali</option>
+                    <option value="brief" className="bg-slate-900 text-white">📋 Qisqa Tezislar & Metrika</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -406,105 +558,136 @@ export default function PowerPointModule() {
               {/* 1. HERO SLAYDI */}
               {currentCard.type === 'hero' && (
                 <div 
-                  className="p-6 sm:p-8 rounded-2xl border space-y-4 shadow-xl"
+                  className="p-6 sm:p-8 rounded-2xl border shadow-xl flex flex-col md:flex-row items-center gap-6"
                   style={{ 
                     backgroundColor: `#${activeTheme.cardBg}`,
                     borderColor: `#${activeTheme.cardBorder}`
                   }}
                 >
-                  <input
-                    type="text"
-                    value={currentCard.badge || ''}
-                    onChange={(e) => updateCurrentCard({ badge: e.target.value })}
-                    className="inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase border bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400"
-                    style={{ 
-                      color: `#${activeTheme.accent}`, 
-                      borderColor: `#${activeTheme.accent}`
-                    }}
-                  />
-                  <textarea
-                    rows={2}
-                    value={currentCard.title || ''}
-                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
-                    className="w-full bg-transparent text-2xl sm:text-4xl font-extrabold tracking-tight focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg resize-none"
-                    style={{ color: `#${activeTheme.text}` }}
-                  />
-                  <textarea
-                    rows={2}
-                    value={currentCard.subtitle || ''}
-                    onChange={(e) => updateCurrentCard({ subtitle: e.target.value })}
-                    className="w-full bg-transparent text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg resize-none"
-                    style={{ color: `#${activeTheme.subtext}` }}
-                  />
-                </div>
-              )}
-
-              {/* CONCEPT SLAYDI */}
-              {currentCard.type === 'concept' && (
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    value={currentCard.title || ''}
-                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
-                    className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
-                    style={{ color: `#${activeTheme.text}` }}
-                  />
-                  <div 
-                    className="p-5 rounded-2xl border space-y-2 shadow-lg"
-                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
-                  >
+                  <div className="flex-1 space-y-3 w-full">
                     <input
                       type="text"
-                      value={currentCard.badge || "FUNDAMENTAL QOIDA"}
+                      value={currentCard.badge || ''}
                       onChange={(e) => updateCurrentCard({ badge: e.target.value })}
-                      className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase border bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400"
-                      style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}` }}
+                      className="inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase border bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400"
+                      style={{ 
+                        color: `#${activeTheme.accent}`, 
+                        borderColor: `#${activeTheme.accent}`
+                      }}
                     />
                     <textarea
                       rows={2}
-                      value={currentCard.mainConcept || ''}
-                      onChange={(e) => updateCurrentCard({ mainConcept: e.target.value })}
-                      className="w-full bg-transparent text-sm sm:text-base font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                      value={currentCard.title || ''}
+                      onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                      className="w-full bg-transparent text-2xl sm:text-4xl font-extrabold tracking-tight focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg resize-none"
                       style={{ color: `#${activeTheme.text}` }}
-                      placeholder="Asosiy ta'rif yoki qoida..."
                     />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div 
-                      className="p-4 rounded-xl border space-y-2 shadow"
-                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
-                    >
-                      <h4 className="text-xs font-bold" style={{ color: `#${activeTheme.accent}` }}>📌 Ilmiy Sharh:</h4>
-                      <textarea
-                        rows={3}
-                        value={currentCard.explanation || ''}
-                        onChange={(e) => updateCurrentCard({ explanation: e.target.value })}
-                        className="w-full bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
-                        style={{ color: `#${activeTheme.subtext}` }}
+                    <textarea
+                      rows={2}
+                      value={currentCard.subtitle || ''}
+                      onChange={(e) => updateCurrentCard({ subtitle: e.target.value })}
+                      className="w-full bg-transparent text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg resize-none"
+                      style={{ color: `#${activeTheme.subtext}` }}
+                    />
+                    <div className="pt-2 border-t border-white/10 flex items-center gap-2">
+                      <span className="text-xs font-semibold text-emerald-400">👤 Muallif:</span>
+                      <input
+                        type="text"
+                        value={currentCard.authorName || authorName || ''}
+                        onChange={(e) => {
+                          setAuthorName(e.target.value);
+                          updateCurrentCard({ authorName: e.target.value });
+                        }}
+                        placeholder="Muallif ism-sharifi..."
+                        className="flex-1 bg-transparent text-xs font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded px-1.5 py-0.5"
+                        style={{ color: `#${activeTheme.accent2}` }}
                       />
                     </div>
-                    <div 
-                      className="p-4 rounded-xl border space-y-2 shadow"
-                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
-                    >
-                      <h4 className="text-xs font-bold" style={{ color: `#${activeTheme.accent2}` }}>✓ Muhim Asoslar:</h4>
-                      <div className="space-y-1">
-                        {(currentCard.bullets || []).map((b, i) => (
-                          <input
-                            key={i}
-                            type="text"
-                            value={b}
-                            onChange={(e) => {
-                              const newB = [...(currentCard.bullets || [])];
-                              newB[i] = e.target.value;
-                              updateCurrentCard({ bullets: newB });
-                            }}
-                            className="w-full bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
-                            style={{ color: `#${activeTheme.subtext}` }}
-                          />
-                        ))}
+                  </div>
+                  {includeImages && currentCard.imageUrl && (
+                    <div className="w-full md:w-56 h-36 md:h-44 rounded-2xl overflow-hidden border shadow-lg shrink-0 relative group">
+                      <img 
+                        src={currentCard.imageUrl} 
+                        alt={currentCard.title} 
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-[9px] text-white">
+                        AI Visual
                       </div>
                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* CONCEPT / SHOWCASE SLAYDI */}
+              {currentCard.type === 'concept' && (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <input
+                      type="text"
+                      value={currentCard.title || ''}
+                      onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                      className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                      style={{ color: `#${activeTheme.text}` }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div className={includeImages && currentCard.imageUrl ? "md:col-span-8 space-y-3" : "md:col-span-12 space-y-3"}>
+                      <div 
+                        className="p-4 rounded-2xl border space-y-2 shadow-lg"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                      >
+                        <input
+                          type="text"
+                          value={currentCard.badge || "FUNDAMENTAL QOIDA"}
+                          onChange={(e) => updateCurrentCard({ badge: e.target.value })}
+                          className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase border bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400"
+                          style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}` }}
+                        />
+                        <textarea
+                          rows={2}
+                          value={currentCard.mainConcept || currentCard.subtitle || ''}
+                          onChange={(e) => updateCurrentCard({ mainConcept: e.target.value, subtitle: e.target.value })}
+                          className="w-full bg-transparent text-sm sm:text-base font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                          style={{ color: `#${activeTheme.text}` }}
+                          placeholder="Asosiy ta'rif yoki qoida..."
+                        />
+                      </div>
+                      <div 
+                        className="p-4 rounded-xl border space-y-2 shadow"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+                      >
+                        <h4 className="text-xs font-bold" style={{ color: `#${activeTheme.accent2}` }}>✓ Asosiy Ko'rsatkichlar:</h4>
+                        <div className="space-y-1">
+                          {(currentCard.bullets || []).map((b, i) => (
+                            <input
+                              key={i}
+                              type="text"
+                              value={b}
+                              onChange={(e) => {
+                                const newB = [...(currentCard.bullets || [])];
+                                newB[i] = e.target.value;
+                                updateCurrentCard({ bullets: newB });
+                              }}
+                              className="w-full bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                              style={{ color: `#${activeTheme.subtext}` }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {includeImages && currentCard.imageUrl && (
+                      <div className="md:col-span-4 h-48 md:h-auto rounded-2xl overflow-hidden border shadow-lg relative group">
+                        <img 
+                          src={currentCard.imageUrl} 
+                          alt={currentCard.title} 
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-[9px] text-white">
+                          HD Visual
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -969,6 +1152,13 @@ export default function PowerPointModule() {
                       </div>
                     ))}
                   </div>
+
+                  <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+                    <span className="text-emerald-400 font-semibold">👤 Taqdimot muallifi:</span>
+                    <span className="font-bold font-mono" style={{ color: `#${activeTheme.accent}` }}>
+                      {currentCard.authorName || authorName || "EduHujjat AI"}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -1064,21 +1254,36 @@ export default function PowerPointModule() {
             {/* HERO */}
             {currentCard.type === 'hero' && (
               <div 
-                className="p-10 rounded-3xl border space-y-6 shadow-2xl"
+                className="p-8 sm:p-12 rounded-3xl border shadow-2xl flex flex-col md:flex-row items-center gap-8"
                 style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
               >
-                <span 
-                  className="inline-block px-4 py-1.5 rounded-full text-xs font-black tracking-wider uppercase border"
-                  style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}`, backgroundColor: `#${activeTheme.bg}` }}
-                >
-                  {currentCard.badge || "GAMMA AI TAQDIMOT"}
-                </span>
-                <h1 className="text-4xl sm:text-6xl font-black tracking-tight" style={{ color: `#${activeTheme.text}` }}>
-                  {currentCard.title}
-                </h1>
-                <p className="text-base sm:text-xl opacity-80" style={{ color: `#${activeTheme.subtext}` }}>
-                  {currentCard.subtitle}
-                </p>
+                <div className="flex-1 space-y-6">
+                  <span 
+                    className="inline-block px-4 py-1.5 rounded-full text-xs font-black tracking-wider uppercase border"
+                    style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}`, backgroundColor: `#${activeTheme.bg}` }}
+                  >
+                    {currentCard.badge || "GAMMA AI TAQDIMOT"}
+                  </span>
+                  <h1 className="text-3xl sm:text-5xl font-black tracking-tight" style={{ color: `#${activeTheme.text}` }}>
+                    {currentCard.title}
+                  </h1>
+                  <p className="text-base sm:text-lg opacity-80" style={{ color: `#${activeTheme.subtext}` }}>
+                    {currentCard.subtitle}
+                  </p>
+                  {(currentCard.authorName || authorName) && (
+                    <div className="pt-4 border-t border-white/10 flex items-center gap-2 text-sm">
+                      <span className="text-emerald-400 font-bold">👤 Muallif:</span>
+                      <span className="font-semibold" style={{ color: `#${activeTheme.accent2}` }}>
+                        {currentCard.authorName || authorName}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {includeImages && currentCard.imageUrl && (
+                  <div className="w-full md:w-80 h-48 md:h-64 rounded-2xl overflow-hidden border shadow-2xl shrink-0">
+                    <img src={currentCard.imageUrl} alt={currentCard.title} className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
             )}
 

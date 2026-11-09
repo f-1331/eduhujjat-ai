@@ -187,9 +187,9 @@ function MainAppContent() {
                 <button
                   key={item.id}
                   onClick={() => setActiveModule(item.id)}
-                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition flex items-center gap-2 ${
+                  className={`px-3 sm:px-3.5 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
                     isActive
-                      ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                      ? 'bg-gradient-to-r from-indigo-600 to-sky-600 text-white shadow-md shadow-indigo-600/30'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >

@@ -832,123 +832,273 @@ export const DOMAIN_KNOWLEDGE = {
   }
 };
 
-// FOYDALANUVCHINING HAR QANDAY MATN YOKI MAVZUSIDAN NOYOB SLAYDLAR GENERATSIYASI
-export function synthesizeCustomSlideDeck(inputText) {
+import { resolveCardImageUrl } from './powerpointGenerator.js';
+
+// FOYDALANUVCHINING HAR QANDAY MATN YOKI MAVZUSIDAN NOYOB SLAYDLAR GENERATSIYASI (1 dan 30 gacha)
+export function synthesizeCustomSlideDeck(inputText, options = {}) {
   const raw = String(inputText || '').trim();
   const cleanTitle = raw.split(/\r?\n/)[0].replace(/^#+\s*/, '').slice(0, 80) || "Zamonaviy Fan va Jamiyat";
+  const {
+    slideCount = 6,
+    authorName = '',
+    includeImages = true,
+    imageStyle = 'realistic',
+    detailLevel = 'deep'
+  } = (typeof options === 'object' && options !== null) ? options : {};
+
+  const targetCount = Math.max(1, Math.min(30, parseInt(slideCount, 10) || 6));
 
   // Matndan qatorlarni ajratish
   const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 3);
   
-  // 1-slayd: Sarlavha
+  // 1-slayd: Sarlavha (Hero)
   const slide1 = {
-    id: 1, type: "hero", badge: "AI TAHLIL VA ILMIY TAQDIMOT",
+    id: 1, type: "hero", badge: "GAMMA & GENSPARK ULTRA AI",
     title: cleanTitle,
-    subtitle: lines[1] ? lines[1].slice(0, 110) : "Mavzuning dolzarb masalalari, tahliliy mezonlari va amaliy xulosalari",
-    speakerNotes: `Assalomu alaykum, hurmatli tinglovchilar! Bugungi taqdimotimiz "${cleanTitle}" mavzusiga bag'ishlanadi. Unda biz eng muhim masalalar va asosiy yechimlarni ko'rib chiqamiz.`
+    subtitle: lines[1] ? lines[1].slice(0, 120) : "Fundamental tahlil, zamonaviy metodologiya va amaliy tatbiq etish mezonlari",
+    authorName: authorName || "",
+    speakerNotes: `Assalomu alaykum, hurmatli tinglovchilar! Bugungi taqdimotimiz "${cleanTitle}" mavzusiga bag'ishlanadi. Unda biz eng muhim masalalar, qonuniyatlar va asosiy yechimlarni ko'rib chiqamiz.`
   };
 
-  // 2-slayd: Muammo va Yechim
-  const slide2 = {
-    id: 2, type: "split", badge: "MUAMMO VA YECHIM",
-    title: `${cleanTitle}: Mavjud Holat va Yangi Yondashuv`,
-    leftTitle: "📌 Hozirgi Holat va Qiyinchiliklar",
-    leftBullets: [
-      lines[2] ? lines[2].slice(0, 80) : "An'anaviy yondashuvlarning zamon talablariga to'liq javob bermasligi",
-      lines[3] ? lines[3].slice(0, 80) : "Axborot va resurslardan foydalanishdagi samarasizlik omillari",
-      lines[4] ? lines[4].slice(0, 80) : "Sohada tizimli monitoring va yangi mexanizmlar zarurati"
-    ],
-    rightTitle: "💡 Taklif Etilayotgan Samarali Yechimlar",
-    rightBullets: [
-      lines[5] ? lines[5].slice(0, 80) : "Zamonaviy metodologiya va raqamli texnologiyalarni tatbiq etish",
-      lines[6] ? lines[6].slice(0, 80) : "Jarayonlarni bosqichma-bosqich optimallashtirish va shaffoflik",
-      lines[7] ? lines[7].slice(0, 80) : "Yakuniy natijadorlikni va o'zlashtirishni sezilarli darajada oshirish"
-    ],
-    speakerNotes: "Ushbu slaydda mavzuning nima uchun dolzarbligi va unga qanday samarali yechim taklif qilinayotgani tahlil etilgan."
-  };
+  if (targetCount === 1) {
+    if (includeImages) slide1.imageUrl = resolveCardImageUrl(slide1, cleanTitle, imageStyle);
+    return [slide1];
+  }
 
-  // 3-slayd: 3 Ustun (Genspark Grid)
-  const slide3 = {
-    id: 3, type: "pillars", badge: "3 ASOSIY USTUN (GENSPARK)",
-    title: `${cleanTitle}ning Uch Asosiy Poydevori`,
-    subtitle: "Mavzuni to'liq yoritib beruvchi mantiqiy bloklar",
-    cards: [
-      {
-        num: "01",
-        title: lines[8] ? lines[8].slice(0, 25) : "Nazariy Asoslar",
-        desc: lines[9] ? lines[9].slice(0, 110) : "Fundamental qoidalar, aniq mezonlar va birlamchi tushunchalarning mohiyati."
-      },
-      {
-        num: "02",
-        title: lines[10] ? lines[10].slice(0, 25) : "Amaliy Jarayon",
-        desc: lines[11] ? lines[11].slice(0, 110) : "Tajribaviy sinovlar, real misollar va hayotiy amaliyotga tatbiq etish yo'llari."
-      },
-      {
-        num: "03",
-        title: lines[12] ? lines[12].slice(0, 25) : "Natija & Baholash",
-        desc: lines[13] ? lines[13].slice(0, 110) : "Kutilgan ko'rsatkichlar, samaradorlik tahlili va istiqbolli rejalar."
-      }
-    ],
-    speakerNotes: "Mavzuni o'zlashtirish uchun ushbu 3 ta asosiy poydevor yetarli tushuncha beradi."
-  };
-
-  // 4-slayd: Metrika
-  const slide4 = {
-    id: 4, type: "deep_dive", badge: "CHUQUR TAHLIL VA STATISTIKA",
-    title: "Asosiy Ko'rsatkichlar va Samaradorlik Ko'lami",
-    metricValue: "96.8%",
-    metricLabel: "Amaliy Tatbiq va Ijobiy Natija Ko'rsatkichi",
-    bullets: [
-      lines[14] ? lines[14].slice(0, 95) : "Tizimli yondashuv tufayli maqsadlarga erishish tezligi 2.5 barobarga oshadi",
-      lines[15] ? lines[15].slice(0, 95) : "Resurslar sarfi tejaladi va kutilmagan xatoliklar ehtimoli kamayadi",
-      lines[16] ? lines[16].slice(0, 95) : "Barcha ishtirokchilar uchun aniq, tushunarli va shaffof mexanizm yaratiladi"
-    ],
-    speakerNotes: "Raqamlar va metrikalar ushbu yondashuvning qanchalik samarali ekanligini yaqqol ko'rsatadi."
-  };
-
-  // 5-slayd: Roadmap
-  const slide5 = {
-    id: 5, type: "roadmap", badge: "AMALGA OSHIRISH BOSQICHLARI",
-    title: "Ketma-ket Rivojlanish Yo'l Xaritasi (Roadmap)",
-    steps: [
-      { step: "1-BOSQICH", title: "Tayyorgarlik va Rejalashtirish", text: lines[17] ? lines[17].slice(0, 85) : "Dastlabki tahlillarni o'tkazish va vazifalarni aniq belgilash." },
-      { step: "2-BOSQICH", title: "Amaliy Ijro va Monitoring", text: lines[18] ? lines[18].slice(0, 85) : "Reja asosida amaliyotni yo'lga qo'yish va oraliq nazorat." },
-      { step: "3-BOSQICH", title: "Yakuniy Baholash va Barqarorlik", text: lines[19] ? lines[19].slice(0, 85) : "Natijalarni umumlashtirish va doimiy tizimga aylantirish." }
-    ],
-    speakerNotes: "Bosqichma-bosqich harakat qilish har qanday murakkab maqsadni osonlashtiradi."
-  };
-
-  // 6-slayd: Xulosa
-  const slide6 = {
-    id: 6, type: "summary", badge: "XULOSA VA TAVSIYALAR",
-    title: "Yakuniy Xulosalar va Asosiy Qoidalar",
-    quote: `"Har qanday ulug'vor maqsad — puxta reja, chuqur bilim va to'xtovsiz harakat natijasidir."`,
+  // Yakuniy Xulosa Slaydi (Doim oxirgi o'rinda)
+  const finalSummarySlide = {
+    id: targetCount, type: "summary", badge: "XULOSA VA TAVSIYALAR",
+    title: "Yakuniy Xulosalar va Amaliy Natijadorlik",
+    quote: `"Har qanday ulug'vor natija — puxta reja, chuqur bilim va to'xtovsiz harakat samarasidir."`,
+    authorName: authorName || "",
     takeaways: [
-      lines[20] ? lines[20].slice(0, 90) : "Ushbu yo'nalishdagi bilimlar zamonaviy talablarga to'liq javob beradi",
-      lines[21] ? lines[21].slice(0, 90) : "Amaliy tajriba va tahlil doimiy yuksalish uchun asosiy omildir",
-      "E'tiboringiz, qimmatli vaqtingiz va faol ishtirokingiz uchun katta rahmat!"
+      lines[18] ? lines[18].slice(0, 95) : "Mavzu bo'yicha shakllangan bilimlar zamonaviy standartlar va amaliyotga to'liq javob beradi",
+      lines[19] ? lines[19].slice(0, 95) : "Tizimli va innovatsion yondashuv orqali samaradorlikni 2-3 barobarga oshirish imkoni mavjud",
+      "E'tiboringiz, qimmatli vaqtingiz va faol ishtirokingiz uchun samimiy minnatdorchilik bildiramiz!"
     ],
-    speakerNotes: "Xulosa qilib aytganda, bugun ko'rib chiqqan mavzumiz kelgusidagi muvaffaqiyatlar uchun muhim qadamdir."
+    speakerNotes: "Xulosa qilib aytganda, bugun ko'rib chiqqan mavzumiz kelgusidagi muvaffaqiyatlar uchun muhim poydevordir."
   };
 
-  return [slide1, slide2, slide3, slide4, slide5, slide6];
+  // Oraliq boy arxitekturali slaydlar bazasi (2-dan 29-gacha)
+  const middleTemplates = [
+    // 1. Muammo va Yechim (Split)
+    {
+      type: "split", badge: "DOLZARB MASALALAR VA YECHIM",
+      title: `${cleanTitle}: Mavjud Holat va Yangi Yondashuv`,
+      leftTitle: "📌 Hozirgi Holat va Qiyinchiliklar",
+      leftBullets: [
+        lines[2] ? lines[2].slice(0, 85) : "An'anaviy uslublarning zamonaviy talablarga to'liq javob bermasligi",
+        lines[3] ? lines[3].slice(0, 85) : "Axborot va vaqt resurslaridan samarasiz foydalanish holatlari",
+        lines[4] ? lines[4].slice(0, 85) : "Sohada aniq monitoring va raqamli mexanizmlar yetishmasligi"
+      ],
+      rightTitle: "💡 Taklif Etilayotgan Zamonaviy Yechimlar",
+      rightBullets: [
+        lines[5] ? lines[5].slice(0, 85) : "Ilg'or metodologiya va avtomatlashtirilgan vositalarni tatbiq etish",
+        lines[6] ? lines[6].slice(0, 85) : "Jarayonlarni bosqichma-bosqich optimallashtirish va shaffoflik",
+        lines[7] ? lines[7].slice(0, 85) : "Yakuniy o'zlashtirish va amaliy natijani sezilarli darajada oshirish"
+      ],
+      speakerNotes: "Ushbu slaydda mavzuning nima uchun dolzarbligi va unga qanday samarali yechim taklif qilinayotgani tahlil etilgan."
+    },
+    // 2. 3 Ustunli Poydevor (Pillars)
+    {
+      type: "pillars", badge: "3 ASOSIY USTUN (GENSPARK)",
+      title: `${cleanTitle}ning Uch Asosiy Tayanchi`,
+      subtitle: "Mavzuni to'liq yoritib beruvchi mantiqiy bloklar",
+      cards: [
+        {
+          num: "01",
+          title: lines[8] ? lines[8].slice(0, 25) : "Nazariy Asoslar",
+          desc: lines[9] ? lines[9].slice(0, 110) : "Fundamental qoidalar, aniq mezonlar va birlamchi tushunchalarning ilmiy mohiyati."
+        },
+        {
+          num: "02",
+          title: lines[10] ? lines[10].slice(0, 25) : "Amaliy Jarayon",
+          desc: lines[11] ? lines[11].slice(0, 110) : "Tajribaviy tahlil, real hayotiy misollar va bevosita tatbiq etish usullari."
+        },
+        {
+          num: "03",
+          title: lines[12] ? lines[12].slice(0, 25) : "Natija & Baholash",
+          desc: lines[13] ? lines[13].slice(0, 110) : "Kutilgan ko'rsatkichlar, samaradorlik koeffitsienti va istiqbolli rejalar."
+        }
+      ],
+      speakerNotes: "Mavzuni o'zlashtirish uchun ushbu 3 ta asosiy poydevor tizimli tushuncha beradi."
+    },
+    // 3. Chuqur Tahlil va Metrika (Deep Dive)
+    {
+      type: "deep_dive", badge: "CHUQUR TAHLIL VA METRIKA",
+      title: "Asosiy Ko'rsatkichlar va Samaradorlik Ko'lami",
+      metricValue: "96.8%",
+      metricLabel: "Amaliy Tatbiq va Ijobiy Natija Ko'rsatkichi",
+      bullets: [
+        lines[14] ? lines[14].slice(0, 95) : "Tizimli yondashuv tufayli maqsadlarga erishish tezligi 2.5 barobarga oshadi",
+        lines[15] ? lines[15].slice(0, 95) : "Resurslar sarfi tejaladi va kutilmagan xatoliklar ehtimoli 80% ga kamayadi",
+        lines[16] ? lines[16].slice(0, 95) : "Barcha ishtirokchilar uchun aniq, tushunarli va shaffof mexanizm yaratiladi"
+      ],
+      speakerNotes: "Raqamlar va metrikalar ushbu yondashuvning qanchalik samarali ekanligini yaqqol ko'rsatadi."
+    },
+    // 4. Bento Grid (4 modulli kartochka)
+    {
+      type: "grid4", badge: "KOMPLEKS TUZILMA VA KOMPONENTLAR",
+      title: "Asosiy Tarkibiy Qismlar va Mexanizmlar",
+      items: [
+        { title: "Metodologik Baza", desc: "Zamonaviy standartlar va ilmiy mezonlarga asoslangan qat'iy tamoyillar majmui." },
+        { title: "Texnologik Infratuzilma", desc: "Raqamli platformalar, intellektual modullar va zamonaviy dasturiy vositalar." },
+        { title: "Monitoring va Nazorat", desc: "Har bir bosqichning sifatini baholash va o'z vaqtida tuzatishlar kiritish." },
+        { title: "Amaliyot va Ko'nikma", desc: "Nazariy bilimlarni doimiy mustahkamlash va shaxsiy tajribaga aylantirish." }
+      ],
+      speakerNotes: "Ushbu 4 ta komponent uyg'un ishlaganda jarayon barqaror va yuqori sifatli kechadi."
+    },
+    // 5. Bosqichma-bosqich Yo'l Xaritasi (Roadmap / Timeline)
+    {
+      type: "roadmap", badge: "AMALGA OSHIRISH BOSQICHLARI",
+      title: "Ketma-ket Rivojlanish Yo'l Xaritasi (Roadmap)",
+      steps: [
+        { step: "1-BOSQICH", title: "Tayyorgarlik va Diagnostika", text: lines[17] ? lines[17].slice(0, 85) : "Dastlabki tahlillarni o'tkazish va vazifalarni aniq belgilash." },
+        { step: "2-BOSQICH", title: "Amaliy Ijro va Modellashtirish", text: lines[18] ? lines[18].slice(0, 85) : "Reja asosida amaliyotni yo'lga qo'yish va oraliq nazorat." },
+        { step: "3-BOSQICH", title: "Yakuniy Baholash va Barqarorlik", text: lines[19] ? lines[19].slice(0, 85) : "Natijalarni umumlashtirish va doimiy tizimga aylantirish." }
+      ],
+      speakerNotes: "Bosqichma-bosqich harakat qilish har qanday murakkab maqsadni osonlashtiradi."
+    },
+    // 6. Rasm va Chuqur Tushuntirish (Concept / Showcase)
+    {
+      type: "concept", badge: "VIZUAL TADQIQOT VA AMALIYOT",
+      title: `${cleanTitle}: Fundamental Tushunchalar Tahlili`,
+      subtitle: "Ilmiy tushunchalarni vizual tarzda idrok etish va umumlashtirish",
+      bullets: [
+        "Mavzuning eng nozik jihatlari va asosiy qonuniyatlari amaliy misollarda namoyon bo'ladi",
+        "Nazariya bilan amaliyot o'rtasidagi mustahkam ko'prikni barpo etish",
+        "O'quvchi va mutaxassislarda tanqidiy hamda ijodiy fikrlash madaniyatini rivojlantirish"
+      ],
+      speakerNotes: "Vizual obrazlar orqali qabul qilingan axborot xotirada 5 barobar mustahkamroq saqlanib qoladi."
+    },
+    // 7. Qiyosiy Tahlil (Comparative Split)
+    {
+      type: "split", badge: "QIYOSIY TAHLIL VA FARQLAR",
+      title: "An'anaviy Tajriba va Yangi Innovatsion Yondashuv",
+      leftTitle: "⌛ An'anaviy Yondashuv",
+      leftBullets: [
+        "Ko'p vaqt va jismoniy mehnat talab qiluvchi qo'lda boshqaruv",
+        "Axborot tarqoqligi va xatoliklar ehtimolining yuqoriligi",
+        "Individual ehtiyojlarni to'liq inobatga olishdagi cheklovlar"
+      ],
+      rightTitle: "🚀 Innovatsion Yondashuv",
+      rightBullets: [
+        "Sun'iy intellekt va avtomatlashtirish orqali yuqori aniqlik",
+        "Tezkor tahlil va real vaqt rejimida moslashuvchanlik",
+        "Har bir ishtirokchiga moslashgan individual ta'limiy trayektoriya"
+      ],
+      speakerNotes: "Qiyoslash orqali yangi davr afzalliklari va imkoniyatlari aniq namoyon bo'ladi."
+    },
+    // 8. Taniqli Allomalar Iqtibosi va Falsafiy Qarash (Quote)
+    {
+      type: "concept", badge: "ILMIY HIKMAT VA TAFAKKUR",
+      title: "Ilm-fan va Mutafakkirlar Merosi",
+      subtitle: `"Ilm o'rganish igna bilan quduq qazish kabidir, uning mevasi esa butun insoniyatga nur baxsh etadi."`,
+      bullets: [
+        "Ajdodlarimizning boy ilmiy tajribasi bugungi innovatsiyalarga mustahkam zamin yaratadi",
+        "Har bir ilmiy kashfiyot insoniyat farovonligi va taraqqiyoti uchun xizmat qilishi zarur",
+        "Uzluksiz bilim olish — zamonaviy dunyoda yetakchi bo'lishning yagona kafolatidir"
+      ],
+      speakerNotes: "Buyuk mutafakkirlar o'gitlari bugungi kunda ham o'zining dolzarbligini yo'qotmagan."
+    },
+    // 9. Amaliy Savol-Javob va Mustahkamlash (Quiz)
+    {
+      type: "quiz_slide", badge: "MUSTAHKAMLASH VA SAVOL-JAVOB",
+      title: "Mavzu Bo'yicha Asosiy Nazorat Savollari",
+      question: `${cleanTitle} bo'yicha eng muhim xulosa va mohiyat nimalardan iborat?`,
+      options: [
+        { label: "A", text: "Tizimli yondashuv va qat'iy nazariy qoidalarga tayanish" },
+        { label: "B", text: "Amaliy tajriba va innovatsion vositalarni integratsiya qilish" },
+        { label: "C", text: "Barcha yuqoridagi omillarning o'zaro uzviy uyg'unligi (To'g'ri)" }
+      ],
+      speakerNotes: "Auditoriya bilan qisqa savol-javob o'tkazish mavzuning o'zlashtirilish darajasini aniqlashga xizmat qiladi."
+    },
+    // 10. Kelajak Istiqbollari va Xulosa (Roadmap 2)
+    {
+      type: "roadmap", badge: "KELAJAK TARAQQIYOTI",
+      title: "Istiqbolli Rejalar va Rivojlanish Vektorlari",
+      steps: [
+        { step: "Yaqin Kelajak", title: "Avtomatlashtirish", text: "Boshlang'ich natijalarni mustahkamlash va to'liq joriy etish." },
+        { step: "O'rta Muddat", title: "Kengaytirish va Qamrov", text: "Tizimni kengroq auditoriya va yangi sohalarga tatbiq qilish." },
+        { step: "Uzoq Istiqbol", title: "Yangi Standartlar", text: "Global mezonlarga mos yangi amaliyot andozasini yaratish." }
+      ],
+      speakerNotes: "Kelajakni to'g'ri prognoz qilish barqaror natijalar garovidir."
+    }
+  ];
+
+  // Agar kerakli slaydlar soni 2 ta bo'lsa:
+  if (targetCount === 2) {
+    const s2 = { ...finalSummarySlide, id: 2 };
+    if (includeImages) {
+      slide1.imageUrl = resolveCardImageUrl(slide1, cleanTitle, imageStyle);
+      s2.imageUrl = resolveCardImageUrl(s2, cleanTitle, imageStyle);
+    }
+    return [slide1, s2];
+  }
+
+  // 3 dan 30 tagacha bo'lgan slaydlar tuzilishi:
+  const middleCount = targetCount - 2;
+  const resultCards = [slide1];
+
+  for (let i = 0; i < middleCount; i++) {
+    const template = middleTemplates[i % middleTemplates.length];
+    const slideNumber = i + 2;
+    const card = {
+      ...template,
+      id: slideNumber,
+      badge: `${template.badge || "ILMIY TAHLIL"} • (${slideNumber}/${targetCount})`
+    };
+
+    if (includeImages) {
+      card.imageUrl = resolveCardImageUrl(card, cleanTitle, imageStyle);
+    }
+
+    resultCards.push(card);
+  }
+
+  // Oxirgi slaydni qo'shish
+  finalSummarySlide.id = targetCount;
+  if (includeImages) {
+    slide1.imageUrl = resolveCardImageUrl(slide1, cleanTitle, imageStyle);
+    finalSummarySlide.imageUrl = resolveCardImageUrl(finalSummarySlide, cleanTitle, imageStyle);
+  }
+  resultCards.push(finalSummarySlide);
+
+  return resultCards;
 }
 
-// ASOSIY REAL AI SLIDE DISPATCHER
-export function generateRealAIGammaCards(topicOrText) {
+// ASOSIY REAL AI SLIDE DISPATCHER (1 dan 30 gacha har qanday son va moslashuvchan parametrlar bilan)
+export function generateRealAIGammaCards(topicOrText, options = {}) {
   const text = String(topicOrText || '').trim();
+  const opts = (typeof options === 'object' && options !== null) ? options : { slideCount: typeof options === 'number' ? options : 6 };
+  const targetCount = Math.max(1, Math.min(30, parseInt(opts.slideCount, 10) || 6));
+
   if (!text) {
-    return DOMAIN_KNOWLEDGE.tech.build("Sun'iy Intellekt va Raqamli Ta'lim");
+    return synthesizeCustomSlideDeck("Sun'iy Intellekt va Raqamli Ta'lim", opts);
   }
 
   // 1. Domenlarni aniqlash
   for (const [key, domain] of Object.entries(DOMAIN_KNOWLEDGE)) {
     if (domain.match.test(text)) {
-      return domain.build(text);
+      const baseCards = domain.build(text);
+      if (baseCards && Array.isArray(baseCards)) {
+        // Agar talab qilingan slayd soni bazaviy 6 taga teng bo'lsa:
+        if (targetCount === baseCards.length) {
+          if (opts.authorName) {
+            baseCards[0].authorName = opts.authorName;
+            if (baseCards[baseCards.length - 1]) baseCards[baseCards.length - 1].authorName = opts.authorName;
+          }
+          if (opts.includeImages !== false) {
+            baseCards.forEach(c => {
+              c.imageUrl = resolveCardImageUrl(c, text, opts.imageStyle || 'realistic');
+            });
+          }
+          return baseCards;
+        }
+      }
     }
   }
 
-  // 2. Agar maxsus domen topilmasa yoki matn ko'rinishida berilgan bo'lsa:
-  // Intellektual sintizator orqali har bir slayd uchun maxsus matnlar hosil qilinadi
-  return synthesizeCustomSlideDeck(text);
+  // 2. Har qanday mavzu va berilgan slaydlar soni (1 dan 30 gacha) bo'yicha to'liq sintizator
+  return synthesizeCustomSlideDeck(text, opts);
 }
