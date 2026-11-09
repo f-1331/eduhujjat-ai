@@ -278,7 +278,9 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
     detailGuideline = "MA'LUMOT HAJMI: TO'LIQ VA KENGAYTIRILGAN (Chuqur ilmiy ma'lumotlar, aniq raqamlar, kengaytirilgan tushuntirishlar va har bir slayd uchun ma'ruzachining batafsil nutqi (speakerNotes) bilan to'liq ma'ruza konspekti darajasida).";
   }
 
-  const imageGuideline = `RASMLAR USLUBI: ${imageStyle} (Zichligi: ${imageDensity}). Har bir slayd uchun ingliz tilida aniq fotorealistik qidiruv so'zini "imageKeyword" parametri sifatida kiriting (masalan: "high school physics electric charges coulomb law laboratory experiment").`;
+  const imageGuideline = `RASMLAR BO'YICHA QAT'IY TALAB: Uslubi: ${imageStyle} (Zichligi: ${imageDensity}).
+  Har bir slayd ob'ektida QAT'IY ravishda "imageKeyword" parametri bo'lsin.
+  "imageKeyword" - bu slaydda ko'rsatiladigan rasm uchun INGLIZ TILIDAGI aniq 4-6 so'zli fotorealistik vizual qidiruv iborasi bo'lsin (masalan: "photosynthesis plant leaf cell microscope biology", "ancient Samarkand Registan Silk Road architecture", "modern computer science software coding monitor", "physics quantum atomic particles experiment lab"). O'zbekcha so'z yoki umumiy gap yozilmasin, faqat inglizcha toza vizual kalit so'zlar bo'lsin!`;
 
   const prompt = 
     `Mavzu: "${topic}"\n` +
@@ -292,7 +294,8 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
     `2. Matnlar yuzaki yoki 3 ta qisqa so'z bilan cheklanmasin! Har bir slayd mavzuning haqiqiy ilmiy terminlari, formulalari, hayotiy misollari, metodik tahlillari va darslikka xos chuqur faktlari bilan to'liq boyitilsin (kamida 3-4 ta to'liq jumlali chuqur punktlar bo'lsin)!\n` +
     `3. 1-slayd "hero" bo'lib, uning muallif qismida "${authorName}" ko'rsatilsin.\n` +
     `4. Hech qanday LaTeX yoki dollar ($) belgisidan foydalanmang! Kasrlarni 7/12, darajalarni x^2 yoki oddiy harflar bilan yozing.\n` +
-    `5. Quyidagi boy slayd turlaridan mavzuga eng moslarini tanlab, xilma-xil ketma-ketlikda foydalaning (Har bir slayd uchun mos 2-3 so'zli inglizcha "imageKeyword" kiriting):\n` +
+    `5. Har bir slayd uchun alohida mavzuga mos aniq inglizcha "imageKeyword" kiriting!\n` +
+    `6. Quyidagi boy slayd turlaridan mavzuga eng moslarini tanlab, xilma-xil ketma-ketlikda foydalaning:\n` +
     `   - "hero": Kirish titul slaydi (badge, title, subtitle, presenter: "${authorName}", speakerNotes)\n` +
     `   - "concept": Fundamental ta'rif yoki asosiy qonuniyat (title, badge, mainConcept, explanation, bullets: ["..."], speakerNotes)\n` +
     `   - "split_image": Chapda rasm, o'ngda tahlil (title, badge, imageKeyword: "english topic photo keyword", explanation, bullets: ["..."], speakerNotes)\n` +

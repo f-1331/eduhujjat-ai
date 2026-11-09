@@ -165,38 +165,102 @@ export function getTopicImageUrl(topic = "") {
   return EDUCATIONAL_TOPIC_IMAGES.default;
 }
 
-export function resolveCardImageUrl(card, topic = "", imageStyle = "realistic") {
-  const keyword = card?.imageKeyword || card?.title || topic || "science technology education";
-  let cleanKeyword = String(keyword)
-    .replace(/[^\w\s-]/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 60);
+// O'zbekcha mavzu va matnlarni professional vizual inglizcha promptga o'girish (AI Image Mapper)
+export function translateUzbekToVisualEnglish(text) {
+  if (!text) return "modern education science research";
+  const lower = String(text).toLowerCase().replace(/[ʻʼ`‘’]/g, "'");
 
-  if (!cleanKeyword || cleanKeyword.length < 3) {
-    cleanKeyword = "modern science education research presentation";
+  if (lower.includes('temur') || lower.includes('bobur') || lower.includes('samarqand') || lower.includes('buxoro') || lower.includes('ipak yo')) {
+    return "ancient Silk Road Samarkand Registan turquoise dome medieval central asia emperor historic architecture";
+  }
+  if (lower.includes('navoiy') || lower.includes('adabiyot') || lower.includes('shoir') || lower.includes('g\'azal') || lower.includes('she\'r')) {
+    return "classical oriental poet ancient manuscript quill calligraphy parchment library literature antique";
+  }
+  if (lower.includes('fotosintez') || lower.includes('o\'simlik') || lower.includes('botanika') || lower.includes('barg') || lower.includes('hujayra')) {
+    return "photosynthesis green plant leaf cell chloroplast sunlight microscope botany biology laboratory";
+  }
+  if (lower.includes('biologiya') || lower.includes('genetika') || lower.includes('dna') || lower.includes('dnk') || lower.includes('tirik tabiat')) {
+    return "biology scientific laboratory microscope dna double helix cells medical research scientist";
+  }
+  if (lower.includes('fizika') || lower.includes('nyuton') || lower.includes('optika') || lower.includes('magnit') || lower.includes('elektr') || lower.includes('energiya')) {
+    return "physics laboratory electricity magnetic field atom quantum mechanics chalkboard formulas optics experiment";
+  }
+  if (lower.includes('kimyo') || lower.includes('molekula') || lower.includes('reaksiya') || lower.includes('davriy') || lower.includes('mendeleyev')) {
+    return "chemistry science laboratory glassware colorful glowing liquid chemical reaction molecular model";
+  }
+  if (lower.includes('matematika') || lower.includes('geometriya') || lower.includes('algebra') || lower.includes('pifagor') || lower.includes('uchburchak')) {
+    return "mathematics geometry golden ratio fractal chalkboard formulas compass pythagorean theorem calculation";
+  }
+  if (lower.includes('informatika') || lower.includes('dastur') || lower.includes('python') || lower.includes('algoritm') || lower.includes('kompyuter') || lower.includes('kod')) {
+    return "computer science programming code on monitor software developer neural network data algorithms";
+  }
+  if (lower.includes('sun\'iy intellekt') || lower.includes('ai') || lower.includes('neyro') || lower.includes('robot')) {
+    return "artificial intelligence humanoid robot neural network futuristic glowing data cyber technology";
+  }
+  if (lower.includes('kosmos') || lower.includes('sayyora') || lower.includes('quyosh') || lower.includes('oy') || lower.includes('galaktika') || lower.includes('yulduz')) {
+    return "deep space galaxy solar system planets nebula hubble telescope astronaut earth from orbit astronomy";
+  }
+  if (lower.includes('tibbiyot') || lower.includes('salomatlik') || lower.includes('anatomiya') || lower.includes('yurak') || lower.includes('kasallik') || lower.includes('shifokor')) {
+    return "modern medicine hospital doctor healthcare cardiology stethoscope human anatomy medical consultation";
+  }
+  if (lower.includes('ekologiya') || lower.includes('tabiat') || lower.includes('atrof-muhit') || lower.includes('o\'rmon') || lower.includes('iqlim')) {
+    return "ecology green planet earth lush forest clean energy nature conservation landscape environment";
+  }
+  if (lower.includes('tarix') || lower.includes('qadimgi') || lower.includes('arxeologiya') || lower.includes('urush') || lower.includes('sivilizatsiya')) {
+    return "ancient world history archaeology golden artifacts museum antique parchment historical ruins civilization";
+  }
+  if (lower.includes('iqtisod') || lower.includes('moliya') || lower.includes('biznes') || lower.includes('pul') || lower.includes('bozor')) {
+    return "business finance stock market growth analytics global economy investment banking chart";
+  }
+  if (lower.includes('geografiya') || lower.includes('xarita') || lower.includes('okean') || lower.includes('tog\'') || lower.includes('materik')) {
+    return "geography antique world map globe compass mountain peaks ocean landscape exploration topography";
+  }
+  if (lower.includes('til') || lower.includes('ona tili') || lower.includes('ingliz') || lower.includes('lug\'at') || lower.includes('grammatika')) {
+    return "linguistics languages open antique book vocabulary grammar communication educational library";
+  }
+  if (lower.includes('maktab') || lower.includes('pedagogika') || lower.includes('dars') || lower.includes('o\'qituvchi') || lower.includes('ta\'lim')) {
+    return "modern school classroom teacher students learning education blackboard lecture study";
+  }
+  if (lower.includes('sport') || lower.includes('futbol') || lower.includes('yugurish') || lower.includes('chempion')) {
+    return "sports athlete athletic competition training championship dynamic stadium runner energy";
+  }
+
+  const clean = text.replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+  return clean ? `${clean} professional educational presentation concept` : "modern academic research science presentation";
+}
+
+export function resolveCardImageUrl(card, topic = "", imageStyle = "realistic") {
+  let visualKeyword = "";
+
+  // 1. Agar card.imageKeyword inglizcha bo'lsa (Gemini tomonidan berilgan)
+  if (card?.imageKeyword && /^[a-zA-Z0-9\s,-]+$/.test(card.imageKeyword) && card.imageKeyword.length > 5) {
+    visualKeyword = card.imageKeyword.trim();
+  } else {
+    // 2. Aks holda o'zbekcha mavzu va sarlavhadan aniq inglizcha vizual tushuncha olamiz
+    const combined = `${card?.title || ''} ${topic || ''}`;
+    visualKeyword = translateUzbekToVisualEnglish(combined);
   }
 
   const seed = Math.floor(Math.random() * 999999);
 
   if (imageStyle === 'ai3d') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' 3d isometric render octane c4d presentation graphics 4k uhd')}` +
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(visualKeyword + ' 3d isometric render octane c4d presentation graphics 4k uhd highly detailed')}` +
       `?width=1920&height=1080&nologo=true&seed=${seed}`;
   }
   if (imageStyle === 'vector') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' flat vector illustration clean graphic design colorful educational 4k')}` +
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(visualKeyword + ' flat vector illustration clean graphic design colorful educational 4k uhd')}` +
       `?width=1920&height=1080&nologo=true&seed=${seed}`;
   }
   if (imageStyle === 'infographic') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' scientific infographic chart diagram schematic presentation vector 4k')}` +
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(visualKeyword + ' scientific infographic chart diagram schematic presentation vector 4k uhd')}` +
       `?width=1920&height=1080&nologo=true&seed=${seed}`;
   }
   if (imageStyle === 'abstract') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' abstract pastel gradient glassmorphism aesthetic 3d minimal 4k')}` +
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(visualKeyword + ' abstract pastel gradient glassmorphism aesthetic 3d minimal 4k uhd')}` +
       `?width=1920&height=1080&nologo=true&seed=${seed}`;
   }
   // Realistic (Default)
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanKeyword + ' professional studio photography national geographic 4k uhd crisp detailed educational award winning')}` +
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(visualKeyword + ' professional studio photography national geographic 4k uhd crisp detailed educational award winning high resolution')}` +
     `?width=1920&height=1080&nologo=true&seed=${seed}`;
 }
 
@@ -1361,7 +1425,8 @@ export async function generatePresentationPptx(config = {}) {
   const cardImages = [];
   if (includeImages) {
     try {
-      const imgUrl = resolveCardImageUrl({ title: topic, imageKeyword: topic }, topic, imageStyle);
+      const firstCard = slideDeck[0] || {};
+      const imgUrl = firstCard.imageUrl || resolveCardImageUrl({ title: topic, imageKeyword: topic }, topic, imageStyle);
       topicImageBase64 = await fetchImageAsBase64(imgUrl, 15000);
     } catch (e) {
       topicImageBase64 = null;
@@ -1382,7 +1447,7 @@ export async function generatePresentationPptx(config = {}) {
 
       if (shouldFetch) {
         try {
-          const cardUrl = resolveCardImageUrl(card, topic, imageStyle);
+          const cardUrl = card.imageUrl || resolveCardImageUrl(card, topic, imageStyle);
           const b64 = await fetchImageAsBase64(cardUrl, 15000);
           return b64 || topicImageBase64;
         } catch (err) {

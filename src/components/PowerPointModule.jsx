@@ -23,7 +23,8 @@ import {
   MoveRight,
   FileText,
   Wand2,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 
 export default function PowerPointModule() {
@@ -88,7 +89,10 @@ export default function PowerPointModule() {
       if (res.ok) {
         const data = await res.json();
         if (data.result && Array.isArray(data.result) && data.result.length > 0) {
-          generated = data.result;
+          generated = data.result.map(c => ({
+            ...c,
+            imageUrl: c.imageUrl || (includeImages ? resolveCardImageUrl(c, promptInput.trim(), imageStyle) : null)
+          }));
         }
       }
     } catch(e) {
@@ -97,6 +101,14 @@ export default function PowerPointModule() {
 
     if (!generated || !Array.isArray(generated) || generated.length === 0) {
       generated = generateRealAIGammaCards(promptInput.trim(), genOpts);
+    }
+
+    // Har bir slaydga rasmlarni to'g'ri bog'lash
+    if (includeImages && Array.isArray(generated)) {
+      generated = generated.map(c => ({
+        ...c,
+        imageUrl: c.imageUrl || resolveCardImageUrl(c, promptInput.trim(), imageStyle)
+      }));
     }
 
     setCards(generated);
@@ -197,6 +209,13 @@ export default function PowerPointModule() {
   // Slayd tuzilish turini (layout) almashtirish
   const handleChangeLayout = (newType) => {
     updateCurrentCard({ type: newType });
+  };
+
+  // Joriy slayd rasmini yangilash
+  const handleRegenerateCardImage = () => {
+    if (!currentCard) return;
+    const newUrl = resolveCardImageUrl(currentCard, promptInput.trim(), imageStyle);
+    updateCurrentCard({ imageUrl: newUrl });
   };
 
   return (
@@ -611,6 +630,15 @@ export default function PowerPointModule() {
                         alt={currentCard.title} 
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
+                      <button
+                        type="button"
+                        onClick={handleRegenerateCardImage}
+                        title="Boshqa rasm generatsiya qilish"
+                        className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-black/75 hover:bg-black text-white text-[10px] font-medium backdrop-blur-sm shadow flex items-center gap-1 transition opacity-90 hover:opacity-100"
+                      >
+                        <RefreshCw className="w-3 h-3 text-sky-400" />
+                        <span>Boshqa rasm</span>
+                      </button>
                       <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-[9px] text-white">
                         AI Visual
                       </div>
@@ -683,6 +711,15 @@ export default function PowerPointModule() {
                           alt={currentCard.title} 
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
+                        <button
+                          type="button"
+                          onClick={handleRegenerateCardImage}
+                          title="Boshqa rasm generatsiya qilish"
+                          className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-black/75 hover:bg-black text-white text-[10px] font-medium backdrop-blur-sm shadow flex items-center gap-1 transition opacity-90 hover:opacity-100"
+                        >
+                          <RefreshCw className="w-3 h-3 text-sky-400" />
+                          <span>Boshqa rasm</span>
+                        </button>
                         <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-[9px] text-white">
                           HD Visual
                         </div>
@@ -1180,23 +1217,48 @@ export default function PowerPointModule() {
                       "{currentCard.quote}"
                     </div>
                   )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {(currentCard.bullets || currentCard.leftBullets || currentCard.takeaways || [
-                      currentCard.description || currentCard.text || "Asosiy mavzu tahlili va muhim pedagogik tushunchalar",
-                      "Amaliy qo'llanilishi va mezonlari",
-                      "Xulosa va istiqbolli natijalar"
-                    ]).map((b, bIdx) => (
-                      <div 
-                        key={bIdx}
-                        className="p-4 rounded-xl border flex items-start gap-3"
-                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
-                      >
-                        <span className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: `#${activeTheme.accent}` }} />
-                        <span className="text-xs sm:text-sm font-medium leading-relaxed" style={{ color: `#${activeTheme.text}` }}>
-                          {typeof b === 'string' ? b : JSON.stringify(b)}
-                        </span>
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div className={includeImages && currentCard.imageUrl ? "md:col-span-8 space-y-3" : "md:col-span-12 space-y-3"}>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {(currentCard.bullets || currentCard.leftBullets || currentCard.takeaways || [
+                          currentCard.description || currentCard.text || "Asosiy mavzu tahlili va muhim pedagogik tushunchalar",
+                          "Amaliy qo'llanilishi va mezonlari",
+                          "Xulosa va istiqbolli natijalar"
+                        ]).map((b, bIdx) => (
+                          <div 
+                            key={bIdx}
+                            className="p-3.5 rounded-xl border flex items-start gap-3"
+                            style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+                          >
+                            <span className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: `#${activeTheme.accent}` }} />
+                            <span className="text-xs sm:text-sm font-medium leading-relaxed" style={{ color: `#${activeTheme.text}` }}>
+                              {typeof b === 'string' ? b : JSON.stringify(b)}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                    {includeImages && currentCard.imageUrl && (
+                      <div className="md:col-span-4 h-48 md:h-auto rounded-2xl overflow-hidden border shadow-lg relative group">
+                        <img 
+                          src={currentCard.imageUrl} 
+                          alt={currentCard.title} 
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRegenerateCardImage}
+                          title="Boshqa rasm generatsiya qilish"
+                          className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-black/75 hover:bg-black text-white text-[10px] font-medium backdrop-blur-sm shadow flex items-center gap-1 transition opacity-90 hover:opacity-100"
+                        >
+                          <RefreshCw className="w-3 h-3 text-sky-400" />
+                          <span>Boshqa rasm</span>
+                        </button>
+                        <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-[9px] text-white">
+                          AI Visual
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1332,45 +1394,54 @@ export default function PowerPointModule() {
                 <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
                   {currentCard.title}
                 </h2>
-                <div 
-                  className="p-8 rounded-3xl border space-y-4 shadow-2xl"
-                  style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
-                >
-                  <span 
-                    className="inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase border"
-                    style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}`, backgroundColor: `#${activeTheme.bg}` }}
-                  >
-                    {currentCard.badge || "FUNDAMENTAL QOIDA"}
-                  </span>
-                  <p className="text-xl sm:text-2xl font-bold leading-relaxed" style={{ color: `#${activeTheme.text}` }}>
-                    {currentCard.mainConcept}
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div 
-                    className="p-6 rounded-2xl border space-y-3"
-                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
-                  >
-                    <h4 className="text-base font-bold" style={{ color: `#${activeTheme.accent}` }}>
-                      📌 Ilmiy Sharh:
-                    </h4>
-                    <p className="text-sm opacity-90 leading-relaxed" style={{ color: `#${activeTheme.subtext}` }}>
-                      {currentCard.explanation}
-                    </p>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                  <div className={includeImages && currentCard.imageUrl ? "md:col-span-8 space-y-4" : "md:col-span-12 space-y-4"}>
+                    <div 
+                      className="p-8 rounded-3xl border space-y-4 shadow-2xl"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                    >
+                      <span 
+                        className="inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase border"
+                        style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}`, backgroundColor: `#${activeTheme.bg}` }}
+                      >
+                        {currentCard.badge || "FUNDAMENTAL QOIDA"}
+                      </span>
+                      <p className="text-xl sm:text-2xl font-bold leading-relaxed" style={{ color: `#${activeTheme.text}` }}>
+                        {currentCard.mainConcept}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div 
+                        className="p-6 rounded-2xl border space-y-3"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+                      >
+                        <h4 className="text-base font-bold" style={{ color: `#${activeTheme.accent}` }}>
+                          📌 Ilmiy Sharh:
+                        </h4>
+                        <p className="text-sm opacity-90 leading-relaxed" style={{ color: `#${activeTheme.subtext}` }}>
+                          {currentCard.explanation}
+                        </p>
+                      </div>
+                      <div 
+                        className="p-6 rounded-2xl border space-y-3"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+                      >
+                        <h4 className="text-base font-bold" style={{ color: `#${activeTheme.accent2}` }}>
+                          ✓ Asosiy Qoidalar:
+                        </h4>
+                        <ul className="text-sm space-y-2 list-disc list-inside opacity-90" style={{ color: `#${activeTheme.subtext}` }}>
+                          {(currentCard.bullets || []).map((b, i) => (
+                            <li key={i}>{b}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
                   </div>
-                  <div 
-                    className="p-6 rounded-2xl border space-y-3"
-                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
-                  >
-                    <h4 className="text-base font-bold" style={{ color: `#${activeTheme.accent2}` }}>
-                      ✓ Asosiy Qoidalar:
-                    </h4>
-                    <ul className="text-sm space-y-2 list-disc list-inside opacity-90" style={{ color: `#${activeTheme.subtext}` }}>
-                      {(currentCard.bullets || []).map((b, i) => (
-                        <li key={i}>{b}</li>
-                      ))}
-                    </ul>
-                  </div>
+                  {includeImages && currentCard.imageUrl && (
+                    <div className="md:col-span-4 h-64 md:h-80 rounded-3xl overflow-hidden border shadow-2xl shrink-0">
+                      <img src={currentCard.imageUrl} alt={currentCard.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1657,16 +1728,23 @@ export default function PowerPointModule() {
                     "{currentCard.quote}"
                   </div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm opacity-90" style={{ color: `#${activeTheme.text}` }}>
-                  {(currentCard.bullets || currentCard.leftBullets || currentCard.takeaways || [
-                    currentCard.description || currentCard.text || "Asosiy mavzu tahlili",
-                    "Amaliy qo'llanilishi va mezonlari"
-                  ]).map((tk, i) => (
-                    <div key={i} className="flex items-start gap-2 p-4 rounded-xl bg-white/5 border border-white/10">
-                      <span style={{ color: `#${activeTheme.accent}` }}>★</span>
-                      <span>{typeof tk === 'string' ? tk : JSON.stringify(tk)}</span>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                  <div className={includeImages && currentCard.imageUrl ? "md:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4" : "md:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-4"}>
+                    {(currentCard.bullets || currentCard.leftBullets || currentCard.takeaways || [
+                      currentCard.description || currentCard.text || "Asosiy mavzu tahlili",
+                      "Amaliy qo'llanilishi va mezonlari"
+                    ]).map((tk, i) => (
+                      <div key={i} className="flex items-start gap-2 p-4 rounded-xl bg-white/5 border border-white/10">
+                        <span style={{ color: `#${activeTheme.accent}` }}>★</span>
+                        <span>{typeof tk === 'string' ? tk : JSON.stringify(tk)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {includeImages && currentCard.imageUrl && (
+                    <div className="md:col-span-4 h-64 md:h-80 rounded-3xl overflow-hidden border shadow-2xl shrink-0">
+                      <img src={currentCard.imageUrl} alt={currentCard.title} className="w-full h-full object-cover" />
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}
