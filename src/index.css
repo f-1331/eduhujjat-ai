@@ -5,21 +5,219 @@
 @layer base {
   :root {
     --bg-main: #f8fafc;
+    --card-bg: #ffffff;
+    --card-hover: #f1f5f9;
+    --border-color: #e2e8f0;
     --text-main: #0f172a;
+    --text-muted: #64748b;
+    --primary-color: #4f46e5;
   }
+
   .dark {
     --bg-main: #0b0f19;
-    --text-main: #f1f5f9;
+    --card-bg: #111827;
+    --card-hover: #1e293b;
+    --border-color: #1f2937;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --primary-color: #6366f1;
+  }
+
+  /* 1. Cyberpunk Neon 2077 */
+  [data-theme="cyberpunk"].dark {
+    --bg-main: #060814;
+    --card-bg: #0d1224;
+    --card-hover: #151d38;
+    --border-color: #1e293b;
+    --primary-color: #06b6d4;
+  }
+  [data-theme="cyberpunk"]:not(.dark) {
+    --bg-main: #ecfeff;
+    --card-bg: #ffffff;
+    --card-hover: #cffafe;
+    --border-color: #a5f3fc;
+    --primary-color: #0891b2;
+  }
+
+  /* 2. Royal Navy & Gold */
+  [data-theme="navy"].dark {
+    --bg-main: #050b1a;
+    --card-bg: #091536;
+    --card-hover: #102256;
+    --border-color: #1e3a8a;
+    --primary-color: #f59e0b;
+  }
+  [data-theme="navy"]:not(.dark) {
+    --bg-main: #eff6ff;
+    --card-bg: #ffffff;
+    --card-hover: #dbeafe;
+    --border-color: #bfdbfe;
+    --primary-color: #d97706;
+  }
+
+  /* 3. Emerald Forest */
+  [data-theme="emerald"].dark {
+    --bg-main: #03140c;
+    --card-bg: #062618;
+    --card-hover: #0c3e28;
+    --border-color: #064e3b;
+    --primary-color: #10b981;
+  }
+  [data-theme="emerald"]:not(.dark) {
+    --bg-main: #f0fdf4;
+    --card-bg: #ffffff;
+    --card-hover: #dcfce7;
+    --border-color: #bbf7d0;
+    --primary-color: #059669;
+  }
+
+  /* 4. Dark Amethyst */
+  [data-theme="amethyst"].dark {
+    --bg-main: #0c0617;
+    --card-bg: #160c2c;
+    --card-hover: #231445;
+    --border-color: #4c1d95;
+    --primary-color: #a855f7;
+  }
+  [data-theme="amethyst"]:not(.dark) {
+    --bg-main: #faf5ff;
+    --card-bg: #ffffff;
+    --card-hover: #f3e8ff;
+    --border-color: #e9d5ff;
+    --primary-color: #9333ea;
+  }
+
+  /* 5. Crimson Ruby */
+  [data-theme="ruby"].dark {
+    --bg-main: #140507;
+    --card-bg: #220a0e;
+    --card-hover: #361017;
+    --border-color: #881337;
+    --primary-color: #ef4444;
+  }
+  [data-theme="ruby"]:not(.dark) {
+    --bg-main: #fff1f2;
+    --card-bg: #ffffff;
+    --card-hover: #ffe4e6;
+    --border-color: #fecdd3;
+    --primary-color: #e11d48;
+  }
+
+  /* 6. Nordic Frost */
+  [data-theme="frost"].dark {
+    --bg-main: #05121e;
+    --card-bg: #092035;
+    --card-hover: #103252;
+    --border-color: #0c4a6e;
+    --primary-color: #0ea5e9;
+  }
+  [data-theme="frost"]:not(.dark) {
+    --bg-main: #f0f9ff;
+    --card-bg: #ffffff;
+    --card-hover: #e0f2fe;
+    --border-color: #bae6fd;
+    --primary-color: #0284c7;
+  }
+
+  /* 7. Tokyo Midnight */
+  [data-theme="tokyo"].dark {
+    --bg-main: #090a16;
+    --card-bg: #12142a;
+    --card-hover: #1e2044;
+    --border-color: #3730a3;
+    --primary-color: #ec4899;
+  }
+  [data-theme="tokyo"]:not(.dark) {
+    --bg-main: #fdf2f8;
+    --card-bg: #ffffff;
+    --card-hover: #fce7f3;
+    --border-color: #fbcfe8;
+    --primary-color: #db2777;
+  }
+
+  /* 8. Clean Minimal Slate */
+  [data-theme="minimal"].dark {
+    --bg-main: #000000;
+    --card-bg: #121212;
+    --card-hover: #1c1c1c;
+    --border-color: #27272a;
+    --primary-color: #f4f4f5;
+  }
+  [data-theme="minimal"]:not(.dark) {
+    --bg-main: #f8fafc;
+    --card-bg: #ffffff;
+    --card-hover: #f1f5f9;
+    --border-color: #cbd5e1;
+    --primary-color: #0f172a;
+  }
+
+  /* 9. Sunset Rose */
+  [data-theme="rose"].dark {
+    --bg-main: #14050b;
+    --card-bg: #220b15;
+    --card-hover: #361223;
+    --border-color: #831843;
+    --primary-color: #f43f5e;
+  }
+  [data-theme="rose"]:not(.dark) {
+    --bg-main: #fff1f2;
+    --card-bg: #ffffff;
+    --card-hover: #ffe4e6;
+    --border-color: #fecdd3;
+    --primary-color: #e11d48;
+  }
+
+  /* 10. Indigo Sapphire (Default) */
+  [data-theme="indigo"].dark {
+    --bg-main: #0b0f19;
+    --card-bg: #111827;
+    --card-hover: #1f293d;
+    --border-color: #1f2937;
+    --primary-color: #6366f1;
+  }
+  [data-theme="indigo"]:not(.dark) {
+    --bg-main: #f8fafc;
+    --card-bg: #ffffff;
+    --card-hover: #eef2ff;
+    --border-color: #e0e7ff;
+    --primary-color: #4f46e5;
   }
 }
 
+/* Dinamik ranglar bog'lanishi */
 body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   -webkit-font-smoothing: antialiased;
-  background-color: var(--bg-main);
+  background-color: var(--bg-main) !important;
   color: var(--text-main);
   overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.dark .dark\:bg-slate-900,
+.dark .dark\:bg-slate-950,
+.dark .bg-slate-900,
+.dark .bg-slate-950 {
+  background-color: var(--card-bg) !important;
+}
+
+.dark .dark\:border-slate-800,
+.dark .dark\:border-slate-700,
+.dark .border-slate-800,
+.dark .border-slate-700 {
+  border-color: var(--border-color) !important;
+}
+
+/* Light mode moslashuvi */
+html:not(.dark) body {
+  background-color: var(--bg-main) !important;
+}
+html:not(.dark) .bg-white {
+  background-color: var(--card-bg) !important;
+}
+html:not(.dark) .border-slate-200 {
+  border-color: var(--border-color) !important;
 }
 
 /* Custom scrollbars */
@@ -31,9 +229,6 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--border-color);
   border-radius: 4px;
-}
-.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
 }

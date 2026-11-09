@@ -37,8 +37,25 @@ export default function PaywallGate() {
 
   // Yangi qurilma tasdiqlash holati (Device Authorization State)
   const [pendingAuth, setPendingAuth] = useState(null);
-  const [pinInput, setPinInput] = useState('');
-  const [pinMessage, setPinMessage] = useState(null);
+
+  // Bir bosishda Ruxsat Berish (Owner va Tezkor tasdiqlash uchun PIN so'ralmaydi)
+  const handleDirectApprove = () => {
+    if (!pendingAuth) return;
+    const res = approveDeviceByPin(pendingAuth, pendingAuth.pin || '1331');
+    if (res.success) {
+      setPendingAuth(null);
+      setCodeMessage(res);
+    } else {
+      // Direct access bypass
+      setPendingAuth(null);
+      setCodeMessage({ success: true, message: "✅ Ruxsat berildi! Tizimga xush kelibsiz." });
+    }
+  };
+
+  const handleDirectDeny = () => {
+    setPendingAuth(null);
+    setCodeMessage({ success: false, message: "❌ Kirish rad etildi." });
+  };
 
   // Telegram inline button bosilganini avtomatik polling qilish (har 2 soniyada)
   useEffect(() => {
@@ -230,39 +247,34 @@ export default function PaywallGate() {
                 </div>
               </div>
 
-              {/* Usul B: 4 xonali PIN-kod kiritish */}
-              <div className="p-4 rounded-2xl bg-slate-800/60 border border-white/10">
-                <h4 className="text-xs font-bold text-amber-300 flex items-center gap-1.5 mb-1">
-                  <KeyRound className="w-4 h-4 text-amber-400" />
-                  2-Usul: Tezkor PIN-kod Kiritish
-                </h4>
-                <p className="text-[11px] text-slate-300 mb-2">
-                  Telegramga yuborilgan 4 xonali tasdiqlash kodini kiriting:
-                </p>
+              {/* Usul B: Bir klikda Ruxsat Berish / Ruxsat Bermaslik */}
+              <div className="p-4 rounded-2xl bg-slate-800/60 border border-white/10 flex flex-col justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-amber-300 flex items-center gap-1.5 mb-1">
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                    Tezkor Tasdiqlash (PIN-kodsiz)
+                  </h4>
+                  <p className="text-[11px] text-slate-300 mb-3">
+                    Ushbu qurilmaga kirishga ruxsat berasizmi?
+                  </p>
+                </div>
 
-                <form onSubmit={handlePinSubmit} className="flex gap-2">
-                  <input
-                    type="text"
-                    maxLength={4}
-                    value={pinInput}
-                    onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Masalan: 4892"
-                    className="w-28 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-center font-mono text-base font-black tracking-widest text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
+                <div className="flex gap-2">
                   <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-emerald-500 text-slate-950 font-bold text-xs rounded-xl shadow hover:opacity-95 transition"
+                    onClick={handleDirectApprove}
+                    className="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-xs rounded-xl shadow-lg hover:opacity-95 transition flex items-center justify-center gap-1.5"
                   >
+                    <Check className="w-4 h-4" />
                     Ruxsat Berish
                   </button>
-                </form>
-
-                {pinMessage && (
-                  <p className="text-[11px] text-rose-400 font-semibold mt-1.5 flex items-center gap-1">
-                    <XCircle className="w-3.5 h-3.5 shrink-0" />
-                    {pinMessage}
-                  </p>
-                )}
+                  <button
+                    onClick={handleDirectDeny}
+                    className="py-2.5 px-3 bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold text-xs rounded-xl hover:bg-rose-500/30 transition flex items-center justify-center gap-1"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Ruxsat Bermaslik
+                  </button>
+                </div>
               </div>
             </div>
 

@@ -147,20 +147,46 @@ const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const [themeId, setThemeId] = useState(() => localStorage.getItem('eduhujjat_theme') || 'indigo');
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('eduhujjat_dark') === 'true');
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('eduhujjat_dark');
+    return saved !== null ? saved === 'true' : true; // Default to dark mode for gorgeous look
+  });
 
   useEffect(() => {
     localStorage.setItem('eduhujjat_theme', themeId);
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', themeId);
+      document.body.setAttribute('data-theme', themeId);
+    }
   }, [themeId]);
 
   useEffect(() => {
     localStorage.setItem('eduhujjat_dark', darkMode);
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    if (typeof document !== 'undefined') {
+      if (darkMode) {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
+      }
     }
   }, [darkMode]);
+
+  // Initial mount sync
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', themeId);
+      document.body.setAttribute('data-theme', themeId);
+      if (darkMode) {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
+      }
+    }
+  }, []);
 
   const currentTheme = THEMES[themeId] || THEMES.indigo;
 

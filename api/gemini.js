@@ -75,7 +75,15 @@ export default async function handler(req, res) {
     } else if (type === 'reference') {
       result = await generateAIStudentReferenceWithGemini(prompt);
     } else if (type === 'cards') {
-      result = await generateAIGammaCardsWithGemini(prompt);
+      const { count, authorName, includeImages, imageStyle, imageDensity, detailLevel } = req.body || {};
+      result = await generateAIGammaCardsWithGemini(prompt, {
+        slideCount: count,
+        authorName,
+        includeImages,
+        imageStyle,
+        imageDensity,
+        detailLevel
+      });
     } else {
       result = await callGemini(
         prompt,

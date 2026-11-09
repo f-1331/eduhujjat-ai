@@ -53,6 +53,16 @@ function MainAppContent() {
   const t = translations[lang] || translations.uz;
   const isAccessible = hasAccess();
 
+  // Telegram Mini App kengaytirish va to'liq ekranga moslash
+  React.useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+      }
+    } catch (e) {}
+  }, []);
+
   const navItems = [
     { id: 'ai', label: "🤖 EduAI Yordamchi", icon: Bot, color: 'text-indigo-400 font-bold' },
     { id: 'doc_editor', label: "⚡ AI Fayl & Hujjat Tahrirchisi", icon: FileEdit, color: 'text-purple-500 font-bold' },

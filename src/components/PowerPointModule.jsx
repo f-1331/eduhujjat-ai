@@ -1161,6 +1161,45 @@ export default function PowerPointModule() {
                   </div>
                 </div>
               )}
+
+              {/* Universal Fallback Renderer for any other card type (so no slide is ever blank) */}
+              {!['hero', 'concept', 'grid4', 'split', 'pillars', 'deep_dive', 'stats', 'roadmap', 'timeline', 'quiz_slide', 'summary', 'conclusion'].includes(currentCard.type) && (
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={currentCard.title || ''}
+                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                    className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                    style={{ color: `#${activeTheme.text}` }}
+                  />
+                  {currentCard.quote && (
+                    <div 
+                      className="p-5 rounded-2xl border italic text-base sm:text-lg"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}`, color: `#${activeTheme.accent}` }}
+                    >
+                      "{currentCard.quote}"
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(currentCard.bullets || currentCard.leftBullets || currentCard.takeaways || [
+                      currentCard.description || currentCard.text || "Asosiy mavzu tahlili va muhim pedagogik tushunchalar",
+                      "Amaliy qo'llanilishi va mezonlari",
+                      "Xulosa va istiqbolli natijalar"
+                    ]).map((b, bIdx) => (
+                      <div 
+                        key={bIdx}
+                        className="p-4 rounded-xl border flex items-start gap-3"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+                      >
+                        <span className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: `#${activeTheme.accent}` }} />
+                        <span className="text-xs sm:text-sm font-medium leading-relaxed" style={{ color: `#${activeTheme.text}` }}>
+                          {typeof b === 'string' ? b : JSON.stringify(b)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Bottom Footer (Clean indicator) */}
@@ -1595,6 +1634,37 @@ export default function PowerPointModule() {
                     <div key={i} className="flex items-start gap-2">
                       <span style={{ color: `#${activeTheme.accent}` }}>★</span>
                       <span>{tk}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Universal Fallback in Fullscreen */}
+            {!['hero', 'concept', 'grid4', 'split', 'pillars', 'deep_dive', 'stats', 'roadmap', 'timeline', 'quiz_slide', 'summary', 'conclusion'].includes(currentCard.type) && (
+              <div 
+                className="p-10 rounded-3xl border space-y-6"
+                style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
+              >
+                <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.accent}` }}>
+                  {currentCard.title}
+                </h2>
+                {currentCard.quote && (
+                  <div 
+                    className="p-6 rounded-2xl border italic text-base sm:text-lg text-center"
+                    style={{ backgroundColor: `#${activeTheme.bg}`, borderColor: `#${activeTheme.accent2}`, color: `#${activeTheme.text}` }}
+                  >
+                    "{currentCard.quote}"
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm opacity-90" style={{ color: `#${activeTheme.text}` }}>
+                  {(currentCard.bullets || currentCard.leftBullets || currentCard.takeaways || [
+                    currentCard.description || currentCard.text || "Asosiy mavzu tahlili",
+                    "Amaliy qo'llanilishi va mezonlari"
+                  ]).map((tk, i) => (
+                    <div key={i} className="flex items-start gap-2 p-4 rounded-xl bg-white/5 border border-white/10">
+                      <span style={{ color: `#${activeTheme.accent}` }}>★</span>
+                      <span>{typeof tk === 'string' ? tk : JSON.stringify(tk)}</span>
                     </div>
                   ))}
                 </div>
