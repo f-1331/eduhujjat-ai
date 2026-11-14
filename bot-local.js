@@ -2322,6 +2322,20 @@ bot.command(['help', 'yordam', 'menu'], async (ctx) => {
   return ctx.reply(helpText, { parse_mode: 'Markdown', reply_markup: kb });
 });
 
+// /slayd, /slide, /taqdimot BUYRUG'I - Gamma AI uslubida professional taqdimot
+bot.command(['slayd', 'slide', 'taqdimot', 'prezentatsiya'], async (ctx) => {
+  const userId = ctx.from.id;
+  const username = ctx.from.username;
+  if (!isUserActive(userId, username)) {
+    return ctx.reply(
+      `🔒 **AI Slayd yaratish uchun hisobingizni faollashtiring.**\n\nSizning ID: \`${userId}\``,
+      { reply_markup: getTariffInlineKeyboard(userId) }
+    );
+  }
+  const raw = ctx.match ? ctx.match.trim() : '';
+  return startSlideWizard(ctx, raw);
+});
+
 // /test BUYRUG'I
 bot.command(['test', 'nazorat'], async (ctx) => {
   const userId = ctx.from.id;

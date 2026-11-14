@@ -635,22 +635,38 @@ export default function PowerPointModule() {
                   onClick={() => setThemeKey(th.id)}
                   className={`w-full p-2.5 rounded-xl border-2 text-left transition flex items-center justify-between cursor-pointer ${
                     themeKey === th.id
-                      ? 'border-indigo-600 bg-indigo-50/90 dark:bg-sky-950/40 shadow-md ring-1 ring-indigo-500/20'
-                      : 'border-slate-300 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                      ? 'border-indigo-600 bg-indigo-50 dark:bg-sky-950/60 shadow-md ring-2 ring-indigo-500/30'
+                      : 'border-slate-300 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800/80'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {/* Dual-color visual swatch */}
                     <div 
-                      className="w-6 h-6 rounded-lg border-2 border-slate-300 dark:border-white/20 shadow-sm flex items-center justify-center shrink-0"
+                      className="w-7 h-7 rounded-lg border border-black/25 dark:border-white/30 shadow-sm flex items-center justify-center p-0.5 shrink-0"
                       style={{ backgroundColor: `#${th.bg}` }}
+                      title={`Fon: #${th.bg}, Aksent: #${th.accent}`}
                     >
-                      <span className="w-2 h-2 rounded-full shadow" style={{ backgroundColor: `#${th.accent}` }} />
+                      <div 
+                        className="w-full h-full rounded flex items-center justify-center gap-0.5"
+                        style={{ background: `linear-gradient(135deg, #${th.accent}, #${th.accent2 || th.accent})` }}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-white/90 shadow-xs" />
+                      </div>
                     </div>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {th.name.split('(')[0].trim()}
-                    </span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {th.name.split('(')[0].trim()}
+                      </span>
+                      <span className="text-[10px] font-mono opacity-60 text-slate-600 dark:text-slate-400 truncate">
+                        #{th.accent}
+                      </span>
+                    </div>
                   </div>
-                  {themeKey === th.id && <Check className="w-4 h-4 text-indigo-600 dark:text-sky-400 shrink-0" />}
+                  {themeKey === th.id && (
+                    <div className="w-5 h-5 rounded-full bg-indigo-600 dark:bg-sky-500 flex items-center justify-center text-white shrink-0 ml-1">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
