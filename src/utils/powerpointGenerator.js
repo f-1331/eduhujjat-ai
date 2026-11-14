@@ -126,141 +126,239 @@ export const GAMMA_THEMES = {
 };
 
 // ============================================================================
-// 2. MAVZUGA OID YUQORI SIFATLI RASMLAR BAZASI (HD EDUCATIONAL CDN)
+// 2. MAVZUGA OID YUQORI SIFATLI RASMLAR BAZASI (HD EDUCATIONAL CDN & UNIKAL SLAYDLAR)
 // ============================================================================
-export const EDUCATIONAL_TOPIC_IMAGES = {
-  biology: "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1000&auto=format&fit=crop&q=80",
-  photosynthesis: "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=1000&auto=format&fit=crop&q=80",
-  blood: "https://images.unsplash.com/photo-1579165466791-788226ab77b6?w=1000&auto=format&fit=crop&q=80",
-  heart: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=1000&auto=format&fit=crop&q=80",
-  temur: "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?w=1000&auto=format&fit=crop&q=80",
-  history: "https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=1000&auto=format&fit=crop&q=80",
-  physics: "https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=1000&auto=format&fit=crop&q=80",
-  space: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1000&auto=format&fit=crop&q=80",
-  math: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=1000&auto=format&fit=crop&q=80",
-  chemistry: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=1000&auto=format&fit=crop&q=80",
-  technology: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1000&auto=format&fit=crop&q=80",
-  ai: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000&auto=format&fit=crop&q=80",
-  nature: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1000&auto=format&fit=crop&q=80",
-  school: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1000&auto=format&fit=crop&q=80",
-  default: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1000&auto=format&fit=crop&q=80"
+export const EDUCATIONAL_SLIDE_FALLBACKS = {
+  law: [
+    "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1280&auto=format&fit=crop&q=80", // 1. Lady Justice haykali va tarozisi
+    "https://images.unsplash.com/photo-1589994965851-a8f479c573a9?w=1280&auto=format&fit=crop&q=80", // 2. Zamonaviy sud zali va tribunal
+    "https://images.unsplash.com/photo-1479142506502-19b3a3b7ff33?w=1280&auto=format&fit=crop&q=80", // 3. Oltin adolat tarozisi va kitoblar
+    "https://images.unsplash.com/photo-1450133064473-71024230f91b?w=1280&auto=format&fit=crop&q=80", // 4. Konstitutsiya, peroli ruchka va hujjatlar
+    "https://images.unsplash.com/photo-1505664194779-8beaceb93744?w=1280&auto=format&fit=crop&q=80", // 5. Sudya bolg'achasi (Gavel)
+    "https://images.unsplash.com/photo-1575505586569-646b2ca898fc?w=1280&auto=format&fit=crop&q=80", // 6. Oliy Sud binosi marmar ustunlari
+    "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=1280&auto=format&fit=crop&q=80", // 7. Tarixiy qonunlar kutubxonasi
+    "https://images.unsplash.com/photo-1589578527966-fdac0f44566c?w=1280&auto=format&fit=crop&q=80", // 8. Yuridik kodeks va adolat mezonlari
+    "https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=1280&auto=format&fit=crop&q=80", // 9. Inson huquqlari va fuqarolik erkinligi
+    "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=1280&auto=format&fit=crop&q=80"  // 10. Kiber xavfsizlik va raqamli qonun
+  ],
+  history: [
+    "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?w=1280&auto=format&fit=crop&q=80", // Samarqand Registon
+    "https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=1280&auto=format&fit=crop&q=80", // Qadimgi qo'lyozma
+    "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1280&auto=format&fit=crop&q=80", // Qadimiy ustunlar va obidalar
+    "https://images.unsplash.com/photo-1518684079-3c830dcef090?w=1280&auto=format&fit=crop&q=80", // Qal'a va mudofaa devorlari
+    "https://images.unsplash.com/photo-1524654458049-e36be0721fa2?w=1280&auto=format&fit=crop&q=80", // Xarita va kompas
+    "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=1280&auto=format&fit=crop&q=80", // Buyuk Ipak yo'li karvoni
+    "https://images.unsplash.com/photo-1599707367072-cd6ada2bc375?w=1280&auto=format&fit=crop&q=80", // Tarixiy jangovar qurollar
+    "https://images.unsplash.com/photo-1564507592333-c60657eea523?w=1280&auto=format&fit=crop&q=80"  // Bronza yodgorlik
+  ],
+  biology: [
+    "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1280&auto=format&fit=crop&q=80", // Mikroskopik hujayra
+    "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=1280&auto=format&fit=crop&q=80", // Fotosintez va yam-yashil barg
+    "https://images.unsplash.com/photo-1579165466791-788226ab77b6?w=1280&auto=format&fit=crop&q=80", // Qon hujayralari
+    "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=1280&auto=format&fit=crop&q=80", // Yurak va qon aylanish tizimi
+    "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=1280&auto=format&fit=crop&q=80", // DNK spiral modeli
+    "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1280&auto=format&fit=crop&q=80", // Tabiat biosferasi
+    "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1280&auto=format&fit=crop&q=80"  // Yovvoyi tabiat va fauna
+  ],
+  physics: [
+    "https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=1280&auto=format&fit=crop&q=80", // Kvant fizikasi
+    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1280&auto=format&fit=crop&q=80", // Kosmos va tortishish kuchi
+    "https://images.unsplash.com/photo-1507499739999-097706ad8914?w=1280&auto=format&fit=crop&q=80", // Lazer va optika prizmasi
+    "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1280&auto=format&fit=crop&q=80", // Plazma va elektr zaryad
+    "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=1280&auto=format&fit=crop&q=80", // Orbital stansiya va sayyora
+    "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=1280&auto=format&fit=crop&q=80"  // Quyosh tizimi
+  ],
+  tech: [
+    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1280&auto=format&fit=crop&q=80", // Neyron tarmoqlar va AI
+    "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1280&auto=format&fit=crop&q=80", // Mikroprotsessor va chip
+    "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1280&auto=format&fit=crop&q=80", // Dasturlash kodi
+    "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1280&auto=format&fit=crop&q=80", // Robot va avtomatlashtirish
+    "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1280&auto=format&fit=crop&q=80", // Bulutli serverlar
+    "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1280&auto=format&fit=crop&q=80"  // Kiber xavfsizlik
+  ],
+  math: [
+    "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=1280&auto=format&fit=crop&q=80", // Doskada murakkab tenglamalar
+    "https://images.unsplash.com/photo-1596495578065-6e0763fa1178?w=1280&auto=format&fit=crop&q=80", // Geometrik chizg'ich va sirkul
+    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1280&auto=format&fit=crop&q=80", // Fibonachchi oltin nisbati
+    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1280&auto=format&fit=crop&q=80"  // Abstrakt 3D modellar
+  ],
+  education: [
+    "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1280&auto=format&fit=crop&q=80", // Zamonaviy maktab sinfi
+    "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1280&auto=format&fit=crop&q=80", // Hamkorlikda o'qish va talabalar
+    "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1280&auto=format&fit=crop&q=80", // Bitiruv kepkasi va diplom
+    "https://images.unsplash.com/photo-1577896851231-70ef18881754?w=1280&auto=format&fit=crop&q=80"  // O'qituvchi va interaktiv doska
+  ],
+  default: [
+    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1280&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1280&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1280&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1280&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=1280&auto=format&fit=crop&q=80"
+  ]
 };
 
-export function getTopicImageUrl(topic = "") {
+export const EDUCATIONAL_TOPIC_IMAGES = {
+  biology: EDUCATIONAL_SLIDE_FALLBACKS.biology[0],
+  photosynthesis: EDUCATIONAL_SLIDE_FALLBACKS.biology[1],
+  blood: EDUCATIONAL_SLIDE_FALLBACKS.biology[2],
+  heart: EDUCATIONAL_SLIDE_FALLBACKS.biology[3],
+  temur: EDUCATIONAL_SLIDE_FALLBACKS.history[0],
+  history: EDUCATIONAL_SLIDE_FALLBACKS.history[1],
+  physics: EDUCATIONAL_SLIDE_FALLBACKS.physics[0],
+  space: EDUCATIONAL_SLIDE_FALLBACKS.physics[1],
+  math: EDUCATIONAL_SLIDE_FALLBACKS.math[0],
+  chemistry: EDUCATIONAL_SLIDE_FALLBACKS.biology[4],
+  technology: EDUCATIONAL_SLIDE_FALLBACKS.tech[1],
+  ai: EDUCATIONAL_SLIDE_FALLBACKS.tech[0],
+  nature: EDUCATIONAL_SLIDE_FALLBACKS.biology[5],
+  school: EDUCATIONAL_SLIDE_FALLBACKS.education[0],
+  law: EDUCATIONAL_SLIDE_FALLBACKS.law[0],
+  default: EDUCATIONAL_SLIDE_FALLBACKS.default[0]
+};
+
+// Har bir slayd indeksi (0..N) uchun alohida, takrorlanmas, mavzuga 100% mos HD rasm topish
+export function getPerSlideFallbackImage(topic = "", slideIndex = 0) {
   const t = String(topic).toLowerCase();
-  if (/qon|eritrotsit|leykotsit|trombotsit|gemoglobin|anemiya/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.blood;
-  if (/yurak|tomir|puls|kardiolog/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.heart;
-  if (/fotosintez|xloroplast|barg|o'simlik|daraxt|botanika/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.photosynthesis;
-  if (/biolog|hujayra|anatomi|genetika|organizm|zoolog/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.biology;
-  if (/temur|bobur|samarqand|buxoro|ipak yo'li/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.temur;
-  if (/tarix|arxeolog|sulola|imperiya|qadimgi/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.history;
-  if (/fizika|nyuton|optika|gravitatsiya|kvant|mexanika|termodinamika/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.physics;
-  if (/fazo|koinot|astronomiya|sayyora|quyosh|oy|teleskop/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.space;
-  if (/matematik|algebra|geometriya|tenglama|uchburchak|integral/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.math;
-  if (/kimyo|molekula|atom|reaksiya|element|davriy jadval|eritma/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.chemistry;
-  if (/sun'iy intellekt|ai|robot|dasturlash|axborot|kompyuter/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.ai;
-  if (/texnika|texnologiya|muhandislik/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.technology;
-  if (/ekologiya|tabiat|iqlim|atrof-muhit|biosfera/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.nature;
-  if (/maktab|pedagog|ta'lim|dars|o'quvchi|metodika/i.test(t)) return EDUCATIONAL_TOPIC_IMAGES.school;
-  return EDUCATIONAL_TOPIC_IMAGES.default;
+  let pool = EDUCATIONAL_SLIDE_FALLBACKS.default;
+
+  if (/huquq|qonun|adolat|konstitutsiya|sud|advokat|prokuror|fuqaro|jinoyat|kodeks|davlatchilik|burch|inson huquq/i.test(t)) {
+    pool = EDUCATIONAL_SLIDE_FALLBACKS.law;
+  } else if (/temur|bobur|samarqand|buxoro|tarix|arxeolog|sulola|imperiya|qadimgi/i.test(t)) {
+    pool = EDUCATIONAL_SLIDE_FALLBACKS.history;
+  } else if (/fotosintez|xloroplast|barg|biolog|hujayra|anatomi|genetika|organizm|zoolog|qon|yurak/i.test(t)) {
+    pool = EDUCATIONAL_SLIDE_FALLBACKS.biology;
+  } else if (/fizika|nyuton|optika|gravitatsiya|kvant|fazo|koinot|astronomiya|sayyora|quyosh|oy/i.test(t)) {
+    pool = EDUCATIONAL_SLIDE_FALLBACKS.physics;
+  } else if (/sun'iy intellekt|ai|robot|dasturlash|axborot|kompyuter|texnika|texnologiya/i.test(t)) {
+    pool = EDUCATIONAL_SLIDE_FALLBACKS.tech;
+  } else if (/matematik|algebra|geometriya|tenglama|uchburchak|integral/i.test(t)) {
+    pool = EDUCATIONAL_SLIDE_FALLBACKS.math;
+  } else if (/maktab|pedagog|ta'lim|dars|o'quvchi|metodika|talaba/i.test(t)) {
+    pool = EDUCATIONAL_SLIDE_FALLBACKS.education;
+  }
+
+  const safeIdx = Math.max(0, parseInt(slideIndex, 10) || 0);
+  return pool[safeIdx % pool.length];
 }
+
+export function getTopicImageUrl(topic = "") {
+  return getPerSlideFallbackImage(topic, 0);
+}
+
+// HAR BIR SOHA UCHUN 16+ TA MUTLAQO HAR XIL, BOY VIZUAL SAHNALAR LUG'ATI
+const DOMAIN_VISUAL_SCENES = {
+  law: [
+    "statue of Lady Justice blindfolded holding bronze scales and sword, marble courthouse neoclassical columns, dramatic sunrise",
+    "modern courtroom trial hall judicial bench wooden gavel law briefs mahogany interior atmospheric",
+    "gleaming polished brass balance scales of justice on dark leather law books table dramatic lighting",
+    "historic national constitution book open with antique fountain pen golden wax seal legal parchment",
+    "wooden judge gavel on sound block beside open legal penal code volume cinematic depth of field",
+    "majestic Supreme Court architecture facade white marble columns grand pediment blue hour sky",
+    "diverse people hands raised advocating for human rights democracy and constitutional freedom portrait",
+    "grand antique law library high shelves filled with leather-bound legal folios warm library lamp",
+    "international treaty accord bilateral agreement signing ceremony gold fountain pen on official documents",
+    "cyber security digital law glowing neon padlock on futuristic legal data code streams",
+    "close up of judge hand resting on wooden gavel in courtroom deliberation",
+    "ancient Magna Carta legal charter scroll parchment calligraphy royal seal museum display",
+    "courthouse stone steps looking up to classical pediment and sculpted statues under sunlight",
+    "handcuffs resting on criminal law penal code book dramatic high contrast lighting",
+    "attorney advocate presenting defense in courtroom jury trial chamber",
+    "scales of justice balanced perfectly with soft sunlight streaming through courthouse window"
+  ],
+  history: [
+    "majestic samarkand registan turquoise mosaic dome monumental portal minaret historic architecture night illumination",
+    "ancient silk road camel caravan crossing golden desert sand dunes ancient bazaar trading spices oasis",
+    "medieval central asian armored cavalry shields warrior fortress siege battle ancient epic combat",
+    "ancient illuminated historic manuscript calligraphy parchment royal golden seal medieval throne scrolls",
+    "ancient celestial astrolabe medieval astronomy observatory quadrant celestial globe scholars oriental library",
+    "heroic equestrian bronze monument golden sunset dramatic sky central asian renaissance architectural heritage",
+    "ancient clay pottery archaeological excavation relics museum artifacts dramatic spotlight",
+    "ancient fortress city citadel mudbrick fortress defensive towers sunrise over ancient silk road"
+  ],
+  biology: [
+    "microscopic biological cell organelle nucleus membrane ultrastructure glowing scientific 3d render",
+    "sunlit lush green plant leaf chloroplast photosynthesis cell structure cellular biology microscopic view",
+    "red blood cells erythrocyte flowing through vascular vessel medical microscopic science 3d render",
+    "anatomical human heart cardiology pulse medical visualization 3d render vibrant lighting",
+    "double helix glowing DNA strand genetic engineering biotechnology science laboratory render",
+    "pristine lush green forest waterfall clean nature conservation planet earth atmospheric landscape",
+    "wild animals fauna ecosystem biodiversity tropical rainforest sunlight canopy nature photography"
+  ],
+  physics: [
+    "quantum mechanics physics electric plasma particle accelerator optics laser experiment energy formulas",
+    "deep space nebula planets galaxy hubble telescope astronomical cosmic exploration universe stars",
+    "optical glass prism refracting beam of light into colorful rainbow spectrum physics laboratory",
+    "high voltage electric plasma ball glowing electrical filaments dark room physics science",
+    "orbiting satellite looking down at planet earth continents glowing city lights from space",
+    "solar system planets orbiting glowing sun cosmic celestial bodies gravitational field"
+  ],
+  tech: [
+    "futuristic neural network artificial intelligence cyber glowing digital code processor big data stream",
+    "silicon microchip processor motherboard glowing circuit traces nanotechnology computing hardware",
+    "software developer computer screen with clean programming code modern dark room workstation",
+    "humanoid robot cybernetic artificial intelligence hand touching human finger technology collaboration",
+    "modern enterprise cloud datacenter server racks blinking blue led lights futuristic network",
+    "cybersecurity shield icon glowing padlock digital firewall data protection matrix"
+  ],
+  math: [
+    "dark blackboard covered with intricate chalk mathematical equations geometry calculus formulas",
+    "precision metal compass drawing perfect golden ratio circles on drafting blueprint paper",
+    "fibonacci golden ratio spiral in nature nautilus shell mathematical perfection geometry",
+    "complex 3d geometric polytope multifaceted crystal shape glowing wireframe render"
+  ],
+  education: [
+    "modern bright classroom with interactive whiteboard students engaged in creative learning",
+    "university students collaborating around library table with open textbooks and laptop",
+    "graduation cap tossed in the air with diploma scroll university commencement ceremony sunset",
+    "dedicated teacher writing inspirational knowledge on green chalkboard students listening"
+  ],
+  general: [
+    "modern academic research science presentation concept clean aesthetic lighting",
+    "futuristic innovation laboratory high tech holographic presentation display",
+    "creative brainstorming whiteboard strategy mindmap planning session concepts",
+    "professional business analytics dashboard data charts growth progress visualization",
+    "global network interconnectivity world map glowing node connections"
+  ]
+};
 
 // O'zbekcha mavzu va har bir slaydning aniq sarlavhasini professional vizual inglizcha promptga o'girish (AI Image Mapper)
 export function translateUzbekToVisualEnglish(text, card = null) {
+  // 1. Agar card.imageKeyword oldindan berilgan va inglizcha bo'lsa
+  if (card?.imageKeyword && /^[a-zA-Z0-9\s,-]+$/.test(card.imageKeyword) && card.imageKeyword.length > 5) {
+    return card.imageKeyword.trim();
+  }
+
   const combined = `${card?.title || ''} ${card?.badge || ''} ${card?.leftTitle || ''} ${card?.rightTitle || ''} ${text || ''}`.toLowerCase().replace(/[ʻʼ`‘’]/g, "'");
+  const slideIdx = Math.max(0, (card?.id ? Number(card.id) - 1 : 0));
 
-  // 1. Agar kartada harbiy, armiya, lashkar yoki jang mavzusi bo'lsa
-  if (/armiya|qo'shin|jang|harbiy|askar|lashkar|qilich|qal'a|istilo|zafar|strategiya/i.test(combined)) {
-    return "medieval central asian armored cavalry shields warrior fortress siege battle ancient epic combat";
+  // Domain aniqlash va slayd indeksi bo'yicha MUTLAQO HAR XIL sahna tanlash
+  let scenes = DOMAIN_VISUAL_SCENES.general;
+  if (/huquq|qonun|adolat|konstitutsiya|sud|advokat|prokuror|fuqaro|jinoyat|kodeks|davlatchilik|burch|inson huquq/i.test(combined)) {
+    scenes = DOMAIN_VISUAL_SCENES.law;
+  } else if (/armiya|qo'shin|jang|harbiy|temur|bobur|samarqand|buxoro|ipak yo'li|tarix|sulola|imperiya/i.test(combined)) {
+    scenes = DOMAIN_VISUAL_SCENES.history;
+  } else if (/hujayra|fotosintez|barg|biolog|dnk|genetika|qon|yurak|tibbiyot|ekologiya|tabiat/i.test(combined)) {
+    scenes = DOMAIN_VISUAL_SCENES.biology;
+  } else if (/fizika|kvant|lazer|elektr|kosmos|fazo|koinot|sayyora|quyosh|astronomiya/i.test(combined)) {
+    scenes = DOMAIN_VISUAL_SCENES.physics;
+  } else if (/dastur|algoritm|kod|kiber|sun'iy intellekt|neyro|kompyuter|robot|texnologiya/i.test(combined)) {
+    scenes = DOMAIN_VISUAL_SCENES.tech;
+  } else if (/matematik|algebra|geometriya|formula|tenglama/i.test(combined)) {
+    scenes = DOMAIN_VISUAL_SCENES.math;
+  } else if (/maktab|pedagog|ta'lim|dars|o'quvchi|metodika|talaba/i.test(combined)) {
+    scenes = DOMAIN_VISUAL_SCENES.education;
   }
 
-  // 2. Qonun, boshqaruv, tuzuklar, davlat mezonlari
-  if (/tuzuk|qonun|boshqaruv|nizom|farmon|adolat|vazir|tamg'a|muhr|mezon|hujjat/i.test(combined)) {
-    return "ancient illuminated legal manuscript calligraphy parchment royal golden seal medieval throne decree scrolls";
-  }
-
-  // 3. Ipak yo'li, xalqaro savdo, karvon, bozor
-  if (/ipak yo'li|savdo|karvon|bozor|tijorat|tanga|dinar|iqtisod|moliya|eksport/i.test(combined)) {
-    return "ancient silk road camel caravan crossing golden desert dunes ancient bazaar trading spices merchants oasis";
-  }
-
-  // 4. Me'morchilik, obidalar, bino, registon, maqbara
-  if (/me'morchilik|imorat|bino|saroy|registon|maqbara|gumbaz|obida|samarqand|buxoro/i.test(combined)) {
-    return "majestic samarkand registan turquoise mosaic dome monumental portal minaret historic oriental architecture night illumination";
-  }
-
-  // 5. Fan, olimlar, rasadxona, falakiyot, madaniyat, kutubxona
-  if (/fan|madaniyat|olim|rasadxona|astronomiya|yulduz|kitob|kutubxona|falakiyot|ta'lim/i.test(combined)) {
-    return "ancient celestial astrolabe medieval astronomy observatory quadrant celestial globe scholars oriental library";
-  }
-
-  // 6. Meros, xulosa, buyuk sarkarda shaxsiyati
-  if (/meros|xulosa|natija|shaxsiyat|tamaddun|renessans|tarixiy o'rni/i.test(combined)) {
-    return "heroic equestrian bronze monument golden sunset dramatic sky central asian renaissance architectural heritage";
-  }
-
-  // 7. Biologiya - hujayra va genetika
-  if (/hujayra|membrana|yadro|organoid|dnk|dna|genetika|xromosoma/i.test(combined)) {
-    return "microscopic biological cell organelle nucleus membrane ultrastructure glowing scientific 3d render";
-  }
-
-  // 8. Biologiya - fotosintez va o'simliklar
-  if (/barg|xloroplast|fotosintez|o'simlik|botanika|xlorofill|quyosh/i.test(combined)) {
-    return "sunlit lush green plant leaf chloroplast photosynthesis cell structure cellular biology microscopic view";
-  }
-
-  // 9. Kimyo - molekulalar va reaksiyalar
-  if (/kimyo|molekula|atom|reaksiya|davriy|eritma|kislota|laboratoriya/i.test(combined)) {
-    return "chemical molecular structure atom glowing liquid test tubes reaction modern chemistry laboratory science";
-  }
-
-  // 10. Fizika - kvant, energiya, elektr
-  if (/fizika|kvant|magnit|elektr|gravitatsiya|optika|lazer|atom|yadro/i.test(combined)) {
-    return "quantum mechanics physics electric plasma particle accelerator optics laser experiment energy formulas";
-  }
-
-  // 11. Informatika va AI
-  if (/dastur|algoritm|kod|kiber|sun'iy intellekt|neyro|kompyuter|robot/i.test(combined)) {
-    return "futuristic neural network artificial intelligence cyber glowing digital code processor big data stream";
-  }
-
-  // 12. Tibbiyot va anatomiya
-  if (/tibbiyot|yurak|shifokor|anatomiya|salomatlik|qon|tomir|klinika/i.test(combined)) {
-    return "modern medicine hospital cardiology medical stethoscope anatomical heart model human medical science";
-  }
-
-  // 13. Ekologiya va tabiat
-  if (/ekologiya|o'rmon|tabiat|iqlim|suv|biosfera|sayyora|yer/i.test(combined)) {
-    return "pristine lush green forest waterfall clean nature conservation planet earth atmospheric landscape";
-  }
-
-  // 14. Kosmos va koinot
-  if (/kosmos|sayyora|galaktika|teleskop|quyosh|oy|fazo|astronomiya/i.test(combined)) {
-    return "deep space nebula planets galaxy hubble telescope astronomical cosmic exploration universe stars";
-  }
-
-  // 15. Umumiy sarlavhadan toza kalit so'zlar
-  const clean = String(card?.title || text || '')
-    .replace(/[^a-zA-Z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 45);
-
-  return clean ? `${clean} professional educational presentation concept` : "modern academic research science presentation";
+  return scenes[slideIdx % scenes.length];
 }
 
 export function resolveCardImageUrl(card, topic = "", imageStyle = "realistic") {
   let visualKeyword = "";
 
-  // 1. Agar card.imageKeyword inglizcha bo'lsa
-  if (card?.imageKeyword && /^[a-zA-Z0-9\s,-]+$/.test(card.imageKeyword) && card.imageKeyword.length > 5) {
-    visualKeyword = card.imageKeyword.trim();
-  } else {
-    // 2. Har bir slaydning shaxsiy sarlavhasi va mazmunidan kelib chiqib UNIKAL inglizcha prompt
-    visualKeyword = translateUzbekToVisualEnglish(topic, card);
-  }
+  // Har bir slaydning shaxsiy sarlavhasi va mazmunidan kelib chiqib UNIKAL inglizcha prompt
+  visualKeyword = translateUzbekToVisualEnglish(topic, card);
 
-  // Har bir slayd uchun unikal, takrorlanmas deterministik yoki kvantli seed
+  // Har bir slayd uchun unikal, takrorlanmas deterministik kvantli seed
   const cardId = typeof card?.id === 'number' ? card.id : Math.floor(Math.random() * 50);
   const titleHash = (card?.title || '').split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
   const seed = Math.abs((cardId * 7919 + titleHash * 1331 + 42) % 999999) + 100;
@@ -1452,10 +1550,19 @@ export async function generatePresentationPptx(config = {}) {
   if (includeImages) {
     try {
       const firstCard = slideDeck[0] || {};
-      const imgUrl = firstCard.imageUrl || resolveCardImageUrl({ title: topic, imageKeyword: topic }, topic, imageStyle);
-      topicImageBase64 = await fetchImageAsBase64(imgUrl, 15000);
+      const imgUrl = firstCard.imageUrl || resolveCardImageUrl({ ...firstCard, id: 1 }, topic, imageStyle);
+      topicImageBase64 = await fetchImageAsBase64(imgUrl, 10000);
+      if (!topicImageBase64) {
+        const fallbackUrl = getPerSlideFallbackImage(topic, 0);
+        topicImageBase64 = await fetchImageAsBase64(fallbackUrl, 6000);
+      }
     } catch (e) {
-      topicImageBase64 = null;
+      try {
+        const fallbackUrl = getPerSlideFallbackImage(topic, 0);
+        topicImageBase64 = await fetchImageAsBase64(fallbackUrl, 6000);
+      } catch (errFallback) {
+        topicImageBase64 = null;
+      }
     }
 
     const visualArchs = ['split_image', 'tri_gallery', 'case_study', 'bento_3', 'concept_spotlight', 'hero_classic', 'pillars_3', 'problem_solution', 'summary_takeaways', 'timeline_steps'];
@@ -1473,11 +1580,21 @@ export async function generatePresentationPptx(config = {}) {
 
       if (shouldFetch) {
         try {
-          const cardUrl = card.imageUrl || resolveCardImageUrl(card, topic, imageStyle);
-          const b64 = await fetchImageAsBase64(cardUrl, 15000);
-          return b64 || topicImageBase64;
+          const cardUrl = card.imageUrl || resolveCardImageUrl({ ...card, id: idx + 1 }, topic, imageStyle);
+          let b64 = await fetchImageAsBase64(cardUrl, 10000);
+          if (!b64) {
+            const fallbackUrl = getPerSlideFallbackImage(topic, idx);
+            b64 = await fetchImageAsBase64(fallbackUrl, 6000);
+          }
+          return b64 || null;
         } catch (err) {
-          return topicImageBase64;
+          try {
+            const fallbackUrl = getPerSlideFallbackImage(topic, idx);
+            const b64 = await fetchImageAsBase64(fallbackUrl, 6000);
+            return b64 || null;
+          } catch (e2) {
+            return null;
+          }
         }
       }
       return null;
@@ -1534,8 +1651,8 @@ export async function generatePresentationPptx(config = {}) {
       slide.addNotes(card.speakerNotes);
     }
 
-    // 100+ XIL SLAYD ARXITEKTURASI RENDERINGI (Har bir slayd uchun maxsus kontekstli rasm)
-    const slideImg = (cardImages && cardImages[index]) ? cardImages[index] : topicImageBase64;
+    // 100+ XIL SLAYD ARXITEKTURASI RENDERINGI (Har bir slayd uchun UNIKAL rasm, hech qachon 1-slayddan nusxalanmaydi)
+    const slideImg = (cardImages && cardImages[index]) ? cardImages[index] : (index === 0 ? topicImageBase64 : null);
     renderSlideArchitecture(slide, pres, card, style, index, slideDeck.length, slideImg, authorName, topic);
 
     // Pastki Elegant Footer (1-slayddan keyingi barcha varaqlarda)

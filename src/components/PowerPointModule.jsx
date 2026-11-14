@@ -3,7 +3,8 @@ import { useAuth } from '../utils/authContext';
 import { 
   GAMMA_THEMES, 
   generatePresentationPptx,
-  resolveCardImageUrl 
+  resolveCardImageUrl,
+  getPerSlideFallbackImage 
 } from '../utils/powerpointGenerator';
 import { generateRealAIGammaCards } from '../utils/aiSlideEngine';
 import { 
@@ -1010,6 +1011,7 @@ export default function PowerPointModule() {
                         src={currentCard.imageUrl} 
                         alt={currentCard.title} 
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getPerSlideFallbackImage(promptInput, (currentCard.id || 1) - 1); }}
                       />
                       <button
                         type="button"
@@ -1091,6 +1093,7 @@ export default function PowerPointModule() {
                           src={currentCard.imageUrl} 
                           alt={currentCard.title} 
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getPerSlideFallbackImage(promptInput, (currentCard.id || 1) - 1); }}
                         />
                         <button
                           type="button"
@@ -1181,7 +1184,7 @@ export default function PowerPointModule() {
                         src={currentCard.imageUrl} 
                         alt={currentCard.title}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        onError={(e) => { e.target.style.display = 'none'; }}
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getPerSlideFallbackImage(promptInput, (currentCard.id || 1) - 1); }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-3 flex items-end justify-between">
                         <span className="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20">
@@ -1291,7 +1294,7 @@ export default function PowerPointModule() {
                         src={currentCard.imageUrl} 
                         alt={currentCard.title}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        onError={(e) => { e.target.style.display = 'none'; }}
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getPerSlideFallbackImage(promptInput, (currentCard.id || 1) - 1); }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-3 flex items-end justify-between">
                         <span className="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20">
@@ -1597,7 +1600,7 @@ export default function PowerPointModule() {
                         src={currentCard.imageUrl} 
                         alt={currentCard.title}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        onError={(e) => { e.target.style.display = 'none'; }}
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getPerSlideFallbackImage(promptInput, (currentCard.id || 1) - 1); }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent p-3 flex items-end justify-between">
                         <span className="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20">
@@ -1893,6 +1896,7 @@ export default function PowerPointModule() {
                           src={currentCard.imageUrl} 
                           alt={currentCard.title} 
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getPerSlideFallbackImage(promptInput, (currentCard.id || 1) - 1); }}
                         />
                         <button
                           type="button"
@@ -2031,7 +2035,7 @@ export default function PowerPointModule() {
                 </div>
                 {includeImages && currentCard.imageUrl && (
                   <div className="w-full md:w-80 h-48 md:h-64 rounded-2xl overflow-hidden border shadow-2xl shrink-0">
-                    <img src={currentCard.imageUrl} alt={currentCard.title} className="w-full h-full object-cover" />
+                    <img src={currentCard.imageUrl} alt={currentCard.title} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getPerSlideFallbackImage(promptInput, (currentCard.id || 1) - 1); }} />
                   </div>
                 )}
               </div>
@@ -2088,7 +2092,7 @@ export default function PowerPointModule() {
                   </div>
                   {includeImages && currentCard.imageUrl && (
                     <div className="md:col-span-4 h-64 md:h-80 rounded-3xl overflow-hidden border shadow-2xl shrink-0">
-                      <img src={currentCard.imageUrl} alt={currentCard.title} className="w-full h-full object-cover" />
+                      <img src={currentCard.imageUrl} alt={currentCard.title} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getPerSlideFallbackImage(promptInput, (currentCard.id || 1) - 1); }} />
                     </div>
                   )}
                 </div>
@@ -2503,7 +2507,7 @@ export default function PowerPointModule() {
                   </div>
                   {includeImages && currentCard.imageUrl && (
                     <div className="md:col-span-4 h-64 md:h-80 rounded-3xl overflow-hidden border shadow-2xl shrink-0">
-                      <img src={currentCard.imageUrl} alt={currentCard.title} className="w-full h-full object-cover" />
+                      <img src={currentCard.imageUrl} alt={currentCard.title} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getPerSlideFallbackImage(promptInput, (currentCard.id || 1) - 1); }} />
                     </div>
                   )}
                 </div>

@@ -155,7 +155,91 @@ export const DOMAIN_KNOWLEDGE = {
     }
   },
 
-  // 2. BIOLOGIYA, TIBBIYOT VA EKOLOGIYA
+  // 2. YURISPRUDENSIYA, HUQUQ, DAVLAT VA ADOLAT (LAW & JUSTICE)
+  law: {
+    match: /huquq|qonun|adolat|konstitutsiya|sud|advokat|prokuror|fuqaro|jinoyat|kodeks|davlatchilik|burch|inson huquq/i,
+    build: (topic, options = {}) => {
+      const isHuquqNima = /huquq\s*nima/i.test(topic);
+      const titleMain = isHuquqNima ? "Huquq Nima? Jamiyat, Davlat va Qonun Ustuvorligi" : (topic || "Huquq va Qonun Ustuvorligi");
+      return [
+        {
+          id: 1, type: "hero", badge: "YURISPRUDENSIYA VA HUQUQIY MADANIYAT",
+          title: titleMain,
+          subtitle: "Jamiyatda adolat, inson erkinliklari va xavfsizlikni ta'minlovchi umummajburiy xulq-atvor qoidalari tizimi",
+          speakerNotes: "Assalomu alaykum, hurmatli tinglovchilar! Bugungi taqdimotimiz huquqning mohiyati, inson hayoti va davlatchilikdagi tutgan o'rni hamda adolat mezonlariga bag'ishlanadi.",
+          imageKeyword: "statue of Lady Justice blindfolded holding bronze scales and sword marble courthouse neoclassical columns sunrise"
+        },
+        {
+          id: 2, type: "split", badge: "MOHIYAT VA ASOSIY VAZIFALAR",
+          title: "Huquqning Bosh Vazifalari va Jamiyatdagi O'rni",
+          leftTitle: "⚖️ Regulyativ (Tartibga Soluvchi)",
+          leftBullets: [
+            "Ijtimoiy munosabatlarni qat'iy va adolatli mezonlar asosida tartibga solish",
+            "Fuqarolar, tashkilotlar va davlat o'rtasidagi erkinlik chegaralarini belgilash",
+            "Iqtisodiy, siyosiy va shaxsiy faoliyatning qonuniy kafolatlarini yaratish"
+          ],
+          rightTitle: "🛡 Qo'riqlovchi va Himoya Qiluvchi",
+          rightBullets: [
+            "Inson sha'ni, qadr-qimmati, hayoti va mulk daxlsizligini qat'iy himoya qilish",
+            "Qonunbuzarliklarning oldini olish va huquqbuzarlarga nisbatan jazo muqarrarligi",
+            "Jamiyatda adolat, tinchlik va qonuniylik muhitini barqaror saqlash"
+          ],
+          speakerNotes: "Huquq ikki asosiy ustunga tayanadi: biri munosabatlarni tartibga soladi, ikkinchisi fuqarolarning erkinligi va xavfsizligini himoya qiladi.",
+          imageKeyword: "modern courtroom trial hall judicial bench wooden gavel law briefs mahogany interior"
+        },
+        {
+          id: 3, type: "pillars", badge: "3 ASOSIY USTUN (GENSPARK GRID)",
+          title: "Huquqiy Davlatning Uch Poydevori",
+          subtitle: "Qonun ustuvorligi, odil sudlov va asosiy erkinliklar",
+          cards: [
+            { num: "01", title: "Qonun Ustuvorligi", desc: "Hech kim qonundan ustun emas. Barcha davlat idoralari va fuqarolar qonun oldida mutlaq tengdir." },
+            { num: "02", title: "Odil Sudlov", desc: "Sud hokimiyatining to'liq mustaqilligi, adolatli va xolis tergov hamda aybsizlik prezumpsiyasi." },
+            { num: "03", title: "Inson Huquqlari", desc: "Yashash, erkin fikrlash, ta'lim olish va shaxsiy mulk kabi ajralmas tabiiy huquqlar kafolati." }
+          ],
+          speakerNotes: "Ushbu uchta tamoyilsiz haqiqiy adolatli va demokratik huquqiy jamiyatni tasavvur qilib bo'lmaydi.",
+          imageKeyword: "gleaming polished brass balance scales of justice on dark leather law books table"
+        },
+        {
+          id: 4, type: "deep_dive", badge: "MEZONLAR VA KAFOLATLAR",
+          title: "Qonuniylik va Tenglik Indekslari",
+          metricValue: "100%",
+          metricLabel: "Barcha Fuqarolarning Qonun Oldida Tengligi",
+          bullets: [
+            "Konstitutsiyaning to'g'ridan-to'g'ri amal qilishi va eng oliy yuridik kuchga egaligi",
+            "Xalqaro huquq normalari va Inson Huquqlari Umumjahon Deklaratsiyasi ustuvorligi",
+            "Mansabdor shaxslarning har bir qarori uchun xalq va qonun oldida shaxsiy javobgarligi"
+          ],
+          speakerNotes: "Huquqiy davlatda konstitutsiya eng oliy kuchga ega bo'lib, unga zid bo'lgan har qanday normativ hujjat o'z kuchini yo'qotadi.",
+          imageKeyword: "historic national constitution book open with antique fountain pen golden wax seal legal parchment"
+        },
+        {
+          id: 5, type: "roadmap", badge: "HUQUQIY RIVOJLANISH BOSQICHLARI",
+          title: "Huquqiy Ong va Madaniyat Bosqichlari",
+          steps: [
+            { step: "1-BOSQICH", title: "Huquqiy Bilim", text: "Qonunlar, o'z huquq va majburiyatlari haqida aniq bilim va savodxonlikka ega bo'lish." },
+            { step: "2-BOSQICH", title: "Huquqiy E'tiqod", text: "Qonun qoidalariga shaxsiy e'tiqod va adolat tuyg'usi bilan samimiy hurmatda bo'lish." },
+            { step: "3-BOSQICH", title: "Faol Huquqiy Xulq", text: "Qonunlarni ongli bajarish, nohaqlikka murosasiz bo'lish va o'z haq-huquqini munosib himoya qilish." }
+          ],
+          speakerNotes: "Huquq qog'ozda qolib ketmasligi uchun har bir fuqaroda yuksak huquqiy ong va madaniyat shakllanishi shart.",
+          imageKeyword: "wooden judge gavel on sound block beside open legal penal code volume"
+        },
+        {
+          id: 6, type: "summary", badge: "XULOSA VA ADOLAT MEZONI",
+          title: "Huquq — Adolat va Erkinlik Qalqoni",
+          quote: `"Kuch adolatda bo'lmasa — zulmga, adolat kuchga ega bo'lmasa — ojizlikka aylanadi."`,
+          takeaways: [
+            "Huquq har bir insonning sha'ni, erkinligi va xavfsizligini ta'minlovchi oliy ijtimoiy qadriyatdir",
+            "O'z huquqlarini chuqur bilgan inson boshqalarning ham huquqlarini hurmat qiladi",
+            "Mustahkam huquqiy tizim va qonun ustuvorligi — tinchlik, taraqqiyot va farovonlik garovidir"
+          ],
+          speakerNotes: "Xulosa qilib aytganda, qonun bor joyda tartib, adolat bor joyda taraqqiyot va barqarorlik bo'ladi.",
+          imageKeyword: "majestic Supreme Court architecture facade white marble columns grand pediment blue hour sky"
+        }
+      ];
+    }
+  },
+
+  // 3. BIOLOGIYA, TIBBIYOT VA EKOLOGIYA
   biology: {
     match: /fotosintez|o'simlik|hujayra|dnk|genetika|biologiya|organizm|ekologiya|tabiat|ferment|oqsillar|mitoxondriya/i,
     build: (topic) => {
@@ -928,7 +1012,7 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
     // 3. Chuqur Tahlil va Metrika (Deep Dive)
     {
       type: "deep_dive", badge: "CHUQUR TAHLIL VA METRIKA",
-      title: "Asosiy Ko'rsatkichlar va Samaradorlik Ko'lami",
+      title: `${cleanTitle}: Asosiy Ko'rsatkichlar va Samaradorlik Ko'lami`,
       metricValue: "96.8%",
       metricLabel: "Amaliy Tatbiq va Ijobiy Natija Ko'rsatkichi",
       bullets: [
@@ -941,7 +1025,7 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
     // 4. Bento Grid (4 modulli kartochka)
     {
       type: "grid4", badge: "KOMPLEKS TUZILMA VA KOMPONENTLAR",
-      title: "Asosiy Tarkibiy Qismlar va Mexanizmlar",
+      title: `${cleanTitle}: Asosiy Tarkibiy Qismlar va Mexanizmlar`,
       items: [
         { title: "Metodologik Baza", desc: "Zamonaviy standartlar va ilmiy mezonlarga asoslangan qat'iy tamoyillar majmui." },
         { title: "Texnologik Infratuzilma", desc: "Raqamli platformalar, intellektual modullar va zamonaviy dasturiy vositalar." },
@@ -953,7 +1037,7 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
     // 5. Bosqichma-bosqich Yo'l Xaritasi (Roadmap / Timeline)
     {
       type: "roadmap", badge: "AMALGA OSHIRISH BOSQICHLARI",
-      title: "Ketma-ket Rivojlanish Yo'l Xaritasi (Roadmap)",
+      title: `${cleanTitle}: Rivojlanish Bosqichlari va Yo'l Xaritasi`,
       steps: [
         { step: "1-BOSQICH", title: "Tayyorgarlik va Diagnostika", text: lines[17] ? lines[17].slice(0, 85) : "Dastlabki tahlillarni o'tkazish va vazifalarni aniq belgilash." },
         { step: "2-BOSQICH", title: "Amaliy Ijro va Modellashtirish", text: lines[18] ? lines[18].slice(0, 85) : "Reja asosida amaliyotni yo'lga qo'yish va oraliq nazorat." },
@@ -976,7 +1060,7 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
     // 7. Bento 3 (Katta blok + 2 yon karta)
     {
       type: "bento_3", badge: "STRATEGIK FOKUS VA YONDOSH MODULLAR",
-      title: "Markaziy Yadro va Qo'shimcha Mexanizmlar",
+      title: `${cleanTitle}: Bosh Maqsad va Qo'shimcha Modullar`,
       mainBlock: {
         title: `${cleanTitle}ning Bosh Maqsadi`,
         desc: "Sohani yuqori sifat va xalqaro andozalar darajasiga olib chiqish, inson kapitalini har tomonlama qo'llab-quvvatlash."
@@ -990,7 +1074,7 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
     // 8. Qiyosiy Tahlil (Pros & Cons)
     {
       type: "pros_cons", badge: "QIYOSIY FOYDALAR VA XATARLAR",
-      title: "Afzalliklar va E'tibor Qaratiladigan Xatarlar",
+      title: `${cleanTitle}: Asosiy Afzalliklar va Xatarlar Tahlili`,
       prosTitle: "✅ Asosiy Afzalliklar",
       pros: [
         "Mehnat unumdorligining bir necha barobar ortishi va aniqlik",
