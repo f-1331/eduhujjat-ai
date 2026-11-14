@@ -238,9 +238,67 @@ export default function PowerPointModule() {
     imageStyle: "realistic",
     detailLevel: "deep"
   }));
+  const [slideTransition, setSlideTransition] = useState('fade'); // 'fade' | 'slide' | 'zoom' | 'flip'
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSpeakerNotes, setShowSpeakerNotes] = useState(true);
+
+  // Animatsiya / Perexod klassini hisoblash
+  const getTransitionClass = () => {
+    switch (slideTransition) {
+      case 'slide':
+        return 'animate-in slide-in-from-right-8 fade-in duration-300 ease-out';
+      case 'zoom':
+        return 'animate-in zoom-in-90 fade-in duration-300 ease-out';
+      case 'flip':
+        return 'animate-in spin-in-1 fade-in duration-300 ease-out';
+      default:
+        return 'animate-in fade-in duration-300 ease-out';
+    }
+  };
+
+  // Muallif ismini barcha kerakli slaydlarga sinxron kiritish
+  const handleAuthorNameChange = (newName) => {
+    setAuthorName(newName);
+    setCards(prev => prev.map((c, i) => {
+      if (i === 0 || i === prev.length - 1 || c.type === 'hero' || c.type === 'summary') {
+        return { ...c, authorName: newName };
+      }
+      return c;
+    }));
+  };
+
+  // Slaydlar sonini tezkor o'zgartirish va darhol kartalarni moslashtirish
+  const handleQuickSlideCountChange = (count) => {
+    const target = Math.max(1, Math.min(30, parseInt(count, 10) || 10));
+    setSlideCount(target);
+    const updated = generateRealAIGammaCards(promptInput.trim(), {
+      slideCount: target,
+      authorName: authorName.trim(),
+      includeImages,
+      imageStyle,
+      imageDensity,
+      detailLevel
+    });
+    setCards(updated);
+    if (activeSlideIndex >= target) {
+      setActiveSlideIndex(target - 1);
+    }
+  };
+
+  // Axborot chuqurligini o'zgartirish va darhol kartalarni yangilash
+  const handleDetailLevelChange = (newLevel) => {
+    setDetailLevel(newLevel);
+    const updated = generateRealAIGammaCards(promptInput.trim(), {
+      slideCount: cards.length || slideCount,
+      authorName: authorName.trim(),
+      includeImages,
+      imageStyle,
+      imageDensity,
+      detailLevel: newLevel
+    });
+    setCards(updated);
+  };
 
   // Tahrirlash rejimi (In-place edit mode)
   const [isEditingMode, setIsEditingMode] = useState(false);
@@ -308,11 +366,44 @@ export default function PowerPointModule() {
       generated = generateRealAIGammaCards(promptInput.trim(), genOpts);
     }
 
-    // Har bir slaydga rasmlarni to'g'ri bog'lash
-    if (includeImages && Array.isArray(generated)) {
-      generated = generated.map(c => ({
+    // QAT'IY SLAYD SONI TALABI: Tanlangan slaydlar soniga 100% moslashtirish
+    if (Array.isArray(generated) && generated.length !== targetSlideCount) {
+      if (generated.length < targetSlideCount) {
+        const filler = generateRealAIGammaCards(promptInput.trim(), { ...genOpts, slideCount: targetSlideCount });
+        const existingTitles = new Set(generated.map(g => g.title));
+        const needed = targetSlideCount - generated.length;
+        const candidates = filler.slice(1, -1).filter(f => !existingTitles.has(f.title));
+        const pool = candidates.length >= needed ? candidates : filler.slice(1, -1);
+        
+        const lastSlide = generated[generated.length - 1];
+        const initialSlides = generated.slice(0, -1);
+        for (let i = 0; i < needed; i++) {
+          initialSlides.push({
+            ...pool[i % pool.length],
+            id: initialSlides.length + 1
+          });
+        }
+        generated = [...initialSlides, { ...lastSlide, id: targetSlideCount }];
+      } else if (generated.length > targetSlideCount) {
+        const first = generated[0];
+        const last = generated[generated.length - 1];
+        const middle = generated.slice(1, -1);
+        const sampled = [];
+        const step = middle.length / (targetSlideCount - 2);
+        for (let i = 0; i < targetSlideCount - 2; i++) {
+          sampled.push(middle[Math.min(middle.length - 1, Math.floor(i * step))]);
+        }
+        generated = [first, ...sampled, last];
+      }
+    }
+
+    // Har bir slaydga rasmlarni va muallifni to'g'ri bog'lash
+    if (Array.isArray(generated)) {
+      generated = generated.map((c, i) => ({
         ...c,
-        imageUrl: c.imageUrl || resolveCardImageUrl(c, promptInput.trim(), imageStyle)
+        id: i + 1,
+        authorName: (i === 0 || i === generated.length - 1) ? (authorName.trim() || c.authorName || '') : c.authorName,
+        imageUrl: includeImages ? (c.imageUrl || resolveCardImageUrl({ ...c, id: i + 1 }, promptInput.trim(), imageStyle)) : null
       }));
     }
 
@@ -342,6 +433,7 @@ export default function PowerPointModule() {
         includeImages,
         imageStyle,
         imageDensity,
+        slideTransition,
         filename: `${cleanName}_${cards.length}slayd_Gamma_AI.pptx`
       });
 
@@ -534,26 +626,26 @@ export default function PowerPointModule() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
                 {/* 1. Muallif Ism-sharifi */}
                 <div className="space-y-1">
                   <label className="text-slate-300 font-semibold flex items-center gap-1">
-                    👤 Muallif (Titul varaqqa):
+                    👤 Muallif (Titul & Xulosa):
                   </label>
                   <input
                     type="text"
                     value={authorName}
-                    onChange={(e) => setAuthorName(e.target.value)}
+                    onChange={(e) => handleAuthorNameChange(e.target.value)}
                     placeholder="Masalan: Aziza Karimova (10-maktab)"
-                    className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 text-xs focus:outline-none focus:ring-1 focus:ring-sky-400"
+                    className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 font-medium"
                   />
                 </div>
 
                 {/* 2. Slaydlar soni (1 dan 30 gacha) */}
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-slate-300 font-semibold">
-                    <span>📄 Slaydlar soni (1-30):</span>
-                    <span className="font-mono font-bold text-amber-300">{slideCount} ta</span>
+                    <span>📄 Slaydlar soni:</span>
+                    <span className="font-mono font-bold text-amber-300">{cards.length || slideCount} ta</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
@@ -561,7 +653,7 @@ export default function PowerPointModule() {
                       min={1}
                       max={30}
                       value={slideCount}
-                      onChange={(e) => setSlideCount(parseInt(e.target.value, 10))}
+                      onChange={(e) => handleQuickSlideCountChange(parseInt(e.target.value, 10))}
                       className="w-full accent-amber-400 cursor-pointer"
                     />
                     <input
@@ -569,19 +661,19 @@ export default function PowerPointModule() {
                       min={1}
                       max={30}
                       value={slideCount}
-                      onChange={(e) => setSlideCount(Math.max(1, Math.min(30, parseInt(e.target.value, 10) || 1)))}
+                      onChange={(e) => handleQuickSlideCountChange(Math.max(1, Math.min(30, parseInt(e.target.value, 10) || 1)))}
                       className="w-12 px-1.5 py-1 text-center font-bold bg-white/10 border border-white/20 rounded-lg text-white text-xs"
                     />
                   </div>
                   {/* Tezkor tanlov tugmalari */}
-                  <div className="flex gap-1 pt-0.5 overflow-x-auto">
+                  <div className="flex gap-1 pt-0.5 overflow-x-auto no-scrollbar">
                     {[5, 8, 10, 15, 20, 25, 30].map(cnt => (
                       <button
                         key={cnt}
-                        onClick={() => setSlideCount(cnt)}
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition ${
+                        onClick={() => handleQuickSlideCountChange(cnt)}
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
                           slideCount === cnt 
-                            ? 'bg-amber-400 text-slate-950 font-black' 
+                            ? 'bg-amber-400 text-slate-950 font-black scale-105' 
                             : 'bg-white/10 hover:bg-white/20 text-slate-300'
                         }`}
                       >
@@ -628,7 +720,7 @@ export default function PowerPointModule() {
                       title="Barcha slaydlardagi rasmlarni yangi unikal AI tasvirlar bilan qayta chizish"
                     >
                       <Sparkles className="w-3 h-3 text-amber-400" />
-                      <span>🔄 Barcha Rasmlarni Yangilash (AI Re-roll)</span>
+                      <span>🔄 Rasmlarni Yangilash</span>
                     </button>
                   )}
                 </div>
@@ -640,12 +732,29 @@ export default function PowerPointModule() {
                   </label>
                   <select
                     value={detailLevel}
-                    onChange={(e) => setDetailLevel(e.target.value)}
-                    className="w-full px-2.5 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer"
+                    onChange={(e) => handleDetailLevelChange(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer font-medium"
                   >
                     <option value="deep" className="bg-slate-900 text-white">🎓 Chuqur Darslik & Faktlar</option>
                     <option value="balanced" className="bg-slate-900 text-white">⚡ Balansli & Ko'rgazmali</option>
                     <option value="brief" className="bg-slate-900 text-white">📋 Qisqa Tezislar & Metrika</option>
+                  </select>
+                </div>
+
+                {/* 5. Perexod & Animatsiya */}
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-semibold flex items-center gap-1">
+                    ✨ Perexod Animatsiyasi:
+                  </label>
+                  <select
+                    value={slideTransition}
+                    onChange={(e) => setSlideTransition(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer font-medium"
+                  >
+                    <option value="fade" className="bg-slate-900 text-white">✨ Yumshoq Fade (Tavsiya)</option>
+                    <option value="slide" className="bg-slate-900 text-white">🚀 Yon Siljish (Slide)</option>
+                    <option value="zoom" className="bg-slate-900 text-white">🔍 Zoom / Kattalashish</option>
+                    <option value="flip" className="bg-slate-900 text-white">💫 3D Yaltirash (Flip)</option>
                   </select>
                 </div>
               </div>
@@ -847,8 +956,8 @@ export default function PowerPointModule() {
               <span className="uppercase">{currentCard.badge || "AI SLAYD"}</span>
             </div>
 
-            {/* SLAYD KONTENTI: INTERAKTIV TAHRIRLANADIGAN BLOKLAR */}
-            <div className="my-auto py-2">
+            {/* SLAYD KONTENTI: INTERAKTIV TAHRIRLANADIGAN BLOKLAR (Animatsiyali Perexod) */}
+            <div key={`${activeSlideIndex}-${slideTransition}`} className={`my-auto py-2 ${getTransitionClass()}`}>
               {/* 1. HERO SLAYDI */}
               {currentCard.type === 'hero' && (
                 <div 
@@ -887,11 +996,8 @@ export default function PowerPointModule() {
                       <span className="text-xs font-semibold text-emerald-400">👤 Muallif:</span>
                       <input
                         type="text"
-                        value={currentCard.authorName || authorName || ''}
-                        onChange={(e) => {
-                          setAuthorName(e.target.value);
-                          updateCurrentCard({ authorName: e.target.value });
-                        }}
+                        value={currentCard.authorName !== undefined ? currentCard.authorName : (authorName || '')}
+                        onChange={(e) => handleAuthorNameChange(e.target.value)}
                         placeholder="Muallif ism-sharifi..."
                         className="flex-1 bg-transparent text-xs font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded px-1.5 py-0.5"
                         style={{ color: `#${activeTheme.accent2}` }}
@@ -1540,9 +1646,14 @@ export default function PowerPointModule() {
 
                   <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
                     <span className="text-emerald-400 font-semibold">👤 Taqdimot muallifi:</span>
-                    <span className="font-bold font-mono" style={{ color: `#${activeTheme.accent}` }}>
-                      {currentCard.authorName || authorName || "EduHujjat AI"}
-                    </span>
+                    <input
+                      type="text"
+                      value={currentCard.authorName !== undefined ? currentCard.authorName : (authorName || '')}
+                      onChange={(e) => handleAuthorNameChange(e.target.value)}
+                      placeholder="Muallif ism-sharifi..."
+                      className="font-bold font-mono bg-transparent border-b border-dashed border-white/30 focus:outline-none focus:border-sky-400 px-1 py-0.5 text-right"
+                      style={{ color: `#${activeTheme.accent}` }}
+                    />
                   </div>
                 </div>
               )}
@@ -1888,8 +1999,8 @@ export default function PowerPointModule() {
             </div>
           </div>
 
-          {/* Slayd markazi */}
-          <div className="max-w-5xl mx-auto w-full my-auto">
+          {/* Slayd markazi (Animatsiyali Perexod) */}
+          <div key={`fs-${activeSlideIndex}-${slideTransition}`} className={`max-w-5xl mx-auto w-full my-auto ${getTransitionClass()}`}>
             {/* HERO */}
             {currentCard.type === 'hero' && (
               <div 

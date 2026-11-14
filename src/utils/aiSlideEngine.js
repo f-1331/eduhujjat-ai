@@ -849,11 +849,27 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
   const targetCount = Math.max(1, Math.min(30, parseInt(slideCount, 10) || 6));
   const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 3);
 
+  // detailLevel bo'yicha matn hajmini va chuqurligini dinamik moslashtirish (brief, balanced, deep)
+  const adaptBullets = (bullets) => {
+    if (!Array.isArray(bullets)) return bullets;
+    if (detailLevel === 'brief') {
+      return bullets.slice(0, 2).map(b => b.length > 55 ? b.slice(0, 52) + '...' : b);
+    }
+    if (detailLevel === 'balanced') {
+      return bullets.slice(0, 3).map(b => b.length > 95 ? b.slice(0, 92) + '...' : b);
+    }
+    // 'deep' (Ko'p, chuqur va batafsil tahlil)
+    if (bullets.length < 4) {
+      return [...bullets, "Qo'shimcha ilmiy-amaliy tadqiqotlar va xalqaro metodik mezonlar bilan boyitilgan."];
+    }
+    return bullets;
+  };
+
   // 1-slayd: Sarlavha (Hero)
   const slide1 = {
     id: 1, type: "hero", badge: "GAMMA & GENSPARK ULTRA AI",
     title: cleanTitle,
-    subtitle: lines[1] ? lines[1].slice(0, 120) : "Fundamental tahlil, zamonaviy metodologiya va amaliy tatbiq etish mezonlari",
+    subtitle: lines[1] ? lines[1].slice(0, 120) : (detailLevel === 'brief' ? "Qisqa tahlil va asosiy mezonlar" : "Fundamental tahlil, zamonaviy metodologiya va amaliy tatbiq etish mezonlari"),
     authorName: authorName || "",
     speakerNotes: `Assalomu alaykum, hurmatli tinglovchilar! Bugungi taqdimotimiz "${cleanTitle}" mavzusiga bag'ishlanadi. Unda biz eng muhim masalalar, qonuniyatlar va asosiy yechimlarni ko'rib chiqamiz.`
   };
@@ -1259,6 +1275,11 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
       badge: `${template.badge || "ILMIY TAHLIL"} • (${slideNumber}/${targetCount})`
     };
 
+    if (card.bullets) card.bullets = adaptBullets(card.bullets);
+    if (card.leftBullets) card.leftBullets = adaptBullets(card.leftBullets);
+    if (card.rightBullets) card.rightBullets = adaptBullets(card.rightBullets);
+    if (card.takeaways) card.takeaways = adaptBullets(card.takeaways);
+
     if (includeImages) {
       card.imageUrl = resolveCardImageUrl(card, cleanTitle, imageStyle);
     }
@@ -1268,6 +1289,9 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
 
   // Oxirgi slaydni qo'shish
   finalSummarySlide.id = targetCount;
+  if (finalSummarySlide.takeaways) {
+    finalSummarySlide.takeaways = adaptBullets(finalSummarySlide.takeaways);
+  }
   if (includeImages) {
     slide1.imageUrl = resolveCardImageUrl(slide1, cleanTitle, imageStyle);
     finalSummarySlide.imageUrl = resolveCardImageUrl(finalSummarySlide, cleanTitle, imageStyle);
@@ -1290,7 +1314,7 @@ export function generateRealAIGammaCards(topicOrText, options = {}) {
   // 1. Domenlarni aniqlash va moslashtirish (Istalgan slayd soniga moslash)
   for (const [key, domain] of Object.entries(DOMAIN_KNOWLEDGE)) {
     if (domain.match.test(text)) {
-      const baseCards = domain.build(text);
+      const baseCards = domain.build(text, opts);
       if (baseCards && Array.isArray(baseCards) && baseCards.length > 0) {
         let finalDeck = [];
 

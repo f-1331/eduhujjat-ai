@@ -555,13 +555,16 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
       });
     }
 
-    // Foydalanuvchi / Taqdimotchi ismi aks etadigan maxsus blok (Pastda katta, yorqin va aniq)
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 1.2, y: 4.45, w: 7.6, h: 0.58, fill: { color: style.bg }, line: { color: style.accent, width: 1.5 }, rectRadius: 0.1
-    });
-    slide.addText(`👤 TAQDIMOTCHI / MUALLIF: ${authorName.toUpperCase()}  |  🏛️ EDUHUJJAT AI`, {
-      x: 1.4, y: 4.45, w: 7.2, h: 0.58, fontSize: 11.5, bold: true, color: style.accent, valign: 'middle', fontFace: 'Arial'
-    });
+    // Foydalanuvchi / Taqdimotchi ismi aks etadigan maxsus blok (Agar kiritilgan bo'lsa)
+    const cleanAuthor = String(authorName || '').trim();
+    if (cleanAuthor) {
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: 1.2, y: 4.45, w: 7.6, h: 0.58, fill: { color: style.bg }, line: { color: style.accent, width: 1.5 }, rectRadius: 0.1
+      });
+      slide.addText(`👤 TAQDIMOTCHI / MUALLIF: ${cleanAuthor.toUpperCase()}`, {
+        x: 1.4, y: 4.45, w: 7.2, h: 0.58, fontSize: 11.5, bold: true, color: style.accent, valign: 'middle', fontFace: 'Arial'
+      });
+    }
     return;
   }
 
@@ -1377,7 +1380,8 @@ export async function generatePresentationPptx(config = {}) {
     filename = "Gamma_Taqdimot.pptx",
     includeImages = true,
     imageDensity = 'medium',
-    imageStyle = 'realistic'
+    imageStyle = 'realistic',
+    slideTransition = 'fade'
   } = config;
 
   let themeKey = styleName;
@@ -1506,9 +1510,10 @@ export async function generatePresentationPptx(config = {}) {
     slide.background = { color: slideBgColor };
 
     // PPTX Perexod (Transition Animatsiyasi)
+    const pptxTransType = slideTransition === 'slide' ? 'push' : (slideTransition === 'zoom' ? 'zoom' : (slideTransition === 'flip' ? 'wipe' : 'fade'));
     slide.transition = {
-      type: index === 0 ? 'fade' : transitionTypes[index % transitionTypes.length],
-      duration: 0.8
+      type: index === 0 ? 'fade' : pptxTransType,
+      duration: 0.6
     };
 
     // 100+ XIL DINAMIK FON GRAFIKASI (HECH QACHON BIR XIL BO'LMAYDI)
@@ -1542,9 +1547,11 @@ export async function generatePresentationPptx(config = {}) {
       slide.addText(`📌 ${topic.slice(0, 36)}`, {
         x: 0.8, y: 5.35, w: 3.8, h: 0.22, fontSize: 8.5, color: style.subtext, fontFace: 'Arial'
       });
-      slide.addText(`👤 ${authorName}`, {
-        x: 4.6, y: 5.35, w: 3.0, h: 0.22, fontSize: 8.5, color: style.subtext, align: 'center', fontFace: 'Arial'
-      });
+      if (authorName && authorName.trim()) {
+        slide.addText(`👤 ${authorName.trim()}`, {
+          x: 4.6, y: 5.35, w: 3.0, h: 0.22, fontSize: 8.5, color: style.subtext, align: 'center', fontFace: 'Arial'
+        });
+      }
       slide.addText(`${index + 1} / ${slideDeck.length}`, {
         x: 7.8, y: 5.35, w: 1.4, h: 0.22, fontSize: 8.5, color: style.subtext, align: 'right', fontFace: 'Arial'
       });
