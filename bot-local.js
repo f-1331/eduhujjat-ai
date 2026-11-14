@@ -35,6 +35,8 @@ import {
   generateAIStudentReference,
   generateAIPedagogicalProtocol
 } from './src/utils/universalAiBrain.js';
+import { analyzeUzbekSpelling } from './src/utils/uzbekSpellChecker.js';
+import { latinToCyrillic, cyrillicToLatin } from './src/utils/transliterator.js';
 
 // 1. .env faylini yuklash
 try {
@@ -2259,6 +2261,272 @@ bot.command('start', async (ctx) => {
     `🔑 **Saytga Kirish Kodingiz:** \`${accessCode}\`\n\n` +
     `📎 **Word (.docx), Excel (.xlsx) faylini tashlang yoki matn yuboring** — tizim 3 soniyada tayyorlab beradi!`,
     { parse_mode: 'Markdown', reply_markup: replyKeyboard }
+  );
+});
+
+// =========================================================================
+// UNIVERSAL TO'G'RIDAN-TO'G'RI BUYRUQLAR (PREDELDAN YUQORI DARAJA)
+// =========================================================================
+
+// /help va /yordam BUYRUG'I
+bot.command(['help', 'yordam', 'menu'], async (ctx) => {
+  const role = getEffectiveRole(ctx);
+  const helpText = 
+    `🌟 **EDUKATSIYA AI & SMARTOFFICE PRO — BARCHA BUYRUQLAR RO'YXATI:**\n\n` +
+    `📊 **1. Taqdimot va Slaydlar:**\n` +
+    `• \`/slayd <mavzu>\` — Gamma AI uslubida professional slayd (.pptx)\n\n` +
+    `📝 **2. Ta'lim va Nazorat:**\n` +
+    `• \`/test <mavzu> [soni]\` — DTS bo'yicha nazorat testi va kaliti (.docx)\n` +
+    `• \`/dars <mavzu>\` yoki \`/konspekt <mavzu>\` — 45 daqiqalik dars konspekti (.docx)\n` +
+    `• \`/sertifikat <ism>\` — QR-kodli Faxriy yorliq va diplom (.docx)\n\n` +
+    `🏛️ **3. Maktab va Rasmiy Hujjatlar:**\n` +
+    `• \`/buyruq <mavzu>\` — Maktab direktori rasmiy buyrug'i (.docx)\n` +
+    `• \`/bayonnoma <mavzu>\` — Pedagogik kengash yig'ilish bayonnomasi (.docx)\n` +
+    `• \`/tavsiyanoma <o'quvchi>\` — O'quvchi xarakteristikasi va ma'lumotnoma (.docx)\n` +
+    `• \`/excel <mavzu>\` — Avtomatik formulali Excel hisobot jadvali (.xlsx)\n\n` +
+    `✍️ **4. Matn va Imlo Asboblari:**\n` +
+    `• \`/imlo <matn>\` — O'zbek tili imlo xatolarini tekshirish va to'g'rilash\n` +
+    `• \`/lotin <matn>\` — Kirill matnini Lotin alifbosiga o'girish\n` +
+    `• \`/kirill <matn>\` — Lotin matnini Kirill alifbosiga o'girish\n\n` +
+    `🔑 **5. Shaxsiy Boshqaruv va Profil:**\n` +
+    `• \`/kod\` — Veb-saytga kirish shaxsiy kodingiz va Mini App\n` +
+    `• \`/hisob\` — Balans, tarif va qolgan imkoniyatlar\n` +
+    `• \`/narxlar\` — Barcha tarif rejalari narxlar jadvali\n` +
+    (role === 'OWNER' || role === 'ADMIN' ? 
+    `\n👑 **6. Boshqaruvchi Buyruqlari:**\n` +
+    `• \`/active <id> <muddat>\` — Foydalanuvchini yoqish\n` +
+    `• \`/userlog <id>\` — Oxirgi 100 ta amal monitoringi\n` +
+    `• \`/devices\` — Faol qurilmalar va sessiyalar\n` +
+    `• \`/kick <kod>\` — Qurilmani darhol chiqarib yuborish\n` +
+    `• \`/broadcast <matn>\` — Barcha foydalanuvchilarga xabar yuborish` : ``);
+
+  const kb = new InlineKeyboard()
+    .webApp("🚀 Telegram Mini App-da Ochish", WEBAPP_URL)
+    .row()
+    .url("🌐 To'liq Saytda Ochish", WEBAPP_URL);
+
+  return ctx.reply(helpText, { parse_mode: 'Markdown', reply_markup: kb });
+});
+
+// /test BUYRUG'I
+bot.command(['test', 'nazorat'], async (ctx) => {
+  const userId = ctx.from.id;
+  const username = ctx.from.username;
+  if (!isUserActive(userId, username)) {
+    return ctx.reply(
+      `🔒 **Test tuzish uchun hisobingizni faollashtiring.**\n\nSizning ID: \`${userId}\``,
+      { reply_markup: getTariffInlineKeyboard(userId) }
+    );
+  }
+  const raw = ctx.match ? ctx.match.trim() : '';
+  if (!raw) {
+    return ctx.reply(
+      `📝 **Test tuzish uchun mavzuni yozing:**\n\n` +
+      `Masalan:\n` +
+      `• \`/test 9-sinf informatika dasturlash asoslari 15 ta\`\n` +
+      `• \`/test 8-sinf biologiya qon aylanish tizimi 20 ta\``,
+      { parse_mode: 'Markdown' }
+    );
+  }
+  return processIntelligentMessage(ctx, `/test ${raw}`);
+});
+
+// /dars va /konspekt BUYRUG'I
+bot.command(['dars', 'konspekt', 'reja'], async (ctx) => {
+  const userId = ctx.from.id;
+  const username = ctx.from.username;
+  if (!isUserActive(userId, username)) {
+    return ctx.reply(
+      `🔒 **Dars ishlanmasi olish uchun hisobingizni faollashtiring.**\n\nSizning ID: \`${userId}\``,
+      { reply_markup: getTariffInlineKeyboard(userId) }
+    );
+  }
+  const raw = ctx.match ? ctx.match.trim() : '';
+  if (!raw) {
+    return ctx.reply(
+      `📖 **Dars konspekti olish uchun mavzuni yozing:**\n\n` +
+      `Masalan:\n` +
+      `• \`/konspekt 8-sinf fizika Nyuton qonunlari\`\n` +
+      `• \`/dars 10-sinf ona tili uyushiq bo'laklar\``,
+      { parse_mode: 'Markdown' }
+    );
+  }
+  return processIntelligentMessage(ctx, `/konspekt ${raw}`);
+});
+
+// /buyruq BUYRUG'I
+bot.command(['buyruq', 'order'], async (ctx) => {
+  const userId = ctx.from.id;
+  const username = ctx.from.username;
+  if (!isUserActive(userId, username)) {
+    return ctx.reply(
+      `🔒 **Rasmiy buyruq tayyorlash uchun hisobingizni faollashtiring.**\n\nSizning ID: \`${userId}\``,
+      { reply_markup: getTariffInlineKeyboard(userId) }
+    );
+  }
+  const raw = ctx.match ? ctx.match.trim() : '';
+  if (!raw) {
+    return ctx.reply(
+      `📜 **Maktab buyrug'i yaratish uchun mavzuni yozing:**\n\n` +
+      `Masalan:\n` +
+      `• \`/buyruq O'quvchilar o'rtasida fan olimpiadasini o'tkazish to'g'risida\`\n` +
+      `• \`/buyruq Navbatchilik jadvalini tasdiqlash to'g'risida\``,
+      { parse_mode: 'Markdown' }
+    );
+  }
+  return processIntelligentMessage(ctx, `/buyruq ${raw}`);
+});
+
+// /bayonnoma BUYRUG'I
+bot.command(['bayonnoma', 'protokol'], async (ctx) => {
+  const userId = ctx.from.id;
+  const username = ctx.from.username;
+  if (!isUserActive(userId, username)) {
+    return ctx.reply(
+      `🔒 **Yig'ilish bayonnomasi yaratish uchun hisobingizni faollashtiring.**\n\nSizning ID: \`${userId}\``,
+      { reply_markup: getTariffInlineKeyboard(userId) }
+    );
+  }
+  const raw = ctx.match ? ctx.match.trim() : '';
+  if (!raw) {
+    return ctx.reply(
+      `📋 **Yig'ilish bayonnomasi mavzusini yozing:**\n\n` +
+      `Masalan:\n` +
+      `• \`/bayonnoma 1-chorak yakunlari va o'zlashtirish tahlili\`\n` +
+      `• \`/bayonnoma Maktab bitiruvchilarini kasbga yo'naltirish yig'ilishi\``,
+      { parse_mode: 'Markdown' }
+    );
+  }
+  return processIntelligentMessage(ctx, `/bayonnoma ${raw}`);
+});
+
+// /tavsiyanoma BUYRUG'I
+bot.command(['tavsiyanoma', 'xarakteristika', 'malumotnoma'], async (ctx) => {
+  const userId = ctx.from.id;
+  const username = ctx.from.username;
+  if (!isUserActive(userId, username)) {
+    return ctx.reply(
+      `🔒 **Tavsiyanoma / Ma'lumotnoma olish uchun hisobingizni faollashtiring.**\n\nSizning ID: \`${userId}\``,
+      { reply_markup: getTariffInlineKeyboard(userId) }
+    );
+  }
+  const raw = ctx.match ? ctx.match.trim() : '';
+  if (!raw) {
+    return ctx.reply(
+      `🎓 **O'quvchi ma'lumotnomasini yaratish uchun yozing:**\n\n` +
+      `Masalan: \`/tavsiyanoma 10-A sinf o'quvchisi Karimova Dildora namunali xulqi va a'lo baholari bilan\``,
+      { parse_mode: 'Markdown' }
+    );
+  }
+  return processIntelligentMessage(ctx, `/tavsiyanoma ${raw}`);
+});
+
+// /sertifikat BUYRUG'I
+bot.command(['sertifikat', 'diplom', 'yorliq'], async (ctx) => {
+  const userId = ctx.from.id;
+  const username = ctx.from.username;
+  if (!isUserActive(userId, username)) {
+    return ctx.reply(
+      `🔒 **Faxriy yorliq yaratish uchun hisobingizni faollashtiring.**\n\nSizning ID: \`${userId}\``,
+      { reply_markup: getTariffInlineKeyboard(userId) }
+    );
+  }
+  const raw = ctx.match ? ctx.match.trim() : 'Faxriy Yorliq va Sertifikat';
+  const buf = await generateOfficialOrderWordBuffer(`Faxriy Yorliq: ${raw}`);
+  consumeUserUse(userId, 'certificate', raw);
+  return ctx.replyWithDocument(new InputFile(buf, `Faxriy_Yorliq_${raw.slice(0, 15).replace(/[^a-zA-Z0-9]/g, '_')}.docx`), {
+    caption: `🏆 **QR-kodli rasmiy Faxriy Yorliq hujjati tayyor!** (.docx)\n\nMavzu/Ism: **${raw}**`
+  });
+});
+
+// /imlo BUYRUG'I
+bot.command(['imlo', 'tekshir'], async (ctx) => {
+  const raw = ctx.match ? ctx.match.trim() : '';
+  if (!raw) {
+    return ctx.reply(
+      `✍️ **O'zbek tili imlo xatolarini tekshirish:**\n\n` +
+      `Matningizni yozing, masalan:\n` +
+      `\`/imlo man bugun darsga bormoxchiman lekn vaqtim yetmiydi\``,
+      { parse_mode: 'Markdown' }
+    );
+  }
+  const analysis = analyzeUzbekSpelling(raw);
+  if (analysis.errorCount === 0) {
+    return ctx.reply(`✅ **Tabriklaymiz!** Ushbu matnda hech qanday imlo xatosi aniqlanmadi:\n\n\`${raw}\``, { parse_mode: 'Markdown' });
+  }
+
+  let errorDetails = `✍️ **IMLO XATOLARI TAHLILI (${analysis.errorCount} ta xato aniqlandi):**\n\n`;
+  analysis.errors.slice(0, 15).forEach((e, idx) => {
+    errorDetails += `**${idx + 1}.** \`${e.original}\` ➔ **${e.suggestion}**\n   *(Izoh: ${e.reason})*\n`;
+  });
+  errorDetails += `\n✨ **To'g'rilangan yakuniy matn:**\n\`${analysis.correctedText}\``;
+
+  return ctx.reply(errorDetails, { parse_mode: 'Markdown' });
+});
+
+// /lotin BUYRUG'I
+bot.command('lotin', async (ctx) => {
+  const raw = ctx.match ? ctx.match.trim() : '';
+  if (!raw) return ctx.reply("🔄 Kirill matnini yuboring: `/lotin Салом, бугунги дарс режаси`", { parse_mode: 'Markdown' });
+  const converted = cyrillicToLatin(raw);
+  return ctx.reply(`🔤 **Lotin alifbosiga o'girildi:**\n\n\`${converted}\``, { parse_mode: 'Markdown' });
+});
+
+// /kirill BUYRUG'I
+bot.command('kirill', async (ctx) => {
+  const raw = ctx.match ? ctx.match.trim() : '';
+  if (!raw) return ctx.reply("🔄 Lotin matnini yuboring: `/kirill Salom, bugungi dars rejasi`", { parse_mode: 'Markdown' });
+  const converted = latinToCyrillic(raw);
+  return ctx.reply(`🔤 **Kirill alifbosiga o'girildi:**\n\n\`${converted}\``, { parse_mode: 'Markdown' });
+});
+
+// /kod BUYRUG'I
+bot.command(['kod', 'code', 'parol'], async (ctx) => {
+  const userId = ctx.from.id;
+  const username = ctx.from.username;
+  if (!isUserActive(userId, username)) {
+    return ctx.reply(
+      `🔒 **Saytga kirish kodini olish uchun hisobingizni faollashtiring.**\n\nSizning ID: \`${userId}\``,
+      { reply_markup: getTariffInlineKeyboard(userId) }
+    );
+  }
+  const code = getAccessCodeForUser(userId);
+  const u = getUser(userId);
+  const expiry = u?.expiresAt || (u?.remainingUses ? `${u.remainingUses} ta hujjat` : 'Cheksiz');
+
+  const kb = new InlineKeyboard()
+    .webApp("🚀 Telegram Mini App-da Ochish", WEBAPP_URL)
+    .row()
+    .url("🌐 To'liq Brauzerda Ochish", WEBAPP_URL);
+
+  return ctx.reply(
+    `🔑 **SIZNING SAYTGA KIRISH KODINGIZ:**\n\n` +
+    `👉 \`${code}\` 👈 *(Nusxalash uchun ustiga bosing)*\n\n` +
+    `⏳ **Amal qilish muddati:** ${expiry}\n` +
+    `🌐 **Sayt manzili:** ${WEBAPP_URL}\n\n` +
+    `Quyidagi tugma orqali saytni to'g'ridan-to'g'ri ochishingiz mumkin:`,
+    { parse_mode: 'Markdown', reply_markup: kb }
+  );
+});
+
+// /hisob BUYRUG'I
+bot.command(['hisob', 'balans', 'status'], async (ctx) => {
+  const userId = ctx.from.id;
+  const u = getUser(userId);
+  const displayId = getDisplayUserId(userId);
+  const code = getAccessCodeForUser(userId);
+  const active = isUserActive(userId, ctx.from.username);
+
+  return ctx.reply(
+    `👤 **SIZNING PROFILINGIZ:**\n\n` +
+    `• ID: \`${displayId}\` *(Telegram: ${userId})*\n` +
+    `• Holati: ${active ? '✅ **FAOL**' : '⏳ **Kutishda (Faol emas)**'}\n` +
+    `• Tarif: **${u?.plan || 'trial (bepul sinov)'}**\n` +
+    `• Sayt Kodingiz: \`${code}\`\n` +
+    `• Qolgan imkoniyat: **${u?.remainingUses ? `${u.remainingUses} ta hujjat` : (u?.expiresAt || 'Cheksiz VIP')}**\n` +
+    `• Ro'yxatdan o'tgan: ${u?.registeredAt ? new Date(u.registeredAt).toLocaleDateString('uz-UZ') : '-'}\n\n` +
+    `Sayt manzili: ${WEBAPP_URL}`,
+    { parse_mode: 'Markdown' }
   );
 });
 
