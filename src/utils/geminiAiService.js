@@ -358,21 +358,19 @@ export async function generateAIGammaCardsWithGemini(topic, options = {}) {
       }
     }
 
-    // 2-bosqich: Alohida kartochkalarni bittalab ajratib olish (kesilib qolgan javoblarni ham qutqarish)
-    const cardBlockRegex = /\{[^{}]*"type"\s*:\s*"[^"]+"[^{}]*\}/g;
-    const individualMatches = cleanedRaw.match(cardBlockRegex);
-    if (individualMatches && individualMatches.length >= 2) {
-      const recoveredCards = [];
-      for (const block of individualMatches) {
+    // 2-bosqich: Agar oxirgi karta kesilib qolgan bo'lsa, oxirgi to'liq yopilgan `}` gacha olib tiklash
+    if (cleanedRaw.includes('"type"')) {
+      const startBracket = cleanedRaw.indexOf('[');
+      const lastObjClose = cleanedRaw.lastIndexOf('}');
+      if (startBracket !== -1 && lastObjClose > startBracket) {
         try {
-          const cardObj = JSON.parse(block.replace(/,\s*([\]}])/g, '$1'));
-          if (cardObj && cardObj.type) {
-            recoveredCards.push(cardObj);
+          const candidate = cleanedRaw.slice(startBracket, lastObjClose + 1).replace(/,\s*$/, '') + ']';
+          const repaired = candidate.replace(/,\s*([\]}])/g, '$1');
+          const parsed = JSON.parse(repaired);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return sanitizeText(parsed);
           }
-        } catch(err) {}
-      }
-      if (recoveredCards.length > 0) {
-        return sanitizeText(recoveredCards);
+        } catch (e3) {}
       }
     }
   } catch(e) {

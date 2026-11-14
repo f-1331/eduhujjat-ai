@@ -38,7 +38,8 @@
       "plan": "unlimited",
       "expiresAt": "Cheksiz VIP",
       "remainingUses": 999999,
-      "registeredAt": "2026-11-07T17:34:34.953Z"
+      "registeredAt": "2026-11-07T17:34:34.953Z",
+      "totalCreated": 1
     }
   },
   "simulatedRoles": {},
@@ -79,6 +80,21 @@
       "time": 1794655571362,
       "approvedBy": 6707839718,
       "approvedTime": 1794655577773
+    },
+    "req_mwgjnwdf_p181": {
+      "status": "APPROVED",
+      "approvedBy": 6707839718,
+      "approvedTime": 1794669138333
+    },
+    "req_mwgjoe5z_r3p3": {
+      "status": "APPROVED",
+      "approvedBy": 6707839718,
+      "approvedTime": 1794669157896
+    },
+    "req_mwgjt4hr_g46v": {
+      "status": "APPROVED",
+      "approvedBy": 6707839718,
+      "approvedTime": 1794669380720
     }
   },
   "deviceBindings": {
@@ -165,6 +181,15 @@
       "typeLabel": "📄 Hujjat",
       "topic": "",
       "timestamp": 1794655013419
+    },
+    {
+      "id": "act_1794661898470_906",
+      "userId": 6707839718,
+      "userName": "Fayzbek (Super Owner)",
+      "type": "presentation",
+      "typeLabel": "🎨 Slayd Taqdimot",
+      "topic": "Ta'lim va zamonaviy metodika",
+      "timestamp": 1794661898470
     }
   ]
 }

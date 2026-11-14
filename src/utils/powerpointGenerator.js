@@ -23,21 +23,21 @@ export const GAMMA_THEMES = {
   quantum_violet: { id: "quantum_violet", name: "Quantum Violet (Abyss & Electric Ultraviolet)", bg: "120826", cardBg: "221244", accent: "A855F7", accent2: "C084FC", text: "FAF5FF", subtext: "E9D5FF", cardBorder: "4C1D95" },
 
   // 2. MINIMALIST & EDITORIAL (15)
-  nordic: { id: "nordic", name: "Clean Nordic (Charcoal & Royal White)", bg: "F8FAFC", cardBg: "FFFFFF", accent: "2563EB", accent2: "0F172A", text: "0F172A", subtext: "64748B", cardBorder: "CBD5E1" },
-  swiss: { id: "swiss", name: "Minimal Swiss (Clean Slate & Bold Crimson)", bg: "F1F5F9", cardBg: "FFFFFF", accent: "DC2626", accent2: "1E293B", text: "0F172A", subtext: "475569", cardBorder: "E2E8F0" },
+  nordic: { id: "nordic", name: "Clean Nordic (Charcoal & Royal White)", bg: "EEF2F6", cardBg: "FFFFFF", accent: "2563EB", accent2: "0F172A", text: "0F172A", subtext: "64748B", cardBorder: "CBD5E1" },
+  swiss: { id: "swiss", name: "Minimal Swiss (Clean Slate & Bold Crimson)", bg: "EBF0F5", cardBg: "FFFFFF", accent: "DC2626", accent2: "1E293B", text: "0F172A", subtext: "475569", cardBorder: "CBD5E1" },
   monolith: { id: "monolith", name: "Monolith Pitch (Pure Black & Pure White)", bg: "000000", cardBg: "121212", accent: "FFFFFF", accent2: "737373", text: "FFFFFF", subtext: "A3A3A3", cardBorder: "262626" },
-  paper_white: { id: "paper_white", name: "Architect Paper (Warm White & Ink Black)", bg: "FAF8F5", cardBg: "FFFFFF", accent: "1C1917", accent2: "78716C", text: "1C1917", subtext: "57534E", cardBorder: "E7E5E4" },
-  bauhaus_mono: { id: "bauhaus_mono", name: "Bauhaus Minimal (Off-White & Primary Blue)", bg: "F5F5F0", cardBg: "FFFFFF", accent: "1D4ED8", accent2: "B91C1C", text: "171717", subtext: "525252", cardBorder: "D4D4D4" },
-  slate_minimal: { id: "slate_minimal", name: "Slate Academic (Cool Slate & Indigo)", bg: "F1F5F9", cardBg: "FFFFFF", accent: "4F46E5", accent2: "334155", text: "0F172A", subtext: "64748B", cardBorder: "CBD5E1" },
-  editorial_serif: { id: "editorial_serif", name: "Editorial Modern (Ivory & Deep Charcoal)", bg: "FDFBF7", cardBg: "FFFFFF", accent: "292524", accent2: "D97706", text: "1C1917", subtext: "78716C", cardBorder: "E7E5E4" },
+  paper_white: { id: "paper_white", name: "Architect Paper (Warm White & Ink Black)", bg: "F3EFEA", cardBg: "FFFFFF", accent: "1C1917", accent2: "78716C", text: "1C1917", subtext: "57534E", cardBorder: "D6D3D1" },
+  bauhaus_mono: { id: "bauhaus_mono", name: "Bauhaus Minimal (Off-White & Primary Blue)", bg: "EBEBE6", cardBg: "FFFFFF", accent: "1D4ED8", accent2: "B91C1C", text: "171717", subtext: "525252", cardBorder: "CBD5E1" },
+  slate_minimal: { id: "slate_minimal", name: "Slate Academic (Cool Slate & Indigo)", bg: "E2E8F0", cardBg: "FFFFFF", accent: "4F46E5", accent2: "334155", text: "0F172A", subtext: "64748B", cardBorder: "CBD5E1" },
+  editorial_serif: { id: "editorial_serif", name: "Editorial Modern (Ivory & Deep Charcoal)", bg: "F4EFEA", cardBg: "FFFFFF", accent: "292524", accent2: "D97706", text: "1C1917", subtext: "78716C", cardBorder: "D6D3D1" },
   modern_charcoal: { id: "modern_charcoal", name: "Modern Charcoal (Gunmetal & Soft Platinum)", bg: "1E293B", cardBg: "334155", accent: "38BDF8", accent2: "F8FAFC", text: "F8FAFC", subtext: "94A3B8", cardBorder: "475569" },
-  architectural_gray: { id: "architectural_gray", name: "Architect Concrete (Pearl Gray & Steel)", bg: "F3F4F6", cardBg: "FFFFFF", accent: "374151", accent2: "4B5563", text: "111827", subtext: "6B7280", cardBorder: "D1D5DB" },
-  scandinavian_light: { id: "scandinavian_light", name: "Scandinavian Frost (Porcelain & Soft Forest)", bg: "F7FBF9", cardBg: "FFFFFF", accent: "059669", accent2: "064E3B", text: "064E3B", subtext: "6B7280", cardBorder: "D1FAE5" },
-  pure_ivory: { id: "pure_ivory", name: "Pure Ivory Luxury (Warm Cream & Warm Gold)", bg: "FAF7F2", cardBg: "FFFFFF", accent: "B45309", accent2: "1C1917", text: "1C1917", subtext: "78716C", cardBorder: "EFEAE1" },
+  architectural_gray: { id: "architectural_gray", name: "Architect Concrete (Pearl Gray & Steel)", bg: "E5E7EB", cardBg: "FFFFFF", accent: "374151", accent2: "4B5563", text: "111827", subtext: "6B7280", cardBorder: "CBD5E1" },
+  scandinavian_light: { id: "scandinavian_light", name: "Scandinavian Frost (Porcelain & Soft Forest)", bg: "E8F3ED", cardBg: "FFFFFF", accent: "059669", accent2: "064E3B", text: "064E3B", subtext: "6B7280", cardBorder: "A7F3D0" },
+  pure_ivory: { id: "pure_ivory", name: "Pure Ivory Luxury (Warm Cream & Warm Gold)", bg: "F4EDE4", cardBg: "FFFFFF", accent: "B45309", accent2: "1C1917", text: "1C1917", subtext: "78716C", cardBorder: "E2D8C7" },
   graphite_clean: { id: "graphite_clean", name: "Graphite Studio (Dark Graphite & Glacier Blue)", bg: "18181B", cardBg: "27272A", accent: "06B6D4", accent2: "E4E4E7", text: "FAFAFA", subtext: "A1A1AA", cardBorder: "3F3F46" },
   pure_onyx: { id: "pure_onyx", name: "Pure Onyx (Dark Onyx & Brushed Silver)", bg: "0F0F10", cardBg: "1B1B1E", accent: "E2E8F0", accent2: "94A3B8", text: "FFFFFF", subtext: "94A3B8", cardBorder: "2E2E33" },
-  helvetica_crisp: { id: "helvetica_crisp", name: "Helvetica Crisp (Pure Snow & Racing Red)", bg: "FFFFFF", cardBg: "F8FAFC", accent: "EF4444", accent2: "0F172A", text: "0F172A", subtext: "64748B", cardBorder: "E2E8F0" },
-  studio_white: { id: "studio_white", name: "Studio Light (Bright White & Royal Violet)", bg: "FAFAFA", cardBg: "FFFFFF", accent: "7C3AED", accent2: "18181B", text: "18181B", subtext: "71717A", cardBorder: "E4E4E7" },
+  helvetica_crisp: { id: "helvetica_crisp", name: "Helvetica Crisp (Pure Snow & Racing Red)", bg: "E8ECF0", cardBg: "FFFFFF", accent: "EF4444", accent2: "0F172A", text: "0F172A", subtext: "64748B", cardBorder: "CBD5E1" },
+  studio_white: { id: "studio_white", name: "Studio Light (Bright White & Royal Violet)", bg: "EDE9FE", cardBg: "FFFFFF", accent: "7C3AED", accent2: "18181B", text: "18181B", subtext: "71717A", cardBorder: "DDD6FE" },
 
   // 3. NATURE & EARTH (15)
   emerald: { id: "emerald", name: "Emerald Matrix (Deep Forest & Mint Gold)", bg: "06261E", cardBg: "0B3B2F", accent: "10B981", accent2: "F59E0B", text: "FFFFFF", subtext: "A7F3D0", cardBorder: "047857" },
@@ -352,45 +352,70 @@ export function translateUzbekToVisualEnglish(text, card = null) {
   return scenes[slideIdx % scenes.length];
 }
 
+// ============================================================================
+// ONLAYN VA SOHA BO'YICHA UNIKAL TASVIRLAR QIDIRUV ENGINE
+// ============================================================================
+export async function searchOnlineImages(query, limit = 4) {
+  try {
+    const q = encodeURIComponent(query);
+    const r1 = await fetch(`https://duckduckgo.com/?q=${q}`, {
+      signal: AbortSignal.timeout(3500),
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+    });
+    if (!r1.ok) return [];
+    const html = await r1.text();
+    const vqdMatch = html.match(/vqd=([0-9-]+)/) || html.match(/vqd=([a-zA-Z0-9_-]+)/);
+    if (!vqdMatch) return [];
+    const vqd = vqdMatch[1];
+    const r2 = await fetch(`https://duckduckgo.com/i.js?l=us-en&o=json&q=${q}&vqd=${vqd}`, {
+      signal: AbortSignal.timeout(3500),
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+    });
+    if (!r2.ok) return [];
+    const data = await r2.json();
+    return (data.results || [])
+      .map(r => r.image)
+      .filter(u => u && /^https?:\/\//i.test(u) && !u.includes('lookaside.fbsbx') && !u.includes('encrypted-tbn'))
+      .slice(0, limit);
+  } catch (e) {
+    return [];
+  }
+}
+
 export function resolveCardImageUrl(card, topic = "", imageStyle = "realistic") {
-  let visualKeyword = "";
-
-  // Har bir slaydning shaxsiy sarlavhasi va mazmunidan kelib chiqib UNIKAL inglizcha prompt
-  visualKeyword = translateUzbekToVisualEnglish(topic, card);
-
-  // Har bir slayd uchun unikal, takrorlanmas deterministik kvantli seed
+  const visualKeyword = translateUzbekToVisualEnglish(topic, card);
   const cardId = typeof card?.id === 'number' ? card.id : Math.floor(Math.random() * 50);
   const titleHash = (card?.title || '').split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
   const seed = Math.abs((cardId * 7919 + titleHash * 1331 + 42) % 999999) + 100;
 
+  let styleModifier = "award winning national geographic studio photography, 8k uhd, cinematic lighting, hyper-realistic";
   if (imageStyle === 'ai3d') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(visualKeyword + ', 3d isometric render, Unreal Engine 5, Octane render, C4D, volumetric lighting, raytracing, colorful cinematic, 4k uhd')}` +
-      `?width=1280&height=720&nologo=true&seed=${seed}`;
+    styleModifier = "3d isometric render, Unreal Engine 5, Octane render, C4D, volumetric lighting, colorful cinematic, 4k uhd";
+  } else if (imageStyle === 'vector') {
+    styleModifier = "modern flat vector art, clean illustration, Dribbble Behance trending, minimalist, bold colors, 4k uhd";
+  } else if (imageStyle === 'infographic') {
+    styleModifier = "technical scientific infographic diagram, schematic breakdown, blueprints, presentation graphic, 4k uhd";
+  } else if (imageStyle === 'abstract') {
+    styleModifier = "abstract pastel gradient, glassmorphism, 3d frosted glass shapes, soft ambient light, aesthetic wallpaper, 4k uhd";
   }
-  if (imageStyle === 'vector') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(visualKeyword + ', modern flat vector art, clean illustration, Dribbble Behance trending, minimalist, bold colors, 4k uhd')}` +
-      `?width=1280&height=720&nologo=true&seed=${seed}`;
-  }
-  if (imageStyle === 'infographic') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(visualKeyword + ', technical scientific infographic diagram, schematic breakdown, blueprints, presentation graphic, 4k uhd')}` +
-      `?width=1280&height=720&nologo=true&seed=${seed}`;
-  }
-  if (imageStyle === 'abstract') {
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(visualKeyword + ', abstract pastel gradient, glassmorphism, 3d frosted glass shapes, soft ambient light, aesthetic wallpaper, 4k uhd')}` +
-      `?width=1280&height=720&nologo=true&seed=${seed}`;
-  }
-  // Realistic (Default)
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(visualKeyword + ', award winning national geographic studio photography, 8k uhd, cinematic lighting, hyper-realistic, high detail')}` +
+
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(visualKeyword + ', ' + styleModifier)}` +
     `?width=1280&height=720&nologo=true&seed=${seed}`;
 }
 
-export async function fetchImageAsBase64(imageUrl, timeoutMs = 15000) {
+export async function fetchImageAsBase64(imageUrl, timeoutMs = 8000) {
   if (!imageUrl) return null;
   try {
-    const res = await fetch(imageUrl, { signal: AbortSignal.timeout(timeoutMs) });
+    const res = await fetch(imageUrl, {
+      signal: AbortSignal.timeout(timeoutMs),
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+    });
     if (!res.ok) return null;
     const arrayBuf = await res.arrayBuffer();
     const contentType = res.headers.get('content-type') || 'image/jpeg';
+    if (!contentType.toLowerCase().includes('image') && !contentType.toLowerCase().includes('octet-stream')) {
+      return null;
+    }
     if (typeof window !== 'undefined') {
       let binary = '';
       const bytes = new Uint8Array(arrayBuf);
@@ -416,139 +441,25 @@ export function getDefaultGammaCards(topic = "Fotosintez jarayoni va o'simliklar
 // 3. 100+ DINAMIK FON GRAFIKASI GENERATORI (HAR BIR SLAYD UNIKAL)
 // ============================================================================
 export function applyDynamicBackgroundPattern(slide, pres, style, index, totalSlides = 10) {
-  const patternId = (index * 17 + 7) % 100;
-  const category = Math.floor(patternId / 10);
-  const sub = patternId % 10;
-
-  // 0-9: Ambient Glowing Mesh Orbs
-  if (category === 0) {
-    const x1 = -1.5 + (sub * 0.4);
-    const y1 = -1.2 + (sub * 0.2);
-    const r1 = 3.8 + (sub * 0.2);
+  // Gamma.app & Pitch.com darajasidagi toza, hashamatli va xalaqit bermaydigan fon
+  // Hech qanday chalkash chiziqlar, burchak qavslari yoki radar doiralari qo'yilmaydi!
+  if (index % 2 === 0) {
     slide.addShape(pres.ShapeType.ellipse, {
-      x: x1, y: y1, w: r1, h: r1,
-      fill: { color: style.accent, transparency: 86 }, line: { color: style.accent, width: 0 }
+      x: 7.2, y: -1.2, w: 4.5, h: 4.5,
+      fill: { color: style.accent, transparency: 94 }, line: { width: 0 }
     });
     slide.addShape(pres.ShapeType.ellipse, {
-      x: 7.2 - (sub * 0.3), y: 3.0 + (sub * 0.15), w: 4.2, h: 4.2,
-      fill: { color: style.accent2, transparency: 89 }, line: { color: style.accent2, width: 0 }
+      x: -1.8, y: 3.2, w: 4.2, h: 4.2,
+      fill: { color: style.accent2, transparency: 96 }, line: { width: 0 }
     });
-  }
-  // 10-19: Tech Dot Matrix & Top Accent Ribbons
-  else if (category === 1) {
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8, y: 0.26, w: 2.2 + (sub * 0.2), h: 0.05,
-      fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.02
-    });
-    const dotCount = 3 + (sub % 4);
-    for (let d = 0; d < dotCount; d++) {
-      slide.addShape(pres.ShapeType.ellipse, {
-        x: 8.2 + (d * 0.28), y: 0.32, w: 0.1, h: 0.1,
-        fill: { color: d === 0 ? style.accent : (d === 1 ? style.accent2 : style.subtext) },
-        line: { color: style.cardBorder, width: 0 }
-      });
-    }
-  }
-  // 20-29: Diagonal Cyber Laser Stripes & Shards
-  else if (category === 2) {
-    const offset = (sub * 0.35);
-    slide.addShape(pres.ShapeType.line, {
-      x: 8.5 + offset, y: -0.5, w: 2.0, h: 2.0,
-      line: { color: style.cardBorder, width: 1.5, dashType: 'solid' }
-    });
-    slide.addShape(pres.ShapeType.line, {
-      x: 8.8 + offset, y: -0.5, w: 2.0, h: 2.0,
-      line: { color: style.accent, width: 1.0, dashType: 'dash' }
+  } else {
+    slide.addShape(pres.ShapeType.ellipse, {
+      x: -1.5, y: -1.5, w: 4.2, h: 4.2,
+      fill: { color: style.accent2, transparency: 94 }, line: { width: 0 }
     });
     slide.addShape(pres.ShapeType.ellipse, {
-      x: -0.6, y: 3.6, w: 3.2, h: 3.2,
-      fill: { color: style.accent2, transparency: 91 }, line: { color: style.accent2, width: 0 }
-    });
-  }
-  // 30-39: Swiss Modernist Framing Brackets & Viewfinder Crosshairs
-  else if (category === 3) {
-    slide.addShape(pres.ShapeType.line, { x: 0.8, y: 0.85, w: 0.4, h: 0, line: { color: style.accent, width: 1.5 } });
-    slide.addShape(pres.ShapeType.line, { x: 0.8, y: 0.85, w: 0, h: 0.4, line: { color: style.accent, width: 1.5 } });
-    slide.addShape(pres.ShapeType.line, { x: 8.8, y: 5.25, w: 0.4, h: 0, line: { color: style.accent2, width: 1.5 } });
-    slide.addShape(pres.ShapeType.line, { x: 9.2, y: 4.85, w: 0, h: 0.4, line: { color: style.accent2, width: 1.5 } });
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8, y: 5.35, w: 1.2 + (sub * 0.1), h: 0.05,
-      fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.02
-    });
-  }
-  // 40-49: Architectural Guide Rails & Timeline Side Spines
-  else if (category === 4) {
-    slide.addShape(pres.ShapeType.line, {
-      x: 0.45, y: 0.6, w: 0, h: 4.4, line: { color: style.cardBorder, width: 1.0, dashType: 'dash' }
-    });
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: 0.4, y: 1.0 + (sub * 0.35), w: 0.12, h: 0.12,
-      fill: { color: style.accent }, line: { color: style.accent, width: 0 }
-    });
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8, y: 5.32, w: 2.0, h: 0.06, fill: { color: style.accent2 }, line: { color: style.accent2, width: 0 }, rectRadius: 0.03
-    });
-  }
-  // 50-59: Isometric Polygons & Floating Shields
-  else if (category === 5) {
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 8.4, y: 4.2, w: 1.4, h: 1.4, fill: { color: style.cardBg },
-      line: { color: style.cardBorder, width: 1.2 }, rectRadius: 0.12
-    });
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: 8.85, y: 4.65, w: 0.5, h: 0.5, fill: { color: style.accent, transparency: 80 }, line: { color: style.accent, width: 0 }
-    });
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: -0.5, y: -0.5, w: 3.5, h: 3.5, fill: { color: style.accent, transparency: 92 }, line: { color: style.accent, width: 0 }
-    });
-  }
-  // 60-69: Wave Horizon Bars & Gradient Curves
-  else if (category === 6) {
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8, y: 5.4, w: 8.4, h: 0.04, fill: { color: style.cardBorder }, line: { color: style.cardBorder, width: 0 }, rectRadius: 0.02
-    });
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8 + (sub * 0.6), y: 5.4, w: 2.2, h: 0.04, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.02
-    });
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: 7.5, y: -0.8, w: 3.5, h: 3.5, fill: { color: style.accent2, transparency: 90 }, line: { color: style.accent2, width: 0 }
-    });
-  }
-  // 70-79: HUD Radar Arcs & Concentric Circles
-  else if (category === 7) {
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: 8.2, y: -0.5, w: 2.2, h: 2.2, fill: { color: style.cardBg }, line: { color: style.accent, width: 1.2, dashType: 'dash' }
-    });
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: 8.6, y: -0.1, w: 1.4, h: 1.4, fill: { color: style.bg }, line: { color: style.accent2, width: 1.0 }
-    });
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: 9.15, y: 0.45, w: 0.3, h: 0.3, fill: { color: style.accent }, line: { color: style.accent, width: 0 }
-    });
-  }
-  // 80-89: Floating Glass Card Underlay Silhouettes
-  else if (category === 8) {
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.95, y: 1.0, w: 8.1, h: 4.15, fill: { color: style.cardBg, transparency: 85 },
-      line: { color: style.cardBorder, width: 1.0 }, rectRadius: 0.15
-    });
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: 6.8, y: 3.2, w: 3.8, h: 3.8, fill: { color: style.accent, transparency: 92 }, line: { color: style.accent, width: 0 }
-    });
-  }
-  // 90-99: Academic Emblems, Gold Threads & Certification Accents
-  else {
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8, y: 0.28, w: 0.45, h: 0.2, fill: { color: style.bg }, line: { color: style.accent, width: 1.0 }, rectRadius: 0.04
-    });
-    slide.addText("VERIFIED", {
-      x: 0.8, y: 0.28, w: 0.45, h: 0.2, fontSize: 6.5, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial'
-    });
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: -1.0, y: 2.0, w: 3.5, h: 3.5, fill: { color: style.accent2, transparency: 91 }, line: { color: style.accent2, width: 0 }
-    });
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 7.2, y: 5.35, w: 2.0, h: 0.05, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.02
+      x: 7.5, y: 3.0, w: 4.0, h: 4.0,
+      fill: { color: style.accent, transparency: 96 }, line: { width: 0 }
     });
   }
 }
@@ -633,7 +544,7 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
     slide.addShape(pres.ShapeType.roundRect, {
       x: 1.2, y: 1.2, w: 3.4, h: 0.4, fill: { color: style.bg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.08
     });
-    slide.addText(card.badge || "GAMMA & GENSPARK AI", {
+    slide.addText(card.badge || "ILMIY VA METODIK TAQDIMOT", {
       x: 1.2, y: 1.2, w: 3.4, h: 0.4, fontSize: 10.5, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial'
     });
     slide.addText((card.title || topic).toUpperCase(), {
@@ -819,50 +730,34 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
     return;
   }
 
-  // 4. PILLARS 3 ARCHITECTURE (3 ta mustahkam ustun)
+  // 4. PILLARS 3 ARCHITECTURE (3 ta mustahkam, mutlaqo simmetrik va professional ustun)
   if (arch === 'pillars_3') {
     slide.addText(card.title || "Asosiy Ustunlar va Tamoyillar", {
-      x: 0.8, y: 0.68, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
+      x: 0.8, y: 0.60, w: 8.4, h: 0.50, fontSize: 20, bold: true, color: style.text, fontFace: 'Arial'
     });
     const pillars = (card.cards || []).slice(0, 3);
     pillars.forEach((c, idx) => {
       const xPos = 0.8 + (idx * 2.9);
       const col = idx === 1 ? style.accent2 : style.accent;
       slide.addShape(pres.ShapeType.roundRect, {
-        x: xPos, y: 1.35, w: 2.65, h: 4.0, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.12
+        x: xPos, y: 1.20, w: 2.65, h: 3.90, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.12
       });
       slide.addShape(pres.ShapeType.roundRect, {
-        x: xPos, y: 1.35, w: 2.65, h: 0.08, fill: { color: col }, line: { color: col, width: 0 }, rectRadius: 0.04
+        x: xPos, y: 1.20, w: 2.65, h: 0.08, fill: { color: col }, line: { width: 0 }, rectRadius: 0.04
       });
 
-      if (idx === 1 && topicImageBase64) {
-        slide.addShape(pres.ShapeType.roundRect, {
-          x: xPos + 0.15, y: 1.5, w: 2.35, h: 1.5, fill: { color: style.bg }, line: { color: col, width: 1 }, rectRadius: 0.08
-        });
-        slide.addImage({
-          data: topicImageBase64,
-          x: xPos + 0.18, y: 1.53, w: 2.29, h: 1.44, sizing: { type: 'cover', w: 2.29, h: 1.44 }, round: true
-        });
-        slide.addText(c.title, {
-          x: xPos + 0.2, y: 3.1, w: 2.25, h: 0.45, fontSize: 12.5, bold: true, color: style.text, fontFace: 'Arial'
-        });
-        slide.addText(c.desc, {
-          x: xPos + 0.2, y: 3.6, w: 2.25, h: 1.6, fontSize: 10, color: style.subtext, fontFace: 'Arial'
-        });
-      } else {
-        slide.addShape(pres.ShapeType.ellipse, {
-          x: xPos + 0.25, y: 1.58, w: 0.55, h: 0.55, fill: { color: style.bg }, line: { color: col, width: 1.2 }
-        });
-        slide.addText(c.num || `0${idx + 1}`, {
-          x: xPos + 0.25, y: 1.58, w: 0.55, h: 0.55, fontSize: 12, bold: true, color: col, align: 'center', valign: 'middle', fontFace: 'Arial'
-        });
-        slide.addText(c.title, {
-          x: xPos + 0.25, y: 2.25, w: 2.15, h: 0.5, fontSize: 13.5, bold: true, color: style.text, fontFace: 'Arial'
-        });
-        slide.addText(c.desc, {
-          x: xPos + 0.25, y: 2.8, w: 2.15, h: 2.3, fontSize: 10.5, color: style.subtext, fontFace: 'Arial'
-        });
-      }
+      slide.addShape(pres.ShapeType.ellipse, {
+        x: xPos + 0.25, y: 1.45, w: 0.55, h: 0.55, fill: { color: style.bg }, line: { color: col, width: 1.5 }
+      });
+      slide.addText(c.num || `0${idx + 1}`, {
+        x: xPos + 0.25, y: 1.45, w: 0.55, h: 0.55, fontSize: 12, bold: true, color: col, align: 'center', valign: 'middle', fontFace: 'Arial'
+      });
+      slide.addText(c.title || `Tamoyil 0${idx + 1}`, {
+        x: xPos + 0.25, y: 2.15, w: 2.15, h: 0.60, fontSize: 13, bold: true, color: style.text, fontFace: 'Arial'
+      });
+      slide.addText(c.desc || c.text || "Ushbu yo'nalish bo'yicha fundamental ilmiy qoidalar va darslik mezonlari.", {
+        x: xPos + 0.25, y: 2.80, w: 2.15, h: 2.15, fontSize: 10.5, color: style.subtext, fontFace: 'Arial'
+      });
     });
     return;
   }
@@ -1374,26 +1269,42 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
     ]).slice(0, 3);
     items.forEach((it, idx) => {
       const xPos = 0.8 + (idx * 2.9);
+      const col = idx === 0 ? style.accent : (idx === 1 ? style.accent2 : style.subtext);
       slide.addShape(pres.ShapeType.roundRect, {
         x: xPos, y: 1.3, w: 2.65, h: 3.85, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.12
       });
       slide.addShape(pres.ShapeType.roundRect, {
-        x: xPos + 0.15, y: 1.45, w: 2.35, h: 1.7, fill: { color: style.bg }, line: { color: style.accent, width: 1 }, rectRadius: 0.08
+        x: xPos, y: 1.3, w: 2.65, h: 0.08, fill: { color: col }, line: { width: 0 }, rectRadius: 0.04
       });
-      if (topicImageBase64) {
+
+      if (idx === 0 && topicImageBase64) {
+        // Faqat 1-kartada slaydning rasmi namoyish etiladi (hamma kartalarga bitta rasm nusxalanmaydi!)
+        slide.addShape(pres.ShapeType.roundRect, {
+          x: xPos + 0.15, y: 1.45, w: 2.35, h: 1.7, fill: { color: style.bg }, line: { color: style.accent, width: 1 }, rectRadius: 0.08
+        });
         slide.addImage({
           data: topicImageBase64,
-          x: xPos + 0.2, y: 1.5, w: 2.25, h: 1.6, sizing: { type: 'cover', w: 2.25, h: 1.6 }
+          x: xPos + 0.18, y: 1.48, w: 2.29, h: 1.64, sizing: { type: 'cover', w: 2.29, h: 1.64 }, round: true
         });
       } else {
-        slide.addText("🖼️ VIZUAL KARTA", {
-          x: xPos + 0.2, y: 2.1, w: 2.25, h: 0.4, fontSize: 11, bold: true, color: style.accent, align: 'center', fontFace: 'Arial'
+        // 2 va 3-kartalarda unikal intellektual tahliliy poydevor va maxsus indikator
+        slide.addShape(pres.ShapeType.roundRect, {
+          x: xPos + 0.15, y: 1.45, w: 2.35, h: 1.7, fill: { color: style.bg }, line: { color: col, width: 1 }, rectRadius: 0.08
+        });
+        slide.addShape(pres.ShapeType.ellipse, {
+          x: xPos + 0.95, y: 1.85, w: 0.75, h: 0.75, fill: { color: style.cardBg }, line: { color: col, width: 1.5 }
+        });
+        slide.addText(idx === 1 ? "⚡" : "★", {
+          x: xPos + 0.95, y: 1.85, w: 0.75, h: 0.75, fontSize: 18, color: col, align: 'center', valign: 'middle', fontFace: 'Arial'
+        });
+        slide.addText(idx === 1 ? "AMALIY METODIKA" : "ILMIY XULOSA", {
+          x: xPos + 0.2, y: 2.75, w: 2.25, h: 0.28, fontSize: 8.5, bold: true, color: col, align: 'center', fontFace: 'Arial'
         });
       }
       slide.addText(it.title || `Konsept 0${idx + 1}`, {
         x: xPos + 0.2, y: 3.3, w: 2.25, h: 0.45, fontSize: 12.5, bold: true, color: style.text, fontFace: 'Arial'
       });
-      slide.addText(it.desc || it.text || "", {
+      slide.addText(it.desc || it.text || "Ushbu yo'nalish bo'yicha muhim darslik tushunchalari va ilmiy xulosalar.", {
         x: xPos + 0.2, y: 3.8, w: 2.25, h: 1.25, fontSize: 10, color: style.subtext, fontFace: 'Arial'
       });
     });
@@ -1544,106 +1455,89 @@ export async function generatePresentationPptx(config = {}) {
     }
   }
 
-  // Topic va per-slide maxsus kontekstli rasmlarni parallel yuklab olish
+  // Har bir slayd uchun 100% UNIKAL va uslubiga mos (AI 3D, Vektor, Infografika, Realistik) tasvirlar
   let topicImageBase64 = null;
   const cardImages = [];
   if (includeImages) {
-    try {
-      const firstCard = slideDeck[0] || {};
-      const imgUrl = firstCard.imageUrl || resolveCardImageUrl({ ...firstCard, id: 1 }, topic, imageStyle);
-      topicImageBase64 = await fetchImageAsBase64(imgUrl, 10000);
-      if (!topicImageBase64) {
-        const fallbackUrl = getPerSlideFallbackImage(topic, 0);
-        topicImageBase64 = await fetchImageAsBase64(fallbackUrl, 6000);
-      }
-    } catch (e) {
-      try {
-        const fallbackUrl = getPerSlideFallbackImage(topic, 0);
-        topicImageBase64 = await fetchImageAsBase64(fallbackUrl, 6000);
-      } catch (errFallback) {
-        topicImageBase64 = null;
-      }
-    }
-
     const visualArchs = ['split_image', 'tri_gallery', 'case_study', 'bento_3', 'concept_spotlight', 'hero_classic', 'pillars_3', 'problem_solution', 'summary_takeaways', 'timeline_steps'];
+    
     const fetchPromises = slideDeck.map(async (card, idx) => {
-      if (idx === 0) return topicImageBase64;
       const arch = resolveSlideArchitecture(card, idx, slideDeck.length);
-      const isVisualLayout = visualArchs.includes(arch);
+      const isVisualLayout = visualArchs.includes(arch) || idx === 0 || idx === slideDeck.length - 1;
       let shouldFetch = false;
       if (imageDensity === 'low') {
-        shouldFetch = isVisualLayout && (idx === 2 || idx === Math.floor(slideDeck.length / 2));
+        shouldFetch = (idx === 0 || idx === 2);
       } else {
-        // High va Medium: Gamma darajasidagi maksimal vizual to'yinganlik
-        shouldFetch = true;
+        shouldFetch = isVisualLayout || (idx % 2 === 0);
       }
 
-      if (shouldFetch) {
-        try {
-          const cardUrl = card.imageUrl || resolveCardImageUrl({ ...card, id: idx + 1 }, topic, imageStyle);
-          let b64 = await fetchImageAsBase64(cardUrl, 10000);
-          if (!b64) {
-            const fallbackUrl = getPerSlideFallbackImage(topic, idx);
-            b64 = await fetchImageAsBase64(fallbackUrl, 6000);
-          }
-          return b64 || null;
-        } catch (err) {
-          try {
-            const fallbackUrl = getPerSlideFallbackImage(topic, idx);
-            const b64 = await fetchImageAsBase64(fallbackUrl, 6000);
-            return b64 || null;
-          } catch (e2) {
-            return null;
-          }
-        }
+      if (!shouldFetch) return null;
+
+      // 1. Agar kartada tayyor unikal rasm bo'lsa
+      if (card.imageUrl && !card.imageUrl.includes('pollinations.ai')) {
+        const b64 = await fetchImageAsBase64(card.imageUrl, 4500);
+        if (b64) return b64;
       }
-      return null;
+
+      // 2. Foydalanuvchi tanlagan uslub (AI 3D, Vektor, Infografika, Abstrakt, Realistik) bo'yicha aniq onlayn qidiruv
+      const baseKeyword = translateUzbekToVisualEnglish(topic, card);
+      let styleQueryModifier = "photography hd 4k";
+      if (imageStyle === 'ai3d') {
+        styleQueryModifier = "3d isometric render octane wallpaper";
+      } else if (imageStyle === 'vector') {
+        styleQueryModifier = "vector art flat illustration minimal";
+      } else if (imageStyle === 'infographic') {
+        styleQueryModifier = "scientific infographic diagram schematic";
+      } else if (imageStyle === 'abstract') {
+        styleQueryModifier = "abstract geometric aesthetic wallpaper 4k";
+      }
+
+      const searchQuery = `${baseKeyword} ${styleQueryModifier}`.trim();
+      const onlineCandidates = await searchOnlineImages(searchQuery, 3);
+      for (const candUrl of onlineCandidates) {
+        const b64 = await fetchImageAsBase64(candUrl, 4500);
+        if (b64) return b64;
+      }
+
+      // 3. Tezkor va kafolatlangan Unsplash CDN zaxirasi (Har bir slayd uchun unikal idx parametri bilan)
+      const fallbackUrl = getPerSlideFallbackImage(topic, idx);
+      const fbB64 = await fetchImageAsBase64(fallbackUrl, 5000);
+      return fbB64 || null;
     });
 
     const settled = await Promise.allSettled(fetchPromises);
     settled.forEach(s => cardImages.push(s.status === 'fulfilled' ? s.value : null));
+    topicImageBase64 = cardImages[0] || null;
   }
 
   const pres = new pptxgen();
   pres.layout = 'LAYOUT_16x9';
 
-  const transitionTypes = ['fade', 'push', 'wipe', 'split', 'reveal', 'cover'];
-
   slideDeck.forEach((card, index) => {
     const slide = pres.addSlide();
     const arch = resolveSlideArchitecture(card, index, slideDeck.length);
 
-    // Gamma & Genspark uslubida har bir slayd uchun dinamik almashinuvchi fon kontrasti
-    let slideBgColor = style.bg;
-    if (index === 0 || index === slideDeck.length - 1) {
-      slideBgColor = style.bg;
-    } else if (arch === 'citation_quote' || arch === 'stats_kpi' || arch === 'quiz_interactive') {
-      slideBgColor = style.cardBg;
-    } else if (index % 2 === 1) {
-      slideBgColor = style.bg;
-    } else {
-      slideBgColor = style.cardBg;
-    }
-    slide.background = { color: slideBgColor };
+    // Fon har doim asosiy kanvas rangi bilan to'ldiriladi (kartalar bilan qo'shilib ketmaydi)
+    slide.background = { color: style.bg };
 
-    // PPTX Perexod (Transition Animatsiyasi)
-    const pptxTransType = slideTransition === 'slide' ? 'push' : (slideTransition === 'zoom' ? 'zoom' : (slideTransition === 'flip' ? 'wipe' : 'fade'));
+    // PPTX Perexod va Silliq Animatsiya
+    const pptxTransType = slideTransition === 'slide' ? 'push' : (slideTransition === 'wipe' ? 'wipe' : (slideTransition === 'split' ? 'split' : 'fade'));
     slide.transition = {
       type: index === 0 ? 'fade' : pptxTransType,
-      duration: 0.6
+      duration: 0.5
     };
 
     // 100+ XIL DINAMIK FON GRAFIKASI (HECH QACHON BIR XIL BO'LMAYDI)
     applyDynamicBackgroundPattern(slide, pres, style, index, slideDeck.length);
 
-    // Top Header Breadcrumb & Divider (Faqat ichki slaydlarda, Hero muqovada emas)
+    // Top Header: Nafis, toza va professional breadcrumb (xalaqit beruvchi reklamalar va chiziqlarsiz)
     if (index > 0) {
-      slide.addShape(pres.ShapeType.line, {
-        x: 0.8, y: 0.62, w: 8.4, h: 0,
-        line: { color: style.cardBorder, width: 0.75, dashType: 'solid' }
+      const topBadge = String(card.badge || topic || '').toUpperCase().slice(0, 45);
+      slide.addText(topBadge, {
+        x: 0.8, y: 0.30, w: 6.2, h: 0.25, fontSize: 9.5, bold: true, color: style.accent, fontFace: 'Arial'
       });
-      slide.addText(`SMARTOFFICE & EDUAI PRO  •  GAMMA & GENSPARK ENGINE  •  SLAYD ${index + 1}/${slideDeck.length}`, {
-        x: 0.8, y: 0.32, w: 8.4, h: 0.28, fontSize: 9.5, color: style.subtext, bold: true, fontFace: 'Arial'
+      slide.addText(`${index + 1} / ${slideDeck.length}`, {
+        x: 7.2, y: 0.30, w: 2.0, h: 0.25, fontSize: 9.5, bold: true, color: style.subtext, align: 'right', fontFace: 'Arial'
       });
     }
 
@@ -1655,23 +1549,16 @@ export async function generatePresentationPptx(config = {}) {
     const slideImg = (cardImages && cardImages[index]) ? cardImages[index] : (index === 0 ? topicImageBase64 : null);
     renderSlideArchitecture(slide, pres, card, style, index, slideDeck.length, slideImg, authorName, topic);
 
-    // Pastki Elegant Footer (1-slayddan keyingi barcha varaqlarda)
+    // Pastki Elegant Footer (1-slayddan keyingi barcha varaqlarda, kartochkalarga tegmaydigan qilib)
     if (index > 0) {
-      slide.addShape(pres.ShapeType.line, {
-        x: 0.8, y: 5.32, w: 8.4, h: 0,
-        line: { color: style.cardBorder, width: 0.5, dashType: 'solid' }
-      });
-      slide.addText(`📌 ${topic.slice(0, 36)}`, {
-        x: 0.8, y: 5.35, w: 3.8, h: 0.22, fontSize: 8.5, color: style.subtext, fontFace: 'Arial'
+      slide.addText(`📌 ${topic.slice(0, 40)}`, {
+        x: 0.8, y: 5.25, w: 4.8, h: 0.22, fontSize: 8.5, color: style.subtext, fontFace: 'Arial'
       });
       if (authorName && authorName.trim()) {
         slide.addText(`👤 ${authorName.trim()}`, {
-          x: 4.6, y: 5.35, w: 3.0, h: 0.22, fontSize: 8.5, color: style.subtext, align: 'center', fontFace: 'Arial'
+          x: 5.8, y: 5.25, w: 3.4, h: 0.22, fontSize: 8.5, color: style.subtext, align: 'right', fontFace: 'Arial'
         });
       }
-      slide.addText(`${index + 1} / ${slideDeck.length}`, {
-        x: 7.8, y: 5.35, w: 1.4, h: 0.22, fontSize: 8.5, color: style.subtext, align: 'right', fontFace: 'Arial'
-      });
     }
   });
 

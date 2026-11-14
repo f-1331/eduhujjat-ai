@@ -933,27 +933,31 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
   const targetCount = Math.max(1, Math.min(30, parseInt(slideCount, 10) || 6));
   const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 3);
 
-  // detailLevel bo'yicha matn hajmini va chuqurligini dinamik moslashtirish (brief, balanced, deep)
+  const normDetail = (detailLevel === 'short' || detailLevel === 'brief') ? 'short'
+    : (detailLevel === 'detailed' || detailLevel === 'deep' || detailLevel === 'full') ? 'detailed'
+    : 'medium';
+
+  // detailLevel bo'yicha matn hajmini va chuqurligini dinamik moslashtirish (short, medium, detailed)
   const adaptBullets = (bullets) => {
     if (!Array.isArray(bullets)) return bullets;
-    if (detailLevel === 'brief') {
-      return bullets.slice(0, 2).map(b => b.length > 55 ? b.slice(0, 52) + '...' : b);
+    if (normDetail === 'short') {
+      return bullets.slice(0, 2).map(b => b.length > 60 ? b.slice(0, 57) + '...' : b);
     }
-    if (detailLevel === 'balanced') {
-      return bullets.slice(0, 3).map(b => b.length > 95 ? b.slice(0, 92) + '...' : b);
+    if (normDetail === 'medium') {
+      return bullets.slice(0, 3).map(b => b.length > 110 ? b.slice(0, 107) + '...' : b);
     }
-    // 'deep' (Ko'p, chuqur va batafsil tahlil)
+    // 'detailed' (Ko'p, chuqur va batafsil tahlil)
     if (bullets.length < 4) {
-      return [...bullets, "Qo'shimcha ilmiy-amaliy tadqiqotlar va xalqaro metodik mezonlar bilan boyitilgan."];
+      return [...bullets, "Fanlararo amaliyot: darslik mezonlari, laboratoriya xulosalari va zamonaviy xalqaro standartlar bilan mustahkamlangan."];
     }
     return bullets;
   };
 
   // 1-slayd: Sarlavha (Hero)
   const slide1 = {
-    id: 1, type: "hero", badge: "GAMMA & GENSPARK ULTRA AI",
+    id: 1, type: "hero", badge: "ILMIY-METODIK TAQDIMOT",
     title: cleanTitle,
-    subtitle: lines[1] ? lines[1].slice(0, 120) : (detailLevel === 'brief' ? "Qisqa tahlil va asosiy mezonlar" : "Fundamental tahlil, zamonaviy metodologiya va amaliy tatbiq etish mezonlari"),
+    subtitle: lines[1] ? lines[1].slice(0, 120) : (normDetail === 'short' ? "Qisqa tahlil va asosiy mezonlar" : "Fundamental tahlil, zamonaviy metodologiya va amaliy tatbiq etish mezonlari"),
     authorName: authorName || "",
     speakerNotes: `Assalomu alaykum, hurmatli tinglovchilar! Bugungi taqdimotimiz "${cleanTitle}" mavzusiga bag'ishlanadi. Unda biz eng muhim masalalar, qonuniyatlar va asosiy yechimlarni ko'rib chiqamiz.`
   };
@@ -1447,12 +1451,35 @@ export function generateRealAIGammaCards(topicOrText, options = {}) {
           finalDeck.push({ ...last, id: targetCount });
         }
 
-        // Har bir slaydning tartib raqami (id) va muallifini yangilash
-        finalDeck = finalDeck.map((c, idx) => ({
-          ...c,
-          id: idx + 1,
-          authorName: (idx === 0 || idx === finalDeck.length - 1) ? (opts.authorName || c.authorName || '') : c.authorName
-        }));
+        // Har bir slaydning tartib raqami, muallif va tanlangan ma'lumot hajmi (detailLevel) bo'yicha moslash
+        const normDetail = (opts.detailLevel === 'short' || opts.detailLevel === 'brief') ? 'short'
+          : (opts.detailLevel === 'detailed' || opts.detailLevel === 'deep' || opts.detailLevel === 'full') ? 'detailed'
+          : 'medium';
+
+        finalDeck = finalDeck.map((c, idx) => {
+          let updatedBullets = c.bullets;
+          let updatedLeft = c.leftBullets;
+          let updatedRight = c.rightBullets;
+
+          if (normDetail === 'short') {
+            if (Array.isArray(updatedBullets)) updatedBullets = updatedBullets.slice(0, 2).map(b => b.length > 60 ? b.slice(0, 57) + '...' : b);
+            if (Array.isArray(updatedLeft)) updatedLeft = updatedLeft.slice(0, 2).map(b => b.length > 60 ? b.slice(0, 57) + '...' : b);
+            if (Array.isArray(updatedRight)) updatedRight = updatedRight.slice(0, 2).map(b => b.length > 60 ? b.slice(0, 57) + '...' : b);
+          } else if (normDetail === 'medium') {
+            if (Array.isArray(updatedBullets)) updatedBullets = updatedBullets.slice(0, 3).map(b => b.length > 110 ? b.slice(0, 107) + '...' : b);
+            if (Array.isArray(updatedLeft)) updatedLeft = updatedLeft.slice(0, 3).map(b => b.length > 110 ? b.slice(0, 107) + '...' : b);
+            if (Array.isArray(updatedRight)) updatedRight = updatedRight.slice(0, 3).map(b => b.length > 110 ? b.slice(0, 107) + '...' : b);
+          }
+
+          return {
+            ...c,
+            id: idx + 1,
+            bullets: updatedBullets,
+            leftBullets: updatedLeft,
+            rightBullets: updatedRight,
+            authorName: (idx === 0 || idx === finalDeck.length - 1) ? (opts.authorName || c.authorName || '') : c.authorName
+          };
+        });
 
         if (opts.includeImages !== false) {
           finalDeck.forEach(c => {
