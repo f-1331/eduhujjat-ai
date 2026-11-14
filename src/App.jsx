@@ -37,12 +37,14 @@ import {
   Smartphone,
   ShieldCheck,
   AlertOctagon,
-  Palette
+  Palette,
+  Check
 } from 'lucide-react';
 
 function MainAppContent() {
   const [lang, setLang] = useState('uz');
   const [activeModule, setActiveModule] = useState('ai'); // Default to AI module!
+  const [showThemePicker, setShowThemePicker] = useState(false);
 
   const { currentTheme, themeId, setThemeId, darkMode, setDarkMode, themes } = useTheme();
   const { 
@@ -102,9 +104,9 @@ function MainAppContent() {
   }
 
   return (
-    <div className={`min-h-screen ${currentTheme.bgLight} ${currentTheme.bgDark} text-slate-900 dark:text-slate-100 transition-colors duration-200`}>
+    <div className={`min-h-screen ${darkMode ? currentTheme.bgDark : currentTheme.bgLight} text-slate-900 dark:text-slate-100 transition-colors duration-300`}>
       {/* Yuqori Header */}
-      <header className={`sticky top-0 z-50 backdrop-blur-md ${currentTheme.cardLight}/85 ${currentTheme.cardDark}/85 border-b border-slate-200 dark:border-slate-800`}>
+      <header className={`sticky top-0 z-50 backdrop-blur-md ${darkMode ? currentTheme.headerDark : currentTheme.headerLight} border-b`}>
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-1 sm:gap-2">
           {/* Logo */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -200,16 +202,16 @@ function MainAppContent() {
                         </span>
                       </div>
 
-                      {/* Dizayn Mavzusi (Telefonda ham qulay) */}
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
-                        <span className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-indigo-500" /> Mavzu:</span>
+                      {/* Dizayn Mavzusi */}
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
+                        <span className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200"><Palette className="w-3.5 h-3.5 text-indigo-500" /> Mavzu:</span>
                         <select
                           value={themeId}
                           onChange={(e) => setThemeId(e.target.value)}
-                          className="bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 border-none focus:outline-none cursor-pointer max-w-[140px] truncate"
+                          className="bg-white dark:bg-slate-800 text-[11px] font-bold text-slate-900 dark:text-slate-100 rounded-lg px-2.5 py-1.5 border-2 border-slate-300 dark:border-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer max-w-[150px] truncate"
                         >
                           {Object.values(themes).map(th => (
-                            <option key={th.id} value={th.id}>{th.name}</option>
+                            <option key={th.id} value={th.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white py-1">{th.emoji} {th.name}</option>
                           ))}
                         </select>
                       </div>
@@ -336,18 +338,79 @@ function MainAppContent() {
               </div>
             )}
 
-            {/* Mavzu (Katta ekranlar uchun) */}
-            <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-              <select
-                value={themeId}
-                onChange={(e) => setThemeId(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 border-none focus:outline-none pr-1 cursor-pointer max-w-[130px] truncate"
-                title="Dizayn Mavzusi"
+            {/* Rangli Mavzular (Visual Theme Picker - Telefon va Katta Ekranlar) */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowThemePicker(!showThemePicker);
+                  setShowUserMenu(false);
+                }}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 hover:border-indigo-500 shadow-sm text-xs font-bold text-slate-900 dark:text-slate-100 transition cursor-pointer"
+                title="Dizayn va Rang Mavzusini Tanlash"
               >
-                {Object.values(themes).map(th => (
-                  <option key={th.id} value={th.id}>{th.name}</option>
-                ))}
-              </select>
+                <Palette className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span className="hidden sm:inline max-w-[100px] truncate">{currentTheme.name}</span>
+                <div 
+                  className="w-3.5 h-3.5 rounded-full border border-black/20 shadow-inner shrink-0" 
+                  style={{ background: `linear-gradient(135deg, ${currentTheme.colors?.[0] || '#6366f1'}, ${currentTheme.colors?.[1] || '#38bdf8'})` }} 
+                />
+                <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform ${showThemePicker ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showThemePicker && (
+                <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-700 shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 max-h-[80vh] overflow-y-auto">
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200 dark:border-slate-800">
+                    <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Palette className="w-4 h-4 text-indigo-500" />
+                      Dizayn Mavzulari ({Object.keys(themes).length} ta)
+                    </span>
+                    <button
+                      onClick={() => setShowThemePicker(false)}
+                      className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold px-1.5 py-0.5 rounded cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {Object.values(themes).map(th => {
+                      const isSelected = themeId === th.id;
+                      return (
+                        <button
+                          key={th.id}
+                          onClick={() => {
+                            setThemeId(th.id);
+                            setShowThemePicker(false);
+                          }}
+                          className={`w-full p-2.5 rounded-xl text-left transition flex items-center justify-between border-2 cursor-pointer ${
+                            isSelected
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/50 shadow-md ring-1 ring-indigo-500/20'
+                              : 'border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            {/* 2 ta rang doirasi */}
+                            <div className="flex items-center -space-x-1 shrink-0">
+                              <div 
+                                className="w-4 h-4 rounded-full border border-white dark:border-slate-900 shadow-sm"
+                                style={{ backgroundColor: th.colors?.[0] || '#6366f1' }}
+                              />
+                              <div 
+                                className="w-4 h-4 rounded-full border border-white dark:border-slate-900 shadow-sm"
+                                style={{ backgroundColor: th.colors?.[1] || '#38bdf8' }}
+                              />
+                            </div>
+                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                              {th.emoji} {th.name}
+                            </span>
+                          </div>
+                          {isSelected && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Til (Katta ekranlar uchun) */}
@@ -391,8 +454,8 @@ function MainAppContent() {
                   onClick={() => setActiveModule(item.id)}
                   className={`px-3 sm:px-3.5 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
                     isActive
-                      ? 'bg-gradient-to-r from-indigo-600 to-sky-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? `${currentTheme.navActive} scale-105 transition-transform`
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/10'
                   }`}
                 >
                   <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : item.color}`} />
