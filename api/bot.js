@@ -15,7 +15,9 @@ import {
 import { generateRealAIGammaCards } from '../src/utils/aiSlideEngine.js';
 import { generateAITestSuite, generateAILessonPlan, generateAIOfficialOrder } from '../src/utils/universalAiBrain.js';
 
-const BOT_TOKEN = process.env.BOT_TOKEN || Buffer.from('OTAwMTc3MjYzMjpBQUdGU3ZGRTF0VHRYY1owNHVaME1UV3VfaXRFekZJeU9XOA==', 'base64').toString('utf-8');
+const VALID_TOKEN = Buffer.from('OTAwMTc3MjYzMjpBQUdGU3ZGRTF0VHRYY1owNHVaME1UV3VfaXRFekZJeU9XOA==', 'base64').toString('utf-8');
+const envTok = process.env.BOT_TOKEN || '';
+const BOT_TOKEN = (envTok && !envTok.includes('AAE913') && envTok.length > 35) ? envTok : VALID_TOKEN;
 const WEBAPP_URL = process.env.WEBAPP_URL || 'https://eduhujjat.vercel.app';
 const OWNER_USERNAME = (process.env.OWNER_USERNAME || 'fayzbek1331').replace('@', '');
 const SUPER_OWNER_ID = 6707839718;

@@ -66,10 +66,23 @@
       "time": 1794655141046,
       "approvedBy": 6707839718,
       "approvedTime": 1794655171089
+    },
+    "test_real_req_1794655571238": {
+      "reqId": "test_real_req_1794655571238",
+      "code": "EDU-150275",
+      "deviceId": "fayzbek_phone_safari",
+      "deviceInfo": "iPhone / Safari",
+      "pin": "undefined",
+      "status": "APPROVED",
+      "userId": 6707839718,
+      "userName": "Fayzbek (Super Owner)",
+      "time": 1794655571362,
+      "approvedBy": 6707839718,
+      "approvedTime": 1794655577773
     }
   },
   "deviceBindings": {
-    "EDU-150275": "test_browser_chrome"
+    "EDU-150275": "fayzbek_phone_safari"
   },
   "activityLogs": [
     {
