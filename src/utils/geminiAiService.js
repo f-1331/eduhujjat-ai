@@ -255,7 +255,7 @@ export async function generateAIStudentReferenceWithGemini(studentName) {
  */
 export async function generateAIGammaCardsWithGemini(topic, options = {}) {
   const {
-    authorName = "SmartOffice EduAI",
+    authorName = "",
     detailLevel = "medium", // 'short' | 'medium' | 'detailed'
     slideCount = null,
     includeImages = true,

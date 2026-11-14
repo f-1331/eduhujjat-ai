@@ -401,7 +401,7 @@ function sendWizardStyleStep(ctx, topic, authorName, detailLevel, includeImages,
 }
 
 async function generateGammaPresentationBuffer(topic, options = {}) {
-  const authorName = options.authorName || "SmartOffice EduAI";
+  const authorName = options.authorName || "O'qituvchi";
   const detailLevel = options.detailLevel || 'medium';
   const slideCount = options.slideCount || 5;
   const includeImages = options.includeImages !== false;
@@ -433,7 +433,7 @@ async function generateGammaPresentationBuffer(topic, options = {}) {
 }
 
 async function executePresentationGeneration(ctx, topic, options = {}) {
-  const authorName = options.authorName || ctx.from?.first_name || "SmartOffice EduAI";
+  const authorName = options.authorName || ctx.from?.first_name || "O'qituvchi";
   const detailLevel = options.detailLevel || 'medium';
   const includeImages = options.includeImages !== false;
   const imageDensity = options.imageDensity || 'medium';
@@ -2748,9 +2748,23 @@ bot.on('callback_query:data', async (ctx) => {
     }
   }
 
+  // 1. Agar foydalanuvchi o'z ismini qo'lda yozishni tanlagan bo'lsa
+  if (data === 'sw_auth_custom') {
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot" };
+    sw.step = 'awaiting_author';
+    slideWizardState.set(userId, sw);
+    await ctx.answerCallbackQuery({ text: "Ismingizni yozing..." });
+    return ctx.reply(
+      `✍️ Iltimos, 1-slaydda ko'rinadigan **ism-familiyangiz yoki lavozimingizni** xabar sifatida yozib yuboring:\n` +
+      `*(Masalan: \`Fayzbek Omonov\` yoki \`Toshkent 15-maktab o'qituvchisi\`)*:`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  // 2. Tayyor tugmalardan tanlangan muallif
   if (data.startsWith('sw_auth_')) {
     const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'lim va zamonaviy metodika" };
-    let chosenAuthor = "SmartOffice EduAI";
+    let chosenAuthor = `${ctx.from?.first_name || ''} ${ctx.from?.last_name || ''}`.trim() || ctx.from?.first_name || "Muallif";
     if (data === 'sw_auth_handle') {
       chosenAuthor = ctx.from?.username ? `@${ctx.from.username}` : (ctx.from?.first_name || "Muallif");
     } else if (data === 'sw_auth_name') {
@@ -2767,7 +2781,7 @@ bot.on('callback_query:data', async (ctx) => {
 
   if (data === 'sw_quick') {
     const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot" };
-    const author = sw.authorName || ctx.from?.first_name || "SmartOffice EduAI";
+    const author = sw.authorName || ctx.from?.first_name || "Muallif";
     slideWizardState.delete(userId);
     await ctx.answerCallbackQuery({ text: "Tezkor taqdimot tayyorlanmoqda..." });
     return executePresentationGeneration(ctx, sw.topic || "Ta'limiy taqdimot", {
@@ -2832,23 +2846,11 @@ bot.on('callback_query:data', async (ctx) => {
     return sendWizardStyleStep(ctx, sw.topic, sw.authorName, sw.detailLevel || 'medium', sw.includeImages !== false, sw.slideCount || 5, sw.imageDensity || 'medium', sw.imageStyle || 'realistic', true);
   }
 
-  if (data === 'sw_auth_custom') {
-    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot" };
-    sw.step = 'awaiting_author';
-    slideWizardState.set(userId, sw);
-    await ctx.answerCallbackQuery({ text: "Ismingizni yozing..." });
-    return ctx.reply(
-      `✍️ Iltimos, 1-slaydda ko'rinadigan **ism-familiyangiz yoki lavozimingizni** xabar sifatida yozib yuboring:\n` +
-      `*(Masalan: \`Fayzbek Omonov\` yoki \`Toshkent 15-maktab o'qituvchisi\`)*:`,
-      { parse_mode: 'Markdown' }
-    );
-  }
-
   if (data.startsWith('sw_sty_')) {
     const styleKey = data.replace('sw_sty_', '');
     const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot" };
     const finalTopic = sw.topic || db.userSessions.get(userId) || "Ta'limiy taqdimot";
-    const finalAuthor = sw.authorName || ctx.from?.first_name || "SmartOffice EduAI";
+    const finalAuthor = sw.authorName || ctx.from?.first_name || "Muallif";
     const finalDetail = sw.detailLevel || 'medium';
     const finalDensity = sw.imageDensity || 'medium';
     const finalStyle = sw.imageStyle || 'realistic';

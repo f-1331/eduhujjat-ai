@@ -408,7 +408,7 @@ export async function fetchImageAsBase64(imageUrl, timeoutMs = 15000) {
   }
 }
 
-export function getDefaultGammaCards(topic = "Fotosintez jarayoni va o'simliklar biosferasi", authorName = "SmartOffice EduAI") {
+export function getDefaultGammaCards(topic = "Fotosintez jarayoni va o'simliklar biosferasi", authorName = "") {
   return generateRealAIGammaCards(topic);
 }
 
@@ -1474,7 +1474,7 @@ export async function generatePresentationPptx(config = {}) {
     topic = "Fotosintez jarayoni va o'simliklar biosferasi",
     styleName = "obsidian",
     cards = null,
-    authorName = "SmartOffice EduAI",
+    authorName = "",
     filename = "Gamma_Taqdimot.pptx",
     includeImages = true,
     imageDensity = 'medium',
