@@ -1027,7 +1027,20 @@ function isUserActive(userId, username) {
   if (username && db.admins.has(username.toLowerCase())) return true;
   
   const user = getUser(userId);
-  if (!user || user.status !== 'ACTIVE') return false;
+  if (!user) return false;
+
+  // Har bir yangi yoki sinovdagi foydalanuvchiga 5 ta bepul sinov berish (reklamasiz erkin foydalanish)
+  if (!user.trialGiven && (user.status === 'PENDING' || !user.plan || user.plan === 'none')) {
+    user.trialGiven = true;
+    user.status = 'ACTIVE';
+    user.plan = 'trial';
+    user.remainingUses = 5;
+    user.expiresAt = '5 ta bepul sinov';
+    saveDatabase();
+    return true;
+  }
+
+  if (user.status !== 'ACTIVE') return false;
 
   if (typeof user.remainingUses === 'number' && user.remainingUses <= 0) {
     user.status = 'PENDING';
@@ -2173,16 +2186,17 @@ bot.command('start', async (ctx) => {
 
   if (!hasUser(userId)) {
     const isOwnerUser = isRealSuperOwner(ctx);
-    // Yangi oddiy foydalanuvchi boshida HAR DOIM PENDING (yopiq) bo'ladi
+    // Yangi foydalanuvchiga darhol 5 ta bepul sinov (Free Trial) taqdim etiladi
     setUser(userId, {
       id: isOwnerUser ? 1 : userId,
       realId: userId,
       name: fullName,
       username,
-      status: isOwnerUser ? 'ACTIVE' : 'PENDING',
-      plan: isOwnerUser ? 'unlimited' : 'none',
-      expiresAt: isOwnerUser ? 'Cheksiz VIP' : null,
-      remainingUses: isOwnerUser ? 999999 : null,
+      status: 'ACTIVE',
+      plan: isOwnerUser ? 'unlimited' : 'trial',
+      expiresAt: isOwnerUser ? 'Cheksiz VIP' : '5 ta bepul sinov',
+      remainingUses: isOwnerUser ? 999999 : 5,
+      trialGiven: true,
       registeredAt: new Date().toISOString()
     });
     saveDatabase();
@@ -3741,6 +3755,22 @@ bot.on('message:text', async (ctx) => {
 
   if (isSpamming(userId)) return;
 
+  // 1. Guruhlardagi begona spam va reklamalarni butunlay to'xtatish (Faqat shaxsiy chatda yoki bot chaqirilganda)
+  if (ctx.chat?.type && ctx.chat.type !== 'private') {
+    const botUser = ctx.me?.username || 'eduhujjat_bot';
+    if (!text.includes(`@${botUser}`) && !text.startsWith('/')) return;
+  }
+
+  // 2. Anti-Spam va Anti-Reklama Qalqoni (Tashqi reklamalar, kazino va havolalarni to'xtatish)
+  const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
+  const spamAdPattern = /\b(?:1xbet|mostbet|melbet|linebet|kazino|omadshou|aviator|kripto|daromad|investitsiya|tekin pul|pul ishlash|bonus 500%)\b/i;
+  const externalLinkPattern = /(?:https?:\/\/|t\.me\/(?!eduhujjat)|wa\.me\/|bit\.ly\/)/i;
+
+  if (!isOwnerOrAdmin && (spamAdPattern.test(text) || externalLinkPattern.test(text))) {
+    console.warn(`[Anti-Spam Bloki] Foydalanuvchi ${userId} tomonidan reklama to'xtatildi.`);
+    return ctx.reply("🚫 **Xavfsizlik:** Botda tashqi reklama, qimor, havola yoki spam tarqatish taqiqlangan!");
+  }
+
   // =========================================================================
   // BUYRUQ VA MENYU TUGMALARI BOSILGANDA SLIDE WIZARDNI BEKOR QILISH
   // =========================================================================
@@ -4744,6 +4774,13 @@ const API_PORT = process.env.PORT || process.env.API_PORT || 3001;
 apiServer.listen(API_PORT, () => {
   console.log(`🌐 Local Device Auth HTTP API running on port ${API_PORT}`);
 });
+
+// Render 24/7 Keep-Alive (Har 4 daqiqada o'zini-o'zi chaqirib turadi, bepul Render uxlab qolmaydi)
+setInterval(() => {
+  try {
+    fetch('https://eduhujjat-bot.onrender.com/health').catch(() => {});
+  } catch (e) {}
+}, 4 * 60 * 1000);
 
 async function startBotWithRetry() {
   while (true) {

@@ -1077,24 +1077,47 @@ export function generateRealAIGammaCards(topicOrText, options = {}) {
     return synthesizeCustomSlideDeck("Sun'iy Intellekt va Raqamli Ta'lim", opts);
   }
 
-  // 1. Domenlarni aniqlash
+  // 1. Domenlarni aniqlash va moslashtirish (Istalgan slayd soniga moslash)
   for (const [key, domain] of Object.entries(DOMAIN_KNOWLEDGE)) {
     if (domain.match.test(text)) {
       const baseCards = domain.build(text);
-      if (baseCards && Array.isArray(baseCards)) {
-        // Agar talab qilingan slayd soni bazaviy 6 taga teng bo'lsa:
+      if (baseCards && Array.isArray(baseCards) && baseCards.length > 0) {
+        let finalDeck = [];
         if (targetCount === baseCards.length) {
-          if (opts.authorName) {
-            baseCards[0].authorName = opts.authorName;
-            if (baseCards[baseCards.length - 1]) baseCards[baseCards.length - 1].authorName = opts.authorName;
-          }
-          if (opts.includeImages !== false) {
-            baseCards.forEach(c => {
-              c.imageUrl = resolveCardImageUrl(c, text, opts.imageStyle || 'realistic');
+          finalDeck = baseCards;
+        } else if (targetCount < baseCards.length) {
+          const first = baseCards[0];
+          const last = baseCards[baseCards.length - 1];
+          const middle = baseCards.slice(1, targetCount - 1);
+          finalDeck = [first, ...middle, last];
+        } else {
+          // targetCount > baseCards.length: mavzuga xos slaydlar bilan to'ldirish
+          const first = baseCards[0];
+          const last = baseCards[baseCards.length - 1];
+          const middle = baseCards.slice(1, -1);
+          finalDeck = [first];
+          const extraNeeded = targetCount - 2;
+          for (let i = 0; i < extraNeeded; i++) {
+            const tmpl = middle[i % middle.length];
+            finalDeck.push({
+              ...tmpl,
+              id: i + 2,
+              badge: `${tmpl.badge || 'ILMIY TAHLIL'} • (${i + 2}/${targetCount})`
             });
           }
-          return baseCards;
+          finalDeck.push({ ...last, id: targetCount });
         }
+
+        if (opts.authorName) {
+          finalDeck[0].authorName = opts.authorName;
+          if (finalDeck[finalDeck.length - 1]) finalDeck[finalDeck.length - 1].authorName = opts.authorName;
+        }
+        if (opts.includeImages !== false) {
+          finalDeck.forEach(c => {
+            c.imageUrl = resolveCardImageUrl(c, text, opts.imageStyle || 'realistic');
+          });
+        }
+        return finalDeck;
       }
     }
   }
