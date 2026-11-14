@@ -2,7 +2,20 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const OWNER_USERNAME = 'fayzbek1331';
 const SUPER_OWNER_ID = 6707839718;
-const BOT_TOKEN = '9001772632:AAE913k5Mhzna5qU2PcezbYnWErPxgn0zp8';
+
+// Xavfsiz server orqali Telegram xabarnoma yuborish (Bot token mijoz brauzeriga chiqmaydi)
+async function sendServerOwnerAlert(text) {
+  try {
+    await fetch('/api/device-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'send_owner_alert',
+        text
+      })
+    });
+  } catch(e) {}
+}
 
 export const DEFAULT_PRICES = {
   oneTime: 2000,
@@ -187,18 +200,10 @@ export function AuthProvider({ children }) {
       setAccessCodeInfo(info);
       setUserAccessStatus('ACTIVE');
 
-      // Super Ownerga xavfsizlik bildirishnomasi
-      try {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: SUPER_OWNER_ID,
-            text: `👑 **SUPER OWNER KIRISHI:**\n\nSiz yangi qurilmadan (\`${deviceInfo}\`) Master VIP kod orqali saytga kirdingiz.\n⏰ Vaqt: ${new Date().toLocaleTimeString('uz-UZ')}`,
-            parse_mode: 'Markdown'
-          })
-        });
-      } catch(e) {}
+      // Super Ownerga xavfsizlik bildirishnomasi (xavfsiz server orqali)
+      sendServerOwnerAlert(
+        `👑 **SUPER OWNER KIRISHI:**\n\nSiz yangi qurilmadan (\`${deviceInfo}\`) Master VIP kod orqali saytga kirdingiz.\n⏰ Vaqt: ${new Date().toLocaleTimeString('uz-UZ')}`
+      );
 
       return { success: true, instant: true, message: "👑 Master VIP kod qabul qilindi! Cheksiz tizimga xush kelibsiz." };
     }
@@ -319,18 +324,10 @@ export function AuthProvider({ children }) {
         });
       } catch(e) {}
 
-      // Telegramda ham tasdiqlanganini e'lon qilish
-      try {
-        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: SUPER_OWNER_ID,
-            text: `✅ **QURILMA TASDIQLANDI!**\n\nKod: \`${reqData.code}\`\nYangi Qurilma: ${deviceInfo}\nSana: ${new Date().toLocaleTimeString('uz-UZ')}\nOldingi qurilma sessiyasi bekor qilindi.`,
-            parse_mode: 'Markdown'
-          })
-        });
-      } catch(e) {}
+      // Telegramda ham tasdiqlanganini e'lon qilish (xavfsiz server orqali)
+      sendServerOwnerAlert(
+        `✅ **QURILMA TASDIQLANDI!**\n\nKod: \`${reqData.code}\`\nYangi Qurilma: ${deviceInfo}\nSana: ${new Date().toLocaleTimeString('uz-UZ')}\nOldingi qurilma sessiyasi bekor qilindi.`
+      );
 
       return { success: true, message: "✅ Yangi qurilma muvaffaqiyatli tasdiqlandi! Tizimga xush kelibsiz." };
     }

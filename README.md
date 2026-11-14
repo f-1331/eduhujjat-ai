@@ -52,7 +52,7 @@
 
 ### Botga Webhook o'rnatish buyrug'i:
 ```bash
-curl -F "url=https://eduhujjat.vercel.app/api/bot" https://api.telegram.org/bot9001772632:AAE913k5Mhzna5qU2PcezbYnWErPxgn0zp8/setWebhook
+curl -F "url=https://eduhujjat.vercel.app/api/bot" https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook
 ```
 
 ---

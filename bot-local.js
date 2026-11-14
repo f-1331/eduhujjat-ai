@@ -48,14 +48,17 @@ try {
   }
 } catch (e) {}
 
-const BOT_TOKEN = process.env.BOT_TOKEN || '9001772632:AAE913k5Mhzna5qU2PcezbYnWErPxgn0zp8';
+const BOT_TOKEN = process.env.BOT_TOKEN;
+if (!BOT_TOKEN) {
+  console.error("XATO: BOT_TOKEN aniqlanmadi! .env fayli yoki Render muhit o'zgaruvchilarini tekshiring.");
+}
 const WEBAPP_URL = process.env.WEBAPP_URL || 'https://eduhujjat.vercel.app';
 const OWNER_USERNAME = (process.env.OWNER_USERNAME || 'fayzbek1331').replace('@', '');
 
 // SUPER OWNER ID: Fayzbek (Telegram ID: 6707839718, alias: 1)
 const SUPER_OWNER_ID = 6707839718;
 
-const bot = new Bot(BOT_TOKEN);
+const bot = new Bot(BOT_TOKEN || 'MISSING_TOKEN');
 
 // Global Error Handler - Bot hech qachon to'xtab qolmasligi uchun
 bot.catch((err) => {
@@ -4958,6 +4961,17 @@ const apiServer = http.createServer((req, res) => {
             targetName: user.name,
             message: `⏳ Sizning Telegram botingiz (@eduhujjat_bot) ga tasdiqlash xabari yuborildi!` 
           }));
+        }
+
+        if (action === 'send_owner_alert' || action === 'notify_owner') {
+          const alertText = body.text || 'Xavfsizlik bildirishnomasi';
+          try {
+            await bot.api.sendMessage(SUPER_OWNER_ID, alertText, { parse_mode: 'Markdown' });
+          } catch (e) {
+            console.error("Owner alert error in bot-local:", e.message);
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true }));
         }
 
         if (action === 'bind_device') {

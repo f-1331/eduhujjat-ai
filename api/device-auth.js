@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const BOT_TOKEN = process.env.BOT_TOKEN || '9001772632:AAE913k5Mhzna5qU2PcezbYnWErPxgn0zp8';
+const BOT_TOKEN = process.env.BOT_TOKEN;
 const SUPER_OWNER_ID = 6707839718;
 const DB_FILE = path.join(process.cwd(), 'data', 'database.json');
 
@@ -286,6 +286,27 @@ export default async function handler(req, res) {
       r.deniedAt = Date.now();
       pendingRequests.set(reqId, r);
       return res.status(200).json({ success: true, denied: true });
+    }
+
+    // 2d. Super Ownerga xavfsiz bildirishnoma yuborish
+    if (action === 'send_owner_alert' || action === 'notify_owner') {
+      const alertText = body.text || 'Xavfsizlik bildirishnomasi';
+      if (BOT_TOKEN) {
+        try {
+          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: SUPER_OWNER_ID,
+              text: alertText,
+              parse_mode: 'Markdown'
+            })
+          });
+        } catch (e) {
+          console.error("Owner alert error:", e);
+        }
+      }
+      return res.status(200).json({ success: true });
     }
 
     // 2c. Sessiyani chiqarib yuborish (KICK)
