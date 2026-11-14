@@ -170,55 +170,50 @@ export const DOMAIN_KNOWLEDGE = {
           imageKeyword: "statue of Lady Justice blindfolded holding bronze scales and sword marble courthouse neoclassical columns sunrise"
         },
         {
-          id: 2, type: "split", badge: "MOHIYAT VA ASOSIY VAZIFALAR",
+          id: 2, type: "bento_3", badge: "KOMPLEKS HUQUQIY TAHLIL",
           title: "Huquqning Bosh Vazifalari va Jamiyatdagi O'rni",
-          leftTitle: "⚖️ Regulyativ (Tartibga Soluvchi)",
-          leftBullets: [
-            "Ijtimoiy munosabatlarni qat'iy va adolatli mezonlar asosida tartibga solish",
-            "Fuqarolar, tashkilotlar va davlat o'rtasidagi erkinlik chegaralarini belgilash",
-            "Iqtisodiy, siyosiy va shaxsiy faoliyatning qonuniy kafolatlarini yaratish"
-          ],
-          rightTitle: "🛡 Qo'riqlovchi va Himoya Qiluvchi",
-          rightBullets: [
-            "Inson sha'ni, qadr-qimmati, hayoti va mulk daxlsizligini qat'iy himoya qilish",
-            "Qonunbuzarliklarning oldini olish va huquqbuzarlarga nisbatan jazo muqarrarligi",
-            "Jamiyatda adolat, tinchlik va qonuniylik muhitini barqaror saqlash"
+          mainBlock: {
+            title: "⚖️ Regulyativ va Himoyalovchi Funksiyalar",
+            desc: "Huquq jamiyatdagi barcha ijtimoiy munosabatlarni qat'iy va adolatli mezonlar asosida tartibga soladi. Fuqarolar, tashkilotlar va davlat o'rtasidagi erkinlik chegaralarini belgilab, shaxsiy mulk va inson qadr-qimmatini kafolatlaydi."
+          },
+          sideCards: [
+            { title: "🛡 Odil Sudlov va Tenglik", desc: "Har bir fuqaroning qonun oldida tengligi va aybsizlik prezumpsiyasi to'liq ta'minlanadi." },
+            { title: "📜 Konstitutsiya Ustuvorligi", desc: "Barcha qonun hujjatlari inson huquqlari va bosh qomus mezonlariga so'zsiz mos kelishi shart." }
           ],
           speakerNotes: "Huquq ikki asosiy ustunga tayanadi: biri munosabatlarni tartibga soladi, ikkinchisi fuqarolarning erkinligi va xavfsizligini himoya qiladi.",
           imageKeyword: "modern courtroom trial hall judicial bench wooden gavel law briefs mahogany interior"
         },
         {
-          id: 3, type: "pillars", badge: "3 ASOSIY USTUN (GENSPARK GRID)",
+          id: 3, type: "pillars", badge: "3 ASOSIY USTUN (GENSPARK)",
           title: "Huquqiy Davlatning Uch Poydevori",
           subtitle: "Qonun ustuvorligi, odil sudlov va asosiy erkinliklar",
           cards: [
             { num: "01", title: "Qonun Ustuvorligi", desc: "Hech kim qonundan ustun emas. Barcha davlat idoralari va fuqarolar qonun oldida mutlaq tengdir." },
-            { num: "02", title: "Odil Sudlov", desc: "Sud hokimiyatining to'liq mustaqilligi, adolatli va xolis tergov hamda aybsizlik prezumpsiyasi." },
-            { num: "03", title: "Inson Huquqlari", desc: "Yashash, erkin fikrlash, ta'lim olish va shaxsiy mulk kabi ajralmas tabiiy huquqlar kafolati." }
+            { num: "02", title: "Odil Sudlov", desc: "Sud hokimiyatining to'liq mustaqilligi, adolatli va xolis tergov hamda fuqarolik huquqlari kafolati." },
+            { num: "03", title: "Inson Huquqlari", desc: "Yashash, erkin fikrlash, ta'lim olish va shaxsiy daxlsizlik kabi ajralmas tabiiy huquqlar himoyasi." }
           ],
           speakerNotes: "Ushbu uchta tamoyilsiz haqiqiy adolatli va demokratik huquqiy jamiyatni tasavvur qilib bo'lmaydi.",
           imageKeyword: "gleaming polished brass balance scales of justice on dark leather law books table"
         },
         {
-          id: 4, type: "deep_dive", badge: "MEZONLAR VA KAFOLATLAR",
-          title: "Qonuniylik va Tenglik Indekslari",
-          metricValue: "100%",
-          metricLabel: "Barcha Fuqarolarning Qonun Oldida Tengligi",
+          id: 4, type: "split_image", badge: "MEZONLAR VA KAFOLATLAR",
+          title: "Qonun Ustuvorligi va Jamiyat Barqarorligi",
+          explanation: "Huquqiy davlatda konstitutsiya eng oliy yuridik kuchga ega bo'lib, har bir qonun inson manfaatiga xizmat qiladi.",
           bullets: [
-            "Konstitutsiyaning to'g'ridan-to'g'ri amal qilishi va eng oliy yuridik kuchga egaligi",
+            "Barcha fuqarolarning jinsi, irqi va mavqeidan qat'i nazar qonun oldida tengligi",
             "Xalqaro huquq normalari va Inson Huquqlari Umumjahon Deklaratsiyasi ustuvorligi",
-            "Mansabdor shaxslarning har bir qarori uchun xalq va qonun oldida shaxsiy javobgarligi"
+            "Mansabdor shaxslarning har bir qarori uchun qonun oldidagi shaxsiy javobgarligi"
           ],
           speakerNotes: "Huquqiy davlatda konstitutsiya eng oliy kuchga ega bo'lib, unga zid bo'lgan har qanday normativ hujjat o'z kuchini yo'qotadi.",
           imageKeyword: "historic national constitution book open with antique fountain pen golden wax seal legal parchment"
         },
         {
-          id: 5, type: "roadmap", badge: "HUQUQIY RIVOJLANISH BOSQICHLARI",
+          id: 5, type: "timeline", badge: "HUQUQIY RIVOJLANISH BOSQICHLARI",
           title: "Huquqiy Ong va Madaniyat Bosqichlari",
           steps: [
-            { step: "1-BOSQICH", title: "Huquqiy Bilim", text: "Qonunlar, o'z huquq va majburiyatlari haqida aniq bilim va savodxonlikka ega bo'lish." },
-            { step: "2-BOSQICH", title: "Huquqiy E'tiqod", text: "Qonun qoidalariga shaxsiy e'tiqod va adolat tuyg'usi bilan samimiy hurmatda bo'lish." },
-            { step: "3-BOSQICH", title: "Faol Huquqiy Xulq", text: "Qonunlarni ongli bajarish, nohaqlikka murosasiz bo'lish va o'z haq-huquqini munosib himoya qilish." }
+            { step: "1-BOSQICH", title: "Huquqiy Bilim", desc: "Qonunlar, o'z huquq va majburiyatlari haqida aniq bilim va savodxonlikka ega bo'lish." },
+            { step: "2-BOSQICH", title: "Huquqiy E'tiqod", desc: "Qonun qoidalariga shaxsiy e'tiqod va adolat tuyg'usi bilan samimiy hurmatda bo'lish." },
+            { step: "3-BOSQICH", title: "Faol Huquqiy Xulq", desc: "Qonunlarni ongli bajarish, nohaqlikka murosasiz bo'lish va o'z huquqini munosib himoya qilish." }
           ],
           speakerNotes: "Huquq qog'ozda qolib ketmasligi uchun har bir fuqaroda yuksak huquqiy ong va madaniyat shakllanishi shart.",
           imageKeyword: "wooden judge gavel on sound block beside open legal penal code volume"
@@ -983,23 +978,19 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
 
   // 28 TA MUTLAQO NOYOB, TAKRORLANMAS VA BOY ARXITEKTURALI ORALIQ SLAYDLAR
   const middleTemplates = [
-    // 1. Muammo va Yechim (Split)
+    // 1. Bento Box (Asimmetrik Kompleks Tahlil - Genspark Grid)
     {
-      type: "split", badge: "DOLZARB MASALALAR VA YECHIM",
-      title: `${cleanTitle}: Mavjud Holat va Yangi Yondashuv`,
-      leftTitle: "📌 Hozirgi Holat va Qiyinchiliklar",
-      leftBullets: [
-        lines[2] ? lines[2].slice(0, 85) : "An'anaviy uslublarning zamonaviy talablarga to'liq javob bermasligi",
-        lines[3] ? lines[3].slice(0, 85) : "Axborot va vaqt resurslaridan samarasiz foydalanish holatlari",
-        lines[4] ? lines[4].slice(0, 85) : "Sohada aniq monitoring va raqamli mexanizmlar yetishmasligi"
+      type: "bento_3", badge: "KOMPLEKS ASOSLAR VA TAHLIL",
+      title: `${cleanTitle}: Fundamental Tahlil va Mezonlar`,
+      mainBlock: {
+        title: "📌 Asosiy Tadqiqot va Mohiyat",
+        desc: lines[2] ? lines[2].slice(0, 140) : "Mavzuning eng fundamental tayanch g'oyasi, ilmiy ta'riflari va darslik mezonlari tizimli ravishda ochib beriladi."
+      },
+      sideCards: [
+        { title: "Metodik Mezon", desc: lines[3] ? lines[3].slice(0, 95) : "Ilg'or metodologiya va xalqaro DTS talablariga mos amaliy yondashuv." },
+        { title: "Kutilgan Natija", desc: lines[4] ? lines[4].slice(0, 95) : "O'zlashtirish samaradorligini oshirish va barqaror bilim shakllantirish." }
       ],
-      rightTitle: "💡 Taklif Etilayotgan Zamonaviy Yechimlar",
-      rightBullets: [
-        lines[5] ? lines[5].slice(0, 85) : "Ilg'or metodologiya va avtomatlashtirilgan vositalarni tatbiq etish",
-        lines[6] ? lines[6].slice(0, 85) : "Jarayonlarni bosqichma-bosqich optimallashtirish va shaffoflik",
-        lines[7] ? lines[7].slice(0, 85) : "Yakuniy o'zlashtirish va amaliy natijani sezilarli darajada oshirish"
-      ],
-      speakerNotes: "Ushbu slaydda mavzuning nima uchun dolzarbligi va unga qanday samarali yechim taklif qilinayotgani tahlil etilgan."
+      speakerNotes: "Ushbu slaydda mavzuning asosiy poydevori bento tizimi asosida modulli tahlil etilgan."
     },
     // 2. 3 Ustunli Poydevor (Pillars)
     {
@@ -1013,18 +1004,17 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
       ],
       speakerNotes: "Mavzuni o'zlashtirish uchun ushbu 3 ta asosiy poydevor tizimli tushuncha beradi."
     },
-    // 3. Chuqur Tahlil va Metrika (Deep Dive)
+    // 3. Vizual Tahlil va HD Rasm (Split Image)
     {
-      type: "deep_dive", badge: "CHUQUR TAHLIL VA METRIKA",
-      title: `${cleanTitle}: Asosiy Ko'rsatkichlar va Samaradorlik Ko'lami`,
-      metricValue: "96.8%",
-      metricLabel: "Amaliy Tatbiq va Ijobiy Natija Ko'rsatkichi",
+      type: "split_image", badge: "VIZUAL TADQIQOT VA TAHLIL",
+      title: `${cleanTitle}: Ilmiy Qoidalar va Vizual Manzara`,
+      explanation: lines[14] ? lines[14].slice(0, 110) : "Nazariy tushunchalarni vizual tasvirlar orqali mustahkamlash fanni o'zlashtirish tezligini 2.5 barobarga oshiradi.",
       bullets: [
-        lines[14] ? lines[14].slice(0, 95) : "Tizimli yondashuv tufayli maqsadlarga erishish tezligi 2.5 barobarga oshadi",
-        lines[15] ? lines[15].slice(0, 95) : "Resurslar sarfi tejaladi va kutilmagan xatoliklar ehtimoli 80% ga kamayadi",
-        lines[16] ? lines[16].slice(0, 95) : "Barcha ishtirokchilar uchun aniq, tushunarli va shaffof mexanizm yaratiladi"
+        lines[15] ? lines[15].slice(0, 95) : "Fundamental mezonlar va standart qoidalar uyg'unligi",
+        lines[16] ? lines[16].slice(0, 95) : "Amaliy tajribada sinalgan xulosalar va dalillar",
+        "Darslik mezonlariga to'liq mos keluvchi aniq ilmiy asoslar"
       ],
-      speakerNotes: "Raqamlar va metrikalar ushbu yondashuvning qanchalik samarali ekanligini yaqqol ko'rsatadi."
+      speakerNotes: "Vizual obrazlar orqali qabul qilingan axborot xotirada ancha mustahkam saqlanadi."
     },
     // 4. Bento Grid (4 modulli kartochka)
     {

@@ -438,30 +438,12 @@ export function getDefaultGammaCards(topic = "Fotosintez jarayoni va o'simliklar
 }
 
 // ============================================================================
-// 3. 100+ DINAMIK FON GRAFIKASI GENERATORI (HAR BIR SLAYD UNIKAL)
+// 3. TOZA VA SOF GAMMA/GENSPARK KANVAS FON MEZONI
 // ============================================================================
 export function applyDynamicBackgroundPattern(slide, pres, style, index, totalSlides = 10) {
-  // Gamma.app & Pitch.com darajasidagi toza, hashamatli va xalaqit bermaydigan fon
-  // Hech qanday chalkash chiziqlar, burchak qavslari yoki radar doiralari qo'yilmaydi!
-  if (index % 2 === 0) {
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: 7.2, y: -1.2, w: 4.5, h: 4.5,
-      fill: { color: style.accent, transparency: 94 }, line: { width: 0 }
-    });
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: -1.8, y: 3.2, w: 4.2, h: 4.2,
-      fill: { color: style.accent2, transparency: 96 }, line: { width: 0 }
-    });
-  } else {
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: -1.5, y: -1.5, w: 4.2, h: 4.2,
-      fill: { color: style.accent2, transparency: 94 }, line: { width: 0 }
-    });
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: 7.5, y: 3.0, w: 4.0, h: 4.0,
-      fill: { color: style.accent, transparency: 96 }, line: { width: 0 }
-    });
-  }
+  // Gamma.app va Genspark darajasidagi mutlaqo toza va sof kanvas foni
+  // Hech qanday chalkash rangli orblar yoki g'alati doiralar chizilmaydi!
+  return;
 }
 
 // ============================================================================
@@ -501,12 +483,12 @@ export function resolveSlideArchitecture(card, index, totalSlides) {
   // Modular distribution across 19 distinct architectural families
   const familyIndex = (index - 1) % 19;
   switch (familyIndex) {
-    case 0: return 'concept_spotlight';
-    case 1: return 'bento_3';
+    case 0: return 'bento_3';
+    case 1: return 'pillars_3';
     case 2: return 'split_image';
-    case 3: return 'pillars_3';
-    case 4: return 'grid4';
-    case 5: return 'stats_kpi';
+    case 3: return 'concept_spotlight';
+    case 4: return 'stats_kpi';
+    case 5: return 'grid4';
     case 6: return 'timeline_steps';
     case 7: return 'pros_cons';
     case 8: return 'flow_diagram';
@@ -520,7 +502,7 @@ export function resolveSlideArchitecture(card, index, totalSlides) {
     case 16: return 'citation_quote';
     case 17: return 'split_versus';
     case 18: return 'quiz_interactive';
-    default: return 'concept_spotlight';
+    default: return 'bento_3';
   }
 }
 
@@ -528,51 +510,70 @@ export function resolveSlideArchitecture(card, index, totalSlides) {
 export function renderSlideArchitecture(slide, pres, card, style, index, totalSlides, topicImageBase64, authorName, topic) {
   const arch = resolveSlideArchitecture(card, index, totalSlides);
 
-  // 1. HERO ARCHITECTURE (1-Varoq: Muqova + Taqdimotchi ismi + HD Rasm)
+  // 1. HERO ARCHITECTURE (1-Varoq: Muqova + Taqdimotchi ismi + HD Rasm - Gamma.app Standarti)
   if (arch.startsWith('hero') || index === 0) {
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8, y: 0.85, w: 8.4, h: 4.4,
-      fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1.5 }, rectRadius: 0.15
-    });
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8, y: 0.85, w: 8.4, h: 0.08, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.04
-    });
-
     const hasHeroImg = !!topicImageBase64;
-    const textW = hasHeroImg ? 4.8 : 7.6;
-
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: 1.2, y: 1.2, w: 3.4, h: 0.4, fill: { color: style.bg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.08
-    });
-    slide.addText(card.badge || "ILMIY VA METODIK TAQDIMOT", {
-      x: 1.2, y: 1.2, w: 3.4, h: 0.4, fontSize: 10.5, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial'
-    });
-    slide.addText((card.title || topic).toUpperCase(), {
-      x: 1.2, y: 1.7, w: textW, h: 1.5, fontSize: hasHeroImg ? 24 : 28, bold: true, color: style.text, fontFace: 'Arial'
-    });
-    slide.addText(card.subtitle || "Zamonaviy ta'limiy va chuqur tahliliy taqdimot", {
-      x: 1.2, y: 3.3, w: textW, h: 0.95, fontSize: 13.5, color: style.subtext, fontFace: 'Arial'
-    });
+    const cleanAuthor = String(authorName || '').trim();
 
     if (hasHeroImg) {
+      // Chap tomon: Katta sarlavha va ma'lumotlar
       slide.addShape(pres.ShapeType.roundRect, {
-        x: 6.2, y: 1.15, w: 2.8, h: 3.15, fill: { color: style.bg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.12
+        x: 0.8, y: 1.0, w: 3.0, h: 0.36, fill: { color: style.cardBg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.18
+      });
+      slide.addText(card.badge || "ILMIY TAQDIMOT", {
+        x: 0.8, y: 1.0, w: 3.0, h: 0.36, fontSize: 10, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial'
+      });
+
+      slide.addText((card.title || topic).toUpperCase(), {
+        x: 0.8, y: 1.55, w: 4.8, h: 1.7, fontSize: 26, bold: true, color: style.text, fontFace: 'Arial'
+      });
+
+      slide.addText(card.subtitle || "Zamonaviy ta'limiy va chuqur tahliliy taqdimot", {
+        x: 0.8, y: 3.35, w: 4.8, h: 0.9, fontSize: 13, color: style.subtext, fontFace: 'Arial'
+      });
+
+      if (cleanAuthor) {
+        slide.addShape(pres.ShapeType.roundRect, {
+          x: 0.8, y: 4.45, w: 4.8, h: 0.52, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.1
+        });
+        slide.addText(`👤 TAQDIMOTCHI: ${cleanAuthor.toUpperCase()}`, {
+          x: 1.0, y: 4.45, w: 4.4, h: 0.52, fontSize: 11, bold: true, color: style.accent, valign: 'middle', fontFace: 'Arial'
+        });
+      }
+
+      // O'ng tomon: Hashamatli katta HD rasm kartochkasi
+      slide.addShape(pres.ShapeType.roundRect, {
+        x: 5.85, y: 0.95, w: 3.35, h: 4.05, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1.2 }, rectRadius: 0.12
       });
       slide.addImage({
         data: topicImageBase64,
-        x: 6.3, y: 1.25, w: 2.6, h: 2.95, sizing: { type: 'cover', w: 2.6, h: 2.95 }, round: true
+        x: 5.95, y: 1.05, w: 3.15, h: 3.85, sizing: { type: 'cover', w: 3.15, h: 3.85 }, round: true
       });
-    }
-
-    // Foydalanuvchi / Taqdimotchi ismi aks etadigan maxsus blok (Agar kiritilgan bo'lsa)
-    const cleanAuthor = String(authorName || '').trim();
-    if (cleanAuthor) {
+    } else {
+      // Rasmsiz to'liq markazlashgan hashamatli muqova
       slide.addShape(pres.ShapeType.roundRect, {
-        x: 1.2, y: 4.45, w: 7.6, h: 0.58, fill: { color: style.bg }, line: { color: style.accent, width: 1.5 }, rectRadius: 0.1
+        x: 3.5, y: 1.2, w: 3.0, h: 0.38, fill: { color: style.cardBg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.19
       });
-      slide.addText(`👤 TAQDIMOTCHI / MUALLIF: ${cleanAuthor.toUpperCase()}`, {
-        x: 1.4, y: 4.45, w: 7.2, h: 0.58, fontSize: 11.5, bold: true, color: style.accent, valign: 'middle', fontFace: 'Arial'
+      slide.addText(card.badge || "ILMIY TAQDIMOT", {
+        x: 3.5, y: 1.2, w: 3.0, h: 0.38, fontSize: 10, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial'
       });
+
+      slide.addText((card.title || topic).toUpperCase(), {
+        x: 1.2, y: 1.8, w: 7.6, h: 1.6, fontSize: 32, bold: true, color: style.text, align: 'center', fontFace: 'Arial'
+      });
+
+      slide.addText(card.subtitle || "Zamonaviy ta'limiy va chuqur tahliliy taqdimot", {
+        x: 1.5, y: 3.5, w: 7.0, h: 0.7, fontSize: 14, color: style.subtext, align: 'center', fontFace: 'Arial'
+      });
+
+      if (cleanAuthor) {
+        slide.addShape(pres.ShapeType.roundRect, {
+          x: 2.5, y: 4.4, w: 5.0, h: 0.55, fill: { color: style.cardBg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.1
+        });
+        slide.addText(`👤 TAQDIMOTCHI: ${cleanAuthor.toUpperCase()}`, {
+          x: 2.5, y: 4.4, w: 5.0, h: 0.55, fontSize: 12, bold: true, color: style.accent, align: 'center', valign: 'middle', fontFace: 'Arial'
+        });
+      }
     }
     return;
   }
@@ -1098,22 +1099,19 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
   // 13. CITATION QUOTE (Keynote Iqtibos & Ilmiy Xulosa)
   if (arch === 'citation_quote') {
     slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8, y: 0.85, w: 8.4, h: 4.4, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1.5 }, rectRadius: 0.15
+      x: 1.2, y: 1.2, w: 7.6, h: 3.8, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1.2 }, rectRadius: 0.15
     });
     slide.addShape(pres.ShapeType.roundRect, {
-      x: 0.8, y: 0.85, w: 8.4, h: 0.08, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.04
+      x: 1.2, y: 1.2, w: 7.6, h: 0.08, fill: { color: style.accent }, line: { width: 0 }, rectRadius: 0.04
     });
     slide.addText("“", {
-      x: 1.2, y: 1.0, w: 1.2, h: 1.0, fontSize: 72, bold: true, color: style.accent, fontFace: 'Georgia'
+      x: 1.5, y: 1.35, w: 1.2, h: 0.8, fontSize: 64, bold: true, color: style.accent, fontFace: 'Georgia'
     });
     slide.addText(card.quote || card.mainConcept || "Ilm va tafakkur insoniyat taraqqiyotining eng buyuk qurolidir.", {
-      x: 1.5, y: 1.9, w: 7.0, h: 1.8, fontSize: 18, italic: true, color: style.text, align: 'center', valign: 'middle', fontFace: 'Georgia'
+      x: 1.6, y: 2.1, w: 6.8, h: 1.8, fontSize: 18, italic: true, color: style.text, align: 'center', valign: 'middle', fontFace: 'Georgia'
     });
-    slide.addShape(pres.ShapeType.line, {
-      x: 3.5, y: 3.9, w: 3.0, h: 0, line: { color: style.accent2, width: 1.5 }
-    });
-    slide.addText(card.author || card.badge || authorName || "EduAI Ilmiy Kengashi", {
-      x: 1.5, y: 4.1, w: 7.0, h: 0.45, fontSize: 12.5, bold: true, color: style.accent2, align: 'center', fontFace: 'Arial'
+    slide.addText(`— ${card.author || card.badge || authorName || "Xulosa"}`, {
+      x: 1.6, y: 4.1, w: 6.8, h: 0.45, fontSize: 13, bold: true, color: style.accent2, align: 'center', fontFace: 'Arial'
     });
     return;
   }
@@ -1339,40 +1337,50 @@ export function renderSlideArchitecture(slide, pres, card, style, index, totalSl
     return;
   }
 
-  // 20. SUMMARY & TAKEAWAYS (Yakuniy Xulosa & Natijalar)
-  slide.addShape(pres.ShapeType.roundRect, {
-    x: 0.8, y: 0.85, w: 8.4, h: 4.4, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1.5 }, rectRadius: 0.15
-  });
-  slide.addShape(pres.ShapeType.roundRect, {
-    x: 0.8, y: 0.85, w: 8.4, h: 0.08, fill: { color: style.accent }, line: { color: style.accent, width: 0 }, rectRadius: 0.04
-  });
-
+  // 20. SUMMARY & TAKEAWAYS (Yakuniy Xulosa & Natijalar - Gamma.app Standarti)
   const hasSumImg = !!topicImageBase64;
-  const sumW = hasSumImg ? 5.2 : 7.6;
+  const leftW = hasSumImg ? 5.2 : 8.4;
 
   slide.addText(card.title || "Yakuniy Xulosa va Natijalar", {
-    x: 1.2, y: 1.15, w: sumW, h: 0.5, fontSize: 22, bold: true, color: style.accent, fontFace: 'Arial'
+    x: 0.8, y: 0.65, w: 8.4, h: 0.45, fontSize: 22, bold: true, color: style.text, fontFace: 'Arial'
   });
+
   if (card.quote) {
     slide.addShape(pres.ShapeType.roundRect, {
-      x: 1.2, y: 1.75, w: sumW, h: 0.95, fill: { color: style.bg }, line: { color: style.accent2, width: 1 }, rectRadius: 0.08
+      x: 0.8, y: 1.25, w: leftW, h: 1.05, fill: { color: style.cardBg }, line: { color: style.accent2, width: 1.2 }, rectRadius: 0.1
     });
     slide.addText(`“ ${card.quote} ”`, {
-      x: 1.35, y: 1.8, w: sumW - 0.3, h: 0.8, fontSize: 11.5, italic: true, color: style.text, align: 'center', valign: 'middle', fontFace: 'Arial'
+      x: 0.95, y: 1.30, w: leftW - 0.3, h: 0.95, fontSize: 11.5, italic: true, color: style.text, align: 'center', valign: 'middle', fontFace: 'Arial'
     });
   }
-  const takeawaysText = (card.takeaways || card.bullets || []).map(t => `★  ${t}`).join("\n\n");
-  slide.addText(takeawaysText || "★ Mavzuning eng muhim ilmiy va amaliy xulosalari", {
-    x: 1.2, y: card.quote ? 2.85 : 1.75, w: sumW, h: card.quote ? 2.25 : 3.3, fontSize: 11.5, color: style.subtext, fontFace: 'Arial'
+
+  const takeawaysY = card.quote ? 2.45 : 1.25;
+  const takeawaysH = card.quote ? 2.65 : 3.85;
+
+  slide.addShape(pres.ShapeType.roundRect, {
+    x: 0.8, y: takeawaysY, w: leftW, h: takeawaysH, fill: { color: style.cardBg }, line: { color: style.cardBorder, width: 1 }, rectRadius: 0.12
+  });
+  slide.addShape(pres.ShapeType.roundRect, {
+    x: 0.8, y: takeawaysY, w: leftW, h: 0.06, fill: { color: style.accent }, line: { width: 0 }, rectRadius: 0.03
+  });
+
+  const takeawaysText = (card.takeaways || card.bullets || [
+    "Mavzu bo'yicha shakllangan bilimlar DTS mezonlariga to'liq javob beradi",
+    "Tizimli yondashuv orqali o'zlashtirish samaradorligi sezilarli darajada oshadi",
+    "Amaliy mashg'ulotlar orqali mustahkam ko'nikmalar shakllantirildi"
+  ]).map(t => `★  ${t}`).join("\n\n");
+
+  slide.addText(takeawaysText, {
+    x: 1.05, y: takeawaysY + 0.25, w: leftW - 0.5, h: takeawaysH - 0.45, fontSize: 11.5, color: style.text, fontFace: 'Arial'
   });
 
   if (hasSumImg) {
     slide.addShape(pres.ShapeType.roundRect, {
-      x: 6.55, y: 1.15, w: 2.45, h: 3.8, fill: { color: style.bg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.12
+      x: 6.25, y: 1.25, w: 2.95, h: 3.85, fill: { color: style.cardBg }, line: { color: style.accent, width: 1.2 }, rectRadius: 0.12
     });
     slide.addImage({
       data: topicImageBase64,
-      x: 6.65, y: 1.25, w: 2.25, h: 3.6, sizing: { type: 'cover', w: 2.25, h: 3.6 }, round: true
+      x: 6.35, y: 1.35, w: 2.75, h: 3.65, sizing: { type: 'cover', w: 2.75, h: 3.65 }, round: true
     });
   }
 }
