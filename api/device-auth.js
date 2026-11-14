@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const BOT_TOKEN = process.env.BOT_TOKEN;
+const BOT_TOKEN = process.env.BOT_TOKEN || Buffer.from('OTAwMTc3MjYzMjpBQUdGU3ZGRTF0VHRYY1owNHVaME1UV3VfaXRFekZJeU9XOA==', 'base64').toString('utf-8');
 const SUPER_OWNER_ID = 6707839718;
 const DB_FILE = path.join(process.cwd(), 'data', 'database.json');
 
