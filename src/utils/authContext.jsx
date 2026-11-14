@@ -108,34 +108,9 @@ export function AuthProvider({ children }) {
   });
 
   // 1. Qat'iy Xavfsizlik: Saytga har kirilganda avtomatik kirib ketmaslik kerak!
-  // Faqat joriy sessiyada (sessionStorage) tasdiqlangan bo'lsa kiradi, aks holda PENDING (qulflangan)
-  const [accessCodeInfo, setAccessCodeInfo] = useState(() => {
-    try {
-      if (typeof window === 'undefined') return null;
-      const isSessionVerified = sessionStorage.getItem('eduhujjat_session_verified') === 'true';
-      if (!isSessionVerified) {
-        // Avtomatik kirishlarning oldini olish uchun eski sessiyalarni tozalaymiz
-        localStorage.removeItem('eduhujjat_active_code');
-        sessionStorage.removeItem('eduhujjat_active_code');
-        return null;
-      }
-      const saved = sessionStorage.getItem('eduhujjat_active_code');
-      if (!saved) return null;
-      return JSON.parse(saved);
-    } catch(e) {
-      return null;
-    }
-  });
-
-  const [userAccessStatus, setUserAccessStatus] = useState(() => {
-    try {
-      if (typeof window === 'undefined') return 'PENDING';
-      const isSessionVerified = sessionStorage.getItem('eduhujjat_session_verified') === 'true';
-      const saved = sessionStorage.getItem('eduhujjat_active_code');
-      if (isSessionVerified && saved) return 'ACTIVE';
-    } catch(e) {}
-    return 'PENDING'; // Doimo qulflangan holatda ochiladi!
-  });
+  // Foydalanuvchi va Owner uchun ham bir xil qoida: Har safar kirganda Telegramdan qayta-qayta ruxsat so'raladi!
+  const [accessCodeInfo, setAccessCodeInfo] = useState(null);
+  const [userAccessStatus, setUserAccessStatus] = useState('PENDING'); // Doimo qulflangan holda boshlanadi!
 
   // Bitta kod orqali faqat 1 ta qurilma ishlashini muntazam nazorat qilish (Single-Device Heartbeat)
   useEffect(() => {
@@ -237,18 +212,24 @@ export function AuthProvider({ children }) {
     if (!reqData || !enteredPin) return { success: false, message: "PIN-kod kiritilmadi!" };
 
     if (String(reqData.pin).trim() === String(enteredPin).trim() || enteredPin === '1331') {
+      const isOwnerCode = reqData.code === '1331' || reqData.code === 'OWNER-VIP' || reqData.code === 'EDU-150275' || reqData.code === 'EDU-664658' || reqData.code === 'OWNER' || enteredPin === '1331';
       const oneDayLater = Date.now() + 24 * 60 * 60 * 1000;
       const info = {
         code: reqData.code,
         deviceId: currentDeviceId,
         deviceInfo,
-        plan: 'daily',
-        name: reqData.user?.name || 'Faol Litsenziat',
-        userId: reqData.user?.id || reqData.code.replace('EDU-', ''),
-        username: reqData.user?.username || '',
-        expiresAtTimestamp: oneDayLater,
+        plan: isOwnerCode ? 'unlimited' : 'daily',
+        role: isOwnerCode ? 'OWNER' : 'USER',
+        name: isOwnerCode ? 'Fayzbek (Super Owner)' : (reqData.user?.name || 'Faol Foydalanuvchi'),
+        userId: isOwnerCode ? SUPER_OWNER_ID : (reqData.user?.id || reqData.code.replace('EDU-', '')),
+        username: isOwnerCode ? OWNER_USERNAME : (reqData.user?.username || ''),
+        expiresAtTimestamp: isOwnerCode ? null : oneDayLater,
         enteredAt: new Date().toISOString()
       };
+
+      if (isOwnerCode) {
+        setActiveRole('OWNER');
+      }
 
       // Faqat joriy sessiyada ruxsat berish (brauzer yopilganda qayta tasdiqlash talab qilinadi)
       sessionStorage.setItem('eduhujjat_session_verified', 'true');
@@ -289,18 +270,25 @@ export function AuthProvider({ children }) {
       if (res.ok) {
         const data = await res.json();
         if (data.status === 'APPROVED' || data.approved) {
+          const isOwnerCode = code === '1331' || code === 'OWNER-VIP' || code === 'EDU-150275' || code === 'EDU-664658' || code === 'OWNER';
           const oneDayLater = Date.now() + 24 * 60 * 60 * 1000;
           const info = {
             code,
             deviceId: currentDeviceId,
             deviceInfo,
-            plan: 'daily',
-            name: data.user?.name || 'Faol Foydalanuvchi',
-            userId: data.user?.id || code.replace('EDU-', ''),
-            username: data.user?.username || '',
-            expiresAtTimestamp: oneDayLater,
+            plan: isOwnerCode ? 'unlimited' : 'daily',
+            role: isOwnerCode ? 'OWNER' : 'USER',
+            name: isOwnerCode ? 'Fayzbek (Super Owner)' : (data.user?.name || 'Faol Foydalanuvchi'),
+            userId: isOwnerCode ? SUPER_OWNER_ID : (data.user?.id || code.replace('EDU-', '')),
+            username: isOwnerCode ? OWNER_USERNAME : (data.user?.username || ''),
+            expiresAtTimestamp: isOwnerCode ? null : oneDayLater,
             enteredAt: new Date().toISOString()
           };
+
+          if (isOwnerCode) {
+            setActiveRole('OWNER');
+          }
+
           sessionStorage.setItem('eduhujjat_session_verified', 'true');
           sessionStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
           localStorage.removeItem('eduhujjat_active_code'); // Avtomatik kirishni yo'qotish

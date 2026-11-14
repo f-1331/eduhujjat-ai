@@ -53,9 +53,24 @@
       "userId": 9017407025,
       "userName": "Tony Stark",
       "time": 1794145733642
+    },
+    "test_auth_check_1": {
+      "reqId": "test_auth_check_1",
+      "code": "EDU-150275",
+      "deviceId": "test_browser_chrome",
+      "deviceInfo": "Windows PC / Chrome",
+      "pin": "undefined",
+      "status": "APPROVED",
+      "userId": 6707839718,
+      "userName": "Fayzbek (Super Owner)",
+      "time": 1794655141046,
+      "approvedBy": 6707839718,
+      "approvedTime": 1794655171089
     }
   },
-  "deviceBindings": {},
+  "deviceBindings": {
+    "EDU-150275": "test_browser_chrome"
+  },
   "activityLogs": [
     {
       "id": "act_101",
