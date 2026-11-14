@@ -847,10 +847,8 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
   } = (typeof options === 'object' && options !== null) ? options : {};
 
   const targetCount = Math.max(1, Math.min(30, parseInt(slideCount, 10) || 6));
-
-  // Matndan qatorlarni ajratish
   const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 3);
-  
+
   // 1-slayd: Sarlavha (Hero)
   const slide1 = {
     id: 1, type: "hero", badge: "GAMMA & GENSPARK ULTRA AI",
@@ -879,7 +877,7 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
     speakerNotes: "Xulosa qilib aytganda, bugun ko'rib chiqqan mavzumiz kelgusidagi muvaffaqiyatlar uchun muhim poydevordir."
   };
 
-  // Oraliq boy arxitekturali slaydlar bazasi (2-dan 29-gacha)
+  // 28 TA MUTLAQO NOYOB, TAKRORLANMAS VA BOY ARXITEKTURALI ORALIQ SLAYDLAR
   const middleTemplates = [
     // 1. Muammo va Yechim (Split)
     {
@@ -905,21 +903,9 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
       title: `${cleanTitle}ning Uch Asosiy Tayanchi`,
       subtitle: "Mavzuni to'liq yoritib beruvchi mantiqiy bloklar",
       cards: [
-        {
-          num: "01",
-          title: lines[8] ? lines[8].slice(0, 25) : "Nazariy Asoslar",
-          desc: lines[9] ? lines[9].slice(0, 110) : "Fundamental qoidalar, aniq mezonlar va birlamchi tushunchalarning ilmiy mohiyati."
-        },
-        {
-          num: "02",
-          title: lines[10] ? lines[10].slice(0, 25) : "Amaliy Jarayon",
-          desc: lines[11] ? lines[11].slice(0, 110) : "Tajribaviy tahlil, real hayotiy misollar va bevosita tatbiq etish usullari."
-        },
-        {
-          num: "03",
-          title: lines[12] ? lines[12].slice(0, 25) : "Natija & Baholash",
-          desc: lines[13] ? lines[13].slice(0, 110) : "Kutilgan ko'rsatkichlar, samaradorlik koeffitsienti va istiqbolli rejalar."
-        }
+        { num: "01", title: lines[8] ? lines[8].slice(0, 25) : "Nazariy Asoslar", desc: lines[9] ? lines[9].slice(0, 110) : "Fundamental qoidalar, aniq mezonlar va birlamchi tushunchalarning ilmiy mohiyati." },
+        { num: "02", title: lines[10] ? lines[10].slice(0, 25) : "Amaliy Jarayon", desc: lines[11] ? lines[11].slice(0, 110) : "Tajribaviy tahlil, real hayotiy misollar va bevosita tatbiq etish usullari." },
+        { num: "03", title: lines[12] ? lines[12].slice(0, 25) : "Natija & Baholash", desc: lines[13] ? lines[13].slice(0, 110) : "Kutilgan ko'rsatkichlar, samaradorlik koeffitsienti va istiqbolli rejalar." }
       ],
       speakerNotes: "Mavzuni o'zlashtirish uchun ushbu 3 ta asosiy poydevor tizimli tushuncha beradi."
     },
@@ -971,25 +957,154 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
       ],
       speakerNotes: "Vizual obrazlar orqali qabul qilingan axborot xotirada 5 barobar mustahkamroq saqlanib qoladi."
     },
-    // 7. Qiyosiy Tahlil (Comparative Split)
+    // 7. Bento 3 (Katta blok + 2 yon karta)
     {
-      type: "split", badge: "QIYOSIY TAHLIL VA FARQLAR",
-      title: "An'anaviy Tajriba va Yangi Innovatsion Yondashuv",
-      leftTitle: "⌛ An'anaviy Yondashuv",
-      leftBullets: [
-        "Ko'p vaqt va jismoniy mehnat talab qiluvchi qo'lda boshqaruv",
-        "Axborot tarqoqligi va xatoliklar ehtimolining yuqoriligi",
-        "Individual ehtiyojlarni to'liq inobatga olishdagi cheklovlar"
+      type: "bento_3", badge: "STRATEGIK FOKUS VA YONDOSH MODULLAR",
+      title: "Markaziy Yadro va Qo'shimcha Mexanizmlar",
+      mainBlock: {
+        title: `${cleanTitle}ning Bosh Maqsadi`,
+        desc: "Sohani yuqori sifat va xalqaro andozalar darajasiga olib chiqish, inson kapitalini har tomonlama qo'llab-quvvatlash."
+      },
+      sideCards: [
+        { title: "Innovatsion Tezlatgich", desc: "Zamonaviy raqamli vositalar va sun'iy intellekt integratsiyasi orqali unumdorlik." },
+        { title: "Sifat Kafolati", desc: "Har bir bosqichning qat'iy standartlar va obyektiv mezonlarga javob berishi." }
       ],
-      rightTitle: "🚀 Innovatsion Yondashuv",
-      rightBullets: [
-        "Sun'iy intellekt va avtomatlashtirish orqali yuqori aniqlik",
-        "Tezkor tahlil va real vaqt rejimida moslashuvchanlik",
-        "Har bir ishtirokchiga moslashgan individual ta'limiy trayektoriya"
-      ],
-      speakerNotes: "Qiyoslash orqali yangi davr afzalliklari va imkoniyatlari aniq namoyon bo'ladi."
+      speakerNotes: "Bento strukturasi asosiy va yordamchi omillarni bitta qarashda ko'rish imkonini beradi."
     },
-    // 8. Taniqli Allomalar Iqtibosi va Falsafiy Qarash (Quote)
+    // 8. Qiyosiy Tahlil (Pros & Cons)
+    {
+      type: "pros_cons", badge: "QIYOSIY FOYDALAR VA XATARLAR",
+      title: "Afzalliklar va E'tibor Qaratiladigan Xatarlar",
+      prosTitle: "✅ Asosiy Afzalliklar",
+      pros: [
+        "Mehnat unumdorligining bir necha barobar ortishi va aniqlik",
+        "Vaqt va inson resurslarining maksimal tejalishi",
+        "Tizimli monitoring va real vaqt rejimida boshqaruv"
+      ],
+      consTitle: "⚠️ E'tibor Qaratish Kerak Bo'lgan Jihatlar",
+      cons: [
+        "Dastlabki bosqichda kadrlar malakasini oshirish zarurati",
+        "Texnik infratuzilmaning uzluksiz ishlashini kafolatlash",
+        "Ma'lumotlar xavfsizligi va maxfiylik talablariga rioya qilish"
+      ],
+      speakerNotes: "Har qanday loyihada ijobiy va xatarli tomonlarni birgalikda ko'rish xatolarning oldini oladi."
+    },
+    // 9. Harakat Sxemasi (Flow Diagram)
+    {
+      type: "flow_diagram", badge: "KETMA-KET HARAKAT ALGORITMI",
+      title: "Jarayonning 4 Qadamli Mantiqiy Sxemasi",
+      flowSteps: [
+        { step: "01", title: "Tahlil & Reja", desc: "Muammoni aniqlash va resurslarni hisoblash" },
+        { step: "02", title: "Ishlab Chiqish", desc: "Standartlar asosida mexanizmni yaratish" },
+        { step: "03", title: "Sinov & Joriy Qilish", desc: "Amaliyotda tatbiq etish va oraliq tahlil" },
+        { step: "04", title: "Optimallashtirish", desc: "Doimiy takomillashtirish va kengaytirish" }
+      ],
+      speakerNotes: "Ushbu 4 bosqichli sxema barqaror va kafolatlangan yakuniy natijani ta'minlaydi."
+    },
+    // 10. Interaktiv Savol-Javob (Quiz)
+    {
+      type: "quiz_slide", badge: "MUSTAHKAMLASH VA SAVOL-JAVOB",
+      title: "Mavzu Bo'yicha Asosiy Nazorat Savollari",
+      question: `${cleanTitle} bo'yicha eng muhim xulosa va mohiyat nimalardan iborat?`,
+      options: [
+        "A) Tizimli yondashuv va qat'iy nazariy qoidalarga tayanish",
+        "B) Amaliy tajriba va innovatsion vositalarni integratsiya qilish",
+        "C) Barcha yuqoridagi omillarning o'zaro uzviy uyg'unligi (To'g'ri)"
+      ],
+      answer: "C) Nazariya, amaliyot va innovatsiya birlashgandagina eng yuqori samaradorlik kafolatlanadi.",
+      speakerNotes: "Auditoriya bilan qisqa savol-javob o'tkazish mavzuning o'zlashtirilish darajasini aniqlashga xizmat qiladi."
+    },
+    // 11. SWOT Strategik Matritsa
+    {
+      type: "swot_analysis", badge: "STRATEGIK SWOT TAHLILI",
+      title: "Kuchli va Zaif Tomonlar, Imkoniyatlar Matritsasi",
+      swotS: ["Kuchli ilmiy va metodik baza", "Yuqori motivatsiyaga ega mutaxassislar jamoasi"],
+      swotW: ["Yangi texnologiyalarni o'zlashtirishdagi vaqt omili", "Mintaqaviy infratuzilmadagi tafovutlar"],
+      swotO: ["Raqamlashtirish orqali yangi bozorlar va imkoniyatlar", "Xalqaro standartlarga to'liq integratsiya"],
+      swotT: ["Tashqi o'zgarishlar va tez sur'atli texnologik raqobat", "Resurslar cheklanganligi xatarlari"],
+      speakerNotes: "SWOT tahlili uzoq muddatli barqaror strategiyani ishlab chiqishda eng ishonchli vositadir."
+    },
+    // 12. Muammo va Aniq Innovatsion Yechim
+    {
+      type: "problem_solution", badge: "DOLZARB MUAMMO VA YECHIM",
+      title: "Asosiy Qiyinchiliklar va Aniq Innovatsion Yechimlar",
+      problems: [
+        "Axborot oqimining haddan tashqari ko'pligi va sifatni saralash qiyinligi",
+        "Eski andozalarga tayanib qolish oqibatidagi sekinlashuv"
+      ],
+      solutions: [
+        "Sun'iy intellekt va avtomatlashtirilgan saralash algoritmlarini joriy etish",
+        "Moslashuvchan (Agile) boshqaruv va zamonaviy malaka oshirish tizimi"
+      ],
+      speakerNotes: "Har bir aniqlangan muammoga qarshi aniq, o'lchanadigan innovatsion yechim taklif etiladi."
+    },
+    // 13. Tahliliy Monitoring va KPI
+    {
+      type: "stats", badge: "TAHLILIY MONITORING VA KO'RSATKICHLAR",
+      title: "Raqamli Ko'rsatkichlar va Rivojlanish Dinamikasi",
+      stats: [
+        { value: "98.2%", label: "Muvaffaqiyat Koeffitsienti", desc: "Standart talablariga to'liq muvofiqlik darajasi." },
+        { value: "4.5x", label: "Ishlash Tezligi", desc: "Jarayonlarni optimallashtirish hisobiga o'sish sur'ati." },
+        { value: "100%", label: "Shaffoflik & Nazorat", desc: "Barcha bosqichlarning hujjatlashtirilganligi." }
+      ],
+      speakerNotes: "Aniq raqamlar va KPI ko'rsatkichlari tizimning ishonchliligini yaqqol tasdiqlaydi."
+    },
+    // 14. Qiyosiy Mezonlar Matritsasi
+    {
+      type: "comparison_table", badge: "QIYOSIY MEZONLAR JADVALI",
+      title: "An'anaviy Tajriba va Yangi Standartlar Qiyosi",
+      col1Title: "An'anaviy Usul",
+      col2Title: "Yangi Innovatsion Standart",
+      rows: [
+        { param: "Tezkorlik", col1: "2-3 kun davomida qo'lda tahlil", col2: "Soniyalar ichida avtomatik hisobot" },
+        { param: "Aniqlik darajasi", col1: "Inson omili ta'sirida 75-80%", col2: "Raqamli algoritmlar bilan 99%+" },
+        { param: "Moslashuvchanlik", col1: "Cheklangan va qolipga solingan", col2: "Shaxsiy ehtiyojga to'liq moslashuvchi" }
+      ],
+      speakerNotes: "Jadvaldagi qiyosiy ko'rsatkichlar yangi tizimning so'zsiz ustunligini ko'rsatadi."
+    },
+    // 15. Bosqichma-bosqich O'sish Ko'rsatkichlari
+    {
+      type: "progress_metrics", badge: "SAMARADORLIK DINAMIKASI",
+      title: "Bosqichma-bosqich O'sish Dinamikasi va Foizlar",
+      metrics: [
+        { label: "1-Bosqich: Boshlang'ich qamrov va tayyorgarlik", percent: "92%", desc: "Barcha resurslar to'liq safarbar etildi" },
+        { label: "2-Bosqich: Asosiy mexanizmlarni ishga tushirish", percent: "87%", desc: "Jarayonlar barqaror sur'atda kechmoqda" },
+        { label: "3-Bosqich: Yakuniy maqsadlarga to'liq erishish", percent: "95%", desc: "Kutilgan natijalar to'liq ta'minlandi" }
+      ],
+      speakerNotes: "Progress barlari jarayonning qaysi nuqtada ekanligini vizual va aniq namoyish etadi."
+    },
+    // 16. Amaliy Keys Tadqiqoti
+    {
+      type: "case_study", badge: "HAYOTIY KEYS VA TAJRIBA",
+      title: "Amaliy Sinov va Haqiqiy Natijalar Keysi",
+      caseSituation: "Amaliyotda mavjud resurslar tarqoq bo'lib, unumdorlik past darajada edi.",
+      caseAction: "Yangi tizimli yondashuv, zamonaviy axborot modullari va aniq mezonlar joriy etildi.",
+      caseResult: "Xatoliklar 4 barobarga kamaydi, ishtirokchilarning faolligi va o'zlashtirish ko'rsatkichi 96% ga yetdi.",
+      speakerNotes: "Ushbu keys nazariyaning amaliyotda qanchalik yuksak samara berishini isbotlaydi."
+    },
+    // 17. 3 Strategik Yo'nalish Galereyasi
+    {
+      type: "tri_gallery", badge: "3 TA STRATEGIK RIVOJLANISH YO'NALISHI",
+      title: "Kelgusi Rivojlanishning Asosiy Vektorlari",
+      items: [
+        { title: "Raqamli Integratsiya", desc: "Zamonaviy IT va bulutli platformalarni to'liq bog'lash." },
+        { title: "Kadrlar Malakasi", desc: "Mutaxassislarni uzluksiz o'qitish va yangi ko'nikmalarni shakllantirish." },
+        { title: "Barqaror Rivojlanish", desc: "Uzoq muddatli ijtimoiy va iqtisodiy foydani kafolatlash." }
+      ],
+      speakerNotes: "Ushbu 3 vektor kelgusi yillarda barqaror o'sishning kafolati hisoblanadi."
+    },
+    // 18. Ko'p Beriladigan Savollar (FAQ)
+    {
+      type: "faq_accordion", badge: "ENG KO'P BERILADIGAN SAVOLLAR",
+      title: "Mavzu Bo'yicha 3 Ta Muhim Savol va Ilmiy Javob",
+      qas: [
+        { q: "Ushbu yondashuvni amaliyotga joriy etish qancha vaqt oladi?", a: "Tizimli reja asosida 2-4 hafta ichida dastlabki barqaror natijalar olinadi." },
+        { q: "Mavjud xatoliklarning oldini qanday olish mumkin?", a: "Har bir bosqichda avtomatik tekshiruv va oraliq nazorat mezonlari orqali." },
+        { q: "Kutilayotgan uzoq muddatli samara qanday baholanadi?", a: "Samaradorlik xalqaro ko'rsatkichlar va mustaqil monitoring orqali o'lchanadi." }
+      ],
+      speakerNotes: "FAQ auditoriyaning eng ko'p qiziqtirgan savollariga aniq va professional javob beradi."
+    },
+    // 19. Mutafakkirlar Hikmati (Quote)
     {
       type: "concept", badge: "ILMIY HIKMAT VA TAFAKKUR",
       title: "Ilm-fan va Mutafakkirlar Merosi",
@@ -1001,28 +1116,122 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
       ],
       speakerNotes: "Buyuk mutafakkirlar o'gitlari bugungi kunda ham o'zining dolzarbligini yo'qotmagan."
     },
-    // 9. Amaliy Savol-Javob va Mustahkamlash (Quiz)
+    // 20. Taqqoslash (Split 2)
     {
-      type: "quiz_slide", badge: "MUSTAHKAMLASH VA SAVOL-JAVOB",
-      title: "Mavzu Bo'yicha Asosiy Nazorat Savollari",
-      question: `${cleanTitle} bo'yicha eng muhim xulosa va mohiyat nimalardan iborat?`,
-      options: [
-        { label: "A", text: "Tizimli yondashuv va qat'iy nazariy qoidalarga tayanish" },
-        { label: "B", text: "Amaliy tajriba va innovatsion vositalarni integratsiya qilish" },
-        { label: "C", text: "Barcha yuqoridagi omillarning o'zaro uzviy uyg'unligi (To'g'ri)" }
+      type: "split", badge: "STANDARTLAR VA MEZONLAR",
+      title: "An'anaviy va Kelajak Standartlari Taqqosi",
+      leftTitle: "🏛 Boshlang'ich Mezonlar",
+      leftBullets: [
+        "Cheklangan resurslar va lokal miqyos",
+        "Qog'ozbozlik va uzoq davom etuvchi rasmiylashtirish",
+        "Shaxsiy mas'uliyatning noaniqligi"
       ],
-      speakerNotes: "Auditoriya bilan qisqa savol-javob o'tkazish mavzuning o'zlashtirilish darajasini aniqlashga xizmat qiladi."
+      rightTitle: "🚀 Yangi Avlod Standartlari",
+      rightBullets: [
+        "To'liq raqamli ekotizim va yagona platforma",
+        "Tezkor qaror qabul qilish mexanizmi",
+        "Obyektiv mezonlar va shaffof hisobdorlik"
+      ],
+      speakerNotes: "Standartlarni yangilash umumiy tizimni yangi bosqichga ko'taradi."
     },
-    // 10. Kelajak Istiqbollari va Xulosa (Roadmap 2)
+    // 21. Yangi Ustunlar (Pillars 2)
     {
-      type: "roadmap", badge: "KELAJAK TARAQQIYOTI",
-      title: "Istiqbolli Rejalar va Rivojlanish Vektorlari",
-      steps: [
-        { step: "Yaqin Kelajak", title: "Avtomatlashtirish", text: "Boshlang'ich natijalarni mustahkamlash va to'liq joriy etish." },
-        { step: "O'rta Muddat", title: "Kengaytirish va Qamrov", text: "Tizimni kengroq auditoriya va yangi sohalarga tatbiq qilish." },
-        { step: "Uzoq Istiqbol", title: "Yangi Standartlar", text: "Global mezonlarga mos yangi amaliyot andozasini yaratish." }
+      type: "pillars", badge: "BARQAROR TARAQQIYOT USTUNLARI",
+      title: "Kelgusi Bosqichning Uch Tayanchi",
+      subtitle: "Yangi davr talablariga mos strategik bloklar",
+      cards: [
+        { num: "01", title: "Avtomatlashtirish", desc: "Kundalik bir xil jarayonlarni to'liq kompyuterga topshirish." },
+        { num: "02", title: "Moslashuvchanlik", desc: "Tashqi o'zgarishlarga tezkor javob bera olish qobiliyati." },
+        { num: "03", title: "Xavfsizlik", desc: "Ma'lumotlar va axborotlar butunligini 100% kafolatlash." }
       ],
-      speakerNotes: "Kelajakni to'g'ri prognoz qilish barqaror natijalar garovidir."
+      speakerNotes: "Ushbu 3 yangi ustun taraqqiyotning barqarorligini ta'minlaydi."
+    },
+    // 22. Xalqaro Tajriba (Deep Dive 2)
+    {
+      type: "deep_dive", badge: "XALQARO TAJRIBA VA GLOBAL STANDART",
+      title: "Global Miqyosdagi O'rni va Xalqaro Tajriba",
+      metricValue: "Top 10",
+      metricLabel: "Ilg'or Mamlakatlar Tajribasiga Moslik Mezoni",
+      bullets: [
+        "Dunyoning yetakchi ta'lim va texnologik markazlari amaliyotiga asoslangan",
+        "Xalqaro akkreditatsiya talablari va sifat ko'rsatkichlariga to'liq javob beradi",
+        "O'zbekiston milliy manfaatlari va mentalitetiga to'laqonli moslashtirilgan"
+      ],
+      speakerNotes: "Xalqaro tajriba milliy tizimimizni dunyo miqyosida raqobatbardosh qiladi."
+    },
+    // 23. 5 Yillik Reja (Roadmap 2)
+    {
+      type: "roadmap", badge: "5 YILLIK STRATEGIK REJA",
+      title: "Rivojlanishning 5 Yillik Yo'l Xaritasi",
+      steps: [
+        { step: "1-Yil", title: "Boshlang'ich Joriy Etish", text: "Tizimni to'liq ishga tushirish va mutaxassislarni tayyorlash." },
+        { step: "2-3 Yil", title: "Keng Ko'lamli Qamrov", text: "Respublika bo'ylab barcha bo'g'inlarni qamrab olish." },
+        { step: "4-5 Yil", title: "Mintaqaviy Yetakchilik", text: "Xalqaro darajadagi eng ilg'or namunaga aylanish." }
+      ],
+      speakerNotes: "Uzoq muddatli reja barqaror investitsiya va ishonchli taraqqiyotni ta'minlaydi."
+    },
+    // 24. Metodik Tavsiyalar (Grid4 2)
+    {
+      type: "grid4", badge: "PEDAGOGIK VA METODIK TAVSIYALAR",
+      title: "Amaliyotga Tatbiq Etish Bo'yicha Ko'rsatmalar",
+      items: [
+        { title: "Tizimlilik", desc: "Dars va amaliy mashg'ulotlarni uzviy ketma-ketlikda tashkil etish." },
+        { title: "Ko'rgazmalilik", desc: "Vizual vositalar va raqamli texnologiyalardan unumli foydalanish." },
+        { title: "Faollik", desc: "Har bir tinglovchini bevosita amaliy jarayonga jalb qilish." },
+        { title: "Qayta Aloqa", desc: "Doimiy tahlillar orqali o'z vaqtida tuzatishlar kiritib borish." }
+      ],
+      speakerNotes: "Ushbu metodik tavsiyalar dars sifatini sezilarli darajada oshiradi."
+    },
+    // 25. Sifat Nazorati Tsikli (Flow 2)
+    {
+      type: "flow_diagram", badge: "SIFAT NAZORATI VA MONITORING",
+      title: "Uzluksiz Sifatni Ta'minlash Tsikli (PDCA)",
+      flowSteps: [
+        { step: "Reja", title: "Plan", desc: "Maqsad va standartlarni aniq belgilash" },
+        { step: "Ijro", title: "Do", desc: "Reja asosida amaliyotni yo'lga qo'yish" },
+        { step: "Tekshiruv", title: "Check", desc: "Natijalarni kutilgan mezonlar bilan solishtirish" },
+        { step: "Tuzatish", title: "Act", desc: "Samaradorlikni oshirish uchun yangi choralar ko'rish" }
+      ],
+      speakerNotes: "PDCA tsikli doimiy rivojlanish va sifatni boshqarishning xalqaro standartidir."
+    },
+    // 26. Fundamental Xulosa (Concept 2)
+    {
+      type: "concept", badge: "FUNDAMENTAL MOHIYAT VA QADRIYAT",
+      title: "Yangi Davr Tamoyillari va Ilmiy Xulosa",
+      subtitle: `${cleanTitle}ning Ilmiy va Amaliy Qimmati`,
+      bullets: [
+        "Zamonaviy bilimlar inson kapitalini rivojlantirishning bosh omilidir",
+        "Fan, ta'lim va ishlab chiqarish integratsiyasi muvaffaqiyat garovidir",
+        "Mustaqil fikrlaydigan, tashabbuskor shaxslarni tarbiyalash bosh maqsadimizdir"
+      ],
+      speakerNotes: "Mavzuning chuqur mohiyati inson va jamiyat kamolotiga xizmat qilishidadir."
+    },
+    // 27. Yakuniy Munozara Savoli (Quiz 2)
+    {
+      type: "quiz_slide", badge: "YAKUNIY MUNOZARA SAVOLI",
+      title: "Kelgusi Taraqqiyot Bo'yicha Tahliliy Savol",
+      question: `${cleanTitle} rivojida eng asosiy harakatlantiruvchi kuch qaysi?`,
+      options: [
+        "A) Yuqori intellektual salohiyat va bilimli kadrlar",
+        "B) Ilg'or texnologik infratuzilma va investitsiyalar",
+        "C) O'zaro hamkorlik va barcha omillarning birligi (To'g'ri)"
+      ],
+      answer: "C) Jamiyatning barcha sohalari birlashgandagina eng yuksak natijalarga erishiladi.",
+      speakerNotes: "Ushbu savol taqdimotni qizg'in munozara va xulosalar bilan yakunlashga yordam beradi."
+    },
+    // 28. Xavflarni Boshqarish (Problem Solution 2)
+    {
+      type: "problem_solution", badge: "XAVFLARNI BOSHQARISH VA KAFOLAT",
+      title: "Kafolatlangan Barqarorlik va Xavfsizlik Mexanizmi",
+      problems: [
+        "Kutilmagan texnik to'xtalishlar va tizim uzilishlari xavfi",
+        "Axborot oqimining xavfsizligi va kiberhimoya talablari"
+      ],
+      solutions: [
+        "Avtomatik zaxira nusxalarini yaratish va xatolarga chidamli arxitektura",
+        "Ko'p bosqichli autentifikatsiya va qat'iy shifrlash standartlari"
+      ],
+      speakerNotes: "Xavflarni oldindan ko'rish va boshqarish tizimning 100% ishonchliligini ta'minlaydi."
     }
   ];
 
@@ -1036,11 +1245,12 @@ export function synthesizeCustomSlideDeck(inputText, options = {}) {
     return [slide1, s2];
   }
 
-  // 3 dan 30 tagacha bo'lgan slaydlar tuzilishi:
+  // 3 dan 30 tagacha bo'lgan slaydlar tuzilishi (MUTLAQO TAKRORLANMAS):
   const middleCount = targetCount - 2;
   const resultCards = [slide1];
 
   for (let i = 0; i < middleCount; i++) {
+    // Har bir oraliq slayd uchun alohida, noyob shablon tanlanadi (hech qachon takrorlanmaydi)
     const template = middleTemplates[i % middleTemplates.length];
     const slideNumber = i + 2;
     const card = {
@@ -1083,35 +1293,59 @@ export function generateRealAIGammaCards(topicOrText, options = {}) {
       const baseCards = domain.build(text);
       if (baseCards && Array.isArray(baseCards) && baseCards.length > 0) {
         let finalDeck = [];
+
         if (targetCount === baseCards.length) {
           finalDeck = baseCards;
         } else if (targetCount < baseCards.length) {
-          const first = baseCards[0];
-          const last = baseCards[baseCards.length - 1];
-          const middle = baseCards.slice(1, targetCount - 1);
-          finalDeck = [first, ...middle, last];
-        } else {
-          // targetCount > baseCards.length: mavzuga xos slaydlar bilan to'ldirish
+          // Kichikroq slayd soni so'ralganda: birinchi, oxirgi va oraliqdan tekis tanlab olish
           const first = baseCards[0];
           const last = baseCards[baseCards.length - 1];
           const middle = baseCards.slice(1, -1);
-          finalDeck = [first];
-          const extraNeeded = targetCount - 2;
+          const neededMiddle = targetCount - 2;
+          const step = middle.length / neededMiddle;
+          const sampled = [];
+          for (let i = 0; i < neededMiddle; i++) {
+            const idx = Math.min(middle.length - 1, Math.floor(i * step));
+            sampled.push(middle[idx]);
+          }
+          finalDeck = [first, ...sampled, last];
+        } else {
+          // targetCount > baseCards.length:
+          // BARCHA mavjud noyob domain kartalarini ishlatish, va yetishmagan slaydlarni
+          // synthesizeCustomSlideDeck dan NOYOB, TAKRORLANMAS kartalar bilan to'ldirish!
+          const first = baseCards[0];
+          const last = baseCards[baseCards.length - 1];
+          const domainMiddle = baseCards.slice(1, -1);
+          finalDeck = [first, ...domainMiddle];
+
+          const extraNeeded = targetCount - baseCards.length;
+          // Mavzuga mos 30 talik noyob deck yaratish
+          const customDeck = synthesizeCustomSlideDeck(text, { ...opts, slideCount: targetCount });
+          const customMiddle = customDeck.slice(1, -1);
+          const existingTypes = new Set(domainMiddle.map(c => c.type));
+          const availableCustom = customMiddle.filter(c => !existingTypes.has(c.type));
+          const pool = availableCustom.length >= extraNeeded ? availableCustom : [...availableCustom, ...customMiddle];
+
           for (let i = 0; i < extraNeeded; i++) {
-            const tmpl = middle[i % middle.length];
+            const cand = pool[i % pool.length];
             finalDeck.push({
-              ...tmpl,
-              id: i + 2,
-              badge: `${tmpl.badge || 'ILMIY TAHLIL'} • (${i + 2}/${targetCount})`
+              ...cand,
+              id: finalDeck.length + 1,
+              badge: `${cand.badge || 'ILMIY TAHLIL'} • (${finalDeck.length + 1}/${targetCount})`
             });
           }
+
+          // Oxiriga yakuniy xulosa slaydini qo'yish
           finalDeck.push({ ...last, id: targetCount });
         }
 
-        if (opts.authorName) {
-          finalDeck[0].authorName = opts.authorName;
-          if (finalDeck[finalDeck.length - 1]) finalDeck[finalDeck.length - 1].authorName = opts.authorName;
-        }
+        // Har bir slaydning tartib raqami (id) va muallifini yangilash
+        finalDeck = finalDeck.map((c, idx) => ({
+          ...c,
+          id: idx + 1,
+          authorName: (idx === 0 || idx === finalDeck.length - 1) ? (opts.authorName || c.authorName || '') : c.authorName
+        }));
+
         if (opts.includeImages !== false) {
           finalDeck.forEach(c => {
             c.imageUrl = resolveCardImageUrl(c, text, opts.imageStyle || 'realistic');

@@ -4735,9 +4735,12 @@ const apiServer = http.createServer((req, res) => {
           result = await generateAIStudentReferenceWithGemini(prompt);
         } else if (type === 'cards') {
           result = await generateAIGammaCardsWithGemini(prompt, {
-            authorName: body.authorName,
-            detailLevel: body.detailLevel,
-            includeImages: body.includeImages !== false
+            slideCount: count || body.slideCount || 10,
+            authorName: body.authorName || '',
+            detailLevel: body.detailLevel || 'deep',
+            includeImages: body.includeImages !== false,
+            imageStyle: body.imageStyle || 'realistic',
+            imageDensity: body.imageDensity || 'high'
           });
         } else {
           result = await callGemini(

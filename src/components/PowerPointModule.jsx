@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../utils/authContext';
 import { 
   GAMMA_THEMES, 
-  generatePresentationPptx 
+  generatePresentationPptx,
+  resolveCardImageUrl 
 } from '../utils/powerpointGenerator';
 import { generateRealAIGammaCards } from '../utils/aiSlideEngine';
 import { 
@@ -27,6 +28,196 @@ import {
   CheckCircle2,
   RefreshCw
 } from 'lucide-react';
+
+// Har qanday slayd turidan boshqasiga o'tganda ma'lumotlarni yo'qotmasdan, to'laqonli moslashtiruvchi universal adapter
+export function convertCardLayout(card, newType) {
+  if (!card) return card;
+  const oldType = card.type || 'split';
+  if (oldType === newType) return card;
+
+  const title = card.title || 'Mavzu Tahlili';
+  const subtitle = card.subtitle || card.mainConcept || '';
+  const badge = card.badge || 'ILMIY BO\'LIM';
+  const speakerNotes = card.speakerNotes || '';
+  const imageUrl = card.imageUrl || null;
+  const authorName = card.authorName || '';
+
+  // Barcha mavjud matn elementlarini umumiy hovuzga yig'ish
+  let pool = [];
+  if (Array.isArray(card.bullets)) pool.push(...card.bullets);
+  if (Array.isArray(card.leftBullets)) pool.push(...card.leftBullets);
+  if (Array.isArray(card.rightBullets)) pool.push(...card.rightBullets);
+  if (Array.isArray(card.takeaways)) pool.push(...card.takeaways);
+  if (Array.isArray(card.items)) pool.push(...card.items.map(it => it.title ? `${it.title}: ${it.desc || ''}` : it.desc));
+  if (Array.isArray(card.cards)) pool.push(...card.cards.map(c => c.title ? `${c.title}: ${c.desc || ''}` : c.desc));
+  if (Array.isArray(card.steps)) pool.push(...card.steps.map(s => s.title ? `${s.title}: ${s.text || s.desc || ''}` : s.desc || s.text));
+  if (Array.isArray(card.pros)) pool.push(...card.pros);
+  if (Array.isArray(card.cons)) pool.push(...card.cons);
+  if (Array.isArray(card.problems)) pool.push(...card.problems);
+  if (Array.isArray(card.solutions)) pool.push(...card.solutions);
+  if (card.description) pool.push(card.description);
+  if (card.explanation) pool.push(card.explanation);
+
+  pool = pool.filter(p => typeof p === 'string' && p.trim().length > 0);
+  if (pool.length === 0) {
+    pool = [
+      "Asosiy nazariy tamoyillar va fundamental tushunchalar",
+      "Amaliy jarayonlar va tajribaviy tadqiqot mezonlari",
+      "Natijadorlik tahlili va samaradorlik ko'rsatkichlari",
+      "Kelgusi rivojlanish va strategik istiqbollar"
+    ];
+  }
+
+  const base = {
+    ...card,
+    id: card.id || Date.now(),
+    type: newType,
+    title,
+    badge,
+    speakerNotes,
+    imageUrl,
+    authorName
+  };
+
+  switch (newType) {
+    case 'hero':
+      return {
+        ...base,
+        subtitle: subtitle || pool[0] || "Fundamental tahlil va zamonaviy metodologik asoslar"
+      };
+
+    case 'concept':
+      return {
+        ...base,
+        mainConcept: card.mainConcept || pool[0] || "Asosiy qoida va fundamental ta'rif",
+        explanation: card.explanation || pool[1] || "Nazariy va amaliy jihatlarning ilmiy tahlili",
+        bullets: pool.slice(1, 4)
+      };
+
+    case 'split':
+      return {
+        ...base,
+        leftTitle: card.leftTitle || "📌 Asosiy Holat va Tahlil",
+        leftBullets: card.leftBullets || pool.slice(0, 2),
+        rightTitle: card.rightTitle || "💡 Taklif va Yechimlar",
+        rightBullets: card.rightBullets || (pool.slice(2, 4).length > 0 ? pool.slice(2, 4) : [pool[0], pool[1] || "Yangi yondashuv mezonlari"])
+      };
+
+    case 'pillars':
+      return {
+        ...base,
+        subtitle: subtitle || "3 ta asosiy yo'nalish va poydevor",
+        cards: card.cards && card.cards.length >= 3 ? card.cards : [
+          { num: "01", title: card.cards?.[0]?.title || "Nazariy Baza", desc: pool[0] || "Fundamental qoidalar va ilmiy tushunchalar." },
+          { num: "02", title: card.cards?.[1]?.title || "Amaliyot", desc: pool[1] || "Tajribaviy jarayonlar va tadqiqot usullari." },
+          { num: "03", title: card.cards?.[2]?.title || "Natija", desc: pool[2] || "Kutilgan ko'rsatkichlar va yakuniy xulosalar." }
+        ]
+      };
+
+    case 'grid4':
+      return {
+        ...base,
+        subtitle: subtitle || "Kompleks tuzilma va 4 ta tarkibiy qism",
+        items: card.items && card.items.length >= 4 ? card.items : [
+          { title: "Metodologiya", desc: pool[0] || "Ilmiy mezonlarga asoslangan tamoyillar majmui." },
+          { title: "Infratuzilma", desc: pool[1] || "Moddiy va raqamli vositalarning uyg'unligi." },
+          { title: "Monitoring", desc: pool[2] || "Jarayon va natijalarni bosqichma-bosqich baholash." },
+          { title: "Amaliy Tatbiq", desc: pool[3] || "Olingan bilimlarni hayotda qo'llash kafolati." }
+        ]
+      };
+
+    case 'stats':
+    case 'deep_dive':
+      return {
+        ...base,
+        metricValue: card.metricValue || "96.4%",
+        metricLabel: card.metricLabel || "Samaradorlik va Aniqlik Ko'rsatkichi",
+        stats: card.stats && card.stats.length >= 3 ? card.stats : [
+          { value: "96.4%", label: "Samaradorlik", desc: pool[0] || "Asosiy natijalar ko'lami." },
+          { value: "3.5x", label: "Tezkorlik", desc: pool[1] || "Jarayonlarni optimallashtirish sur'ati." },
+          { value: "100%", label: "Muvofiqlik", desc: pool[2] || "Davlat ta'lim standartlariga to'liq moslik." }
+        ],
+        bullets: pool.slice(0, 3)
+      };
+
+    case 'timeline':
+    case 'roadmap':
+      return {
+        ...base,
+        steps: card.steps && card.steps.length >= 3 ? card.steps : [
+          { step: "1-BOSQICH", title: "Dastlabki Diagnostika", text: pool[0] || "Tahlil va rejalashtirish bosqichi." },
+          { step: "2-BOSQICH", title: "Asosiy Ijro va Jarayon", text: pool[1] || "Amaliyotni tashkil etish va boshqaruv." },
+          { step: "3-BOSQICH", title: "Xulosalash va Barqarorlik", text: pool[2] || "Natijalarni tizimlashtirish." }
+        ]
+      };
+
+    case 'bento_3':
+      return {
+        ...base,
+        mainBlock: card.mainBlock || {
+          title: title,
+          desc: pool[0] || "Asosiy markaziy yadro va bosh strategik maqsad."
+        },
+        sideCards: card.sideCards && card.sideCards.length >= 2 ? card.sideCards : [
+          { title: "1-Modul", desc: pool[1] || "Yordamchi mexanizmlar va tezlatgichlar." },
+          { title: "2-Modul", desc: pool[2] || "Sifat monitoringi va kafolat mezonlari." }
+        ]
+      };
+
+    case 'pros_cons':
+      return {
+        ...base,
+        prosTitle: card.prosTitle || "✅ Asosiy Afzalliklar",
+        pros: card.pros && card.pros.length >= 2 ? card.pros : pool.slice(0, 2),
+        consTitle: card.consTitle || "⚠️ E'tibor Qaratiladigan Xatarlar",
+        cons: card.cons && card.cons.length >= 2 ? card.cons : [
+          "Boshlang'ich tayyorgarlik va resurslarni to'g'ri taqsimlash",
+          "Uzluksiz sifat monitoringini yo'lga qo'yish zarurati"
+        ]
+      };
+
+    case 'flow_diagram':
+      return {
+        ...base,
+        flowSteps: card.flowSteps && card.flowSteps.length >= 4 ? card.flowSteps : [
+          { step: "01", title: "Tahlil", desc: pool[0] || "Muammoni aniqlash" },
+          { step: "02", title: "Reja", desc: pool[1] || "Resurslarni taqsimlash" },
+          { step: "03", title: "Ijro", desc: pool[2] || "Amaliyotga tatbiq" },
+          { step: "04", title: "Xulosa", desc: pool[3] || "Natijani baholash" }
+        ]
+      };
+
+    case 'quiz_slide':
+      return {
+        ...base,
+        question: card.question || `${title} bo'yicha eng muhim xulosa nima?`,
+        options: card.options && card.options.length >= 3 ? card.options : [
+          "A) Nazariy qoidalarga qat'iy tayanish",
+          "B) Amaliy tajriba va innovatsion vositalarni uyg'unlashtirish",
+          "C) Barcha ko'rsatilgan omillarning uzviy birligi (To'g'ri)"
+        ],
+        answer: card.answer || "C) Barcha omillarning uzviy birligi tizimli samaradorlikni ta'minlaydi."
+      };
+
+    case 'summary':
+    case 'conclusion':
+      return {
+        ...base,
+        quote: card.quote || `"Ilm va intilish — har qanday buyuk muvaffaqiyatning kalitidir."`,
+        takeaways: card.takeaways && card.takeaways.length >= 3 ? card.takeaways : [
+          pool[0] || "Mavzu bo'yicha shakllangan bilimlar zamonaviy mezonlarga to'liq mos keladi",
+          pool[1] || "Innovatsion yondashuv orqali kutilgan natijalarga 2 barobar tezroq erishish mumkin",
+          "E'tiboringiz va faol ishtirokingiz uchun katta rahmat!"
+        ]
+      };
+
+    default:
+      return {
+        ...base,
+        bullets: pool.slice(0, 4)
+      };
+  }
+}
 
 export default function PowerPointModule() {
   const { logActivity } = useAuth();
@@ -74,27 +265,39 @@ export default function PowerPointModule() {
 
     let generated = null;
     try {
-      const apiEndpoint = window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini';
-      const res = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          type: 'cards', 
-          prompt: promptInput.trim(),
-          count: targetSlideCount,
-          authorName: authorName.trim(),
-          includeImages,
-          imageStyle,
-          detailLevel
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.result && Array.isArray(data.result) && data.result.length > 0) {
-          generated = data.result.map(c => ({
-            ...c,
-            imageUrl: c.imageUrl || (includeImages ? resolveCardImageUrl(c, promptInput.trim(), imageStyle) : null)
-          }));
+      const endpoints = [
+        window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini',
+        '/api/gemini',
+        'https://eduhujjat-bot.onrender.com/api/gemini'
+      ];
+
+      for (const ep of endpoints) {
+        if (!ep) continue;
+        try {
+          const res = await fetch(ep, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              type: 'cards', 
+              prompt: promptInput.trim(),
+              count: targetSlideCount,
+              authorName: authorName.trim(),
+              includeImages,
+              imageStyle,
+              imageDensity,
+              detailLevel
+            }),
+            signal: AbortSignal.timeout(20000)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.result && Array.isArray(data.result) && data.result.length > 0) {
+              generated = data.result;
+              break;
+            }
+          }
+        } catch (subErr) {
+          // Navbatdagi endpointga o'tish
         }
       }
     } catch(e) {
@@ -216,9 +419,11 @@ export default function PowerPointModule() {
     setActiveSlideIndex(targetIdx);
   };
 
-  // Slayd tuzilish turini (layout) almashtirish
+  // Slayd tuzilish turini (layout) almashtirish (ma'lumotlarni saqlab, yangi layoutga to'liq moslashtirish)
   const handleChangeLayout = (newType) => {
-    updateCurrentCard({ type: newType });
+    if (!currentCard) return;
+    const converted = convertCardLayout(currentCard, newType);
+    updateCurrentCard(converted);
   };
 
   // Joriy slayd rasmini yangilash
@@ -466,6 +671,9 @@ export default function PowerPointModule() {
                 { type: 'pillars', label: '3 Ustun' },
                 { type: 'stats', label: 'Raqamlar / Metrika' },
                 { type: 'timeline', label: 'Ketma-ketlik' },
+                { type: 'bento_3', label: 'Bento 3 Modul' },
+                { type: 'pros_cons', label: 'Foyda & Xatar' },
+                { type: 'flow_diagram', label: 'Harakat Sxemasi' },
                 { type: 'quiz_slide', label: 'Interaktiv Savol' },
                 { type: 'summary', label: 'Xulosa' }
               ].map((ly) => (
@@ -1209,8 +1417,198 @@ export default function PowerPointModule() {
                 </div>
               )}
 
+              {/* BENTO 3 MODUL */}
+              {currentCard.type === 'bento_3' && (
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={currentCard.title || ''}
+                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                    className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                    style={{ color: `#${activeTheme.text}` }}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <div 
+                      className="md:col-span-7 p-4 sm:p-5 rounded-2xl border space-y-2 shadow-lg"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                    >
+                      <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: `#${activeTheme.accent}` }}>
+                        ★ Markaziy Yadro
+                      </span>
+                      <input
+                        type="text"
+                        value={currentCard.mainBlock?.title || ''}
+                        onChange={(e) => updateCurrentCard({ mainBlock: { ...(currentCard.mainBlock || {}), title: e.target.value } })}
+                        className="w-full bg-transparent text-sm sm:text-base font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                        style={{ color: `#${activeTheme.text}` }}
+                      />
+                      <textarea
+                        rows={3}
+                        value={currentCard.mainBlock?.desc || ''}
+                        onChange={(e) => updateCurrentCard({ mainBlock: { ...(currentCard.mainBlock || {}), desc: e.target.value } })}
+                        className="w-full bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                        style={{ color: `#${activeTheme.subtext}` }}
+                      />
+                    </div>
+                    <div className="md:col-span-5 space-y-2.5">
+                      {(currentCard.sideCards || []).slice(0, 2).map((sc, i) => (
+                        <div 
+                          key={i}
+                          className="p-3.5 rounded-xl border space-y-1 shadow"
+                          style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: i === 0 ? `#${activeTheme.accent2}` : `#${activeTheme.cardBorder}` }}
+                        >
+                          <input
+                            type="text"
+                            value={sc.title || ''}
+                            onChange={(e) => {
+                              const newSc = [...(currentCard.sideCards || [])];
+                              newSc[i] = { ...newSc[i], title: e.target.value };
+                              updateCurrentCard({ sideCards: newSc });
+                            }}
+                            className="w-full bg-transparent text-xs font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                            style={{ color: `#${activeTheme.text}` }}
+                          />
+                          <textarea
+                            rows={2}
+                            value={sc.desc || ''}
+                            onChange={(e) => {
+                              const newSc = [...(currentCard.sideCards || [])];
+                              newSc[i] = { ...newSc[i], desc: e.target.value };
+                              updateCurrentCard({ sideCards: newSc });
+                            }}
+                            className="w-full bg-transparent text-[11px] focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                            style={{ color: `#${activeTheme.subtext}` }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PROS & CONS (TAROZILI TAHLIL) */}
+              {currentCard.type === 'pros_cons' && (
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={currentCard.title || ''}
+                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                    className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                    style={{ color: `#${activeTheme.text}` }}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div 
+                      className="p-4 sm:p-5 rounded-2xl border space-y-2 shadow"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: '#10b981' }}
+                    >
+                      <input
+                        type="text"
+                        value={currentCard.prosTitle || '✅ Asosiy Afzalliklar'}
+                        onChange={(e) => updateCurrentCard({ prosTitle: e.target.value })}
+                        className="w-full bg-transparent text-xs sm:text-sm font-bold text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 rounded"
+                      />
+                      <div className="space-y-1.5 text-xs">
+                        {(currentCard.pros || []).map((p, i) => (
+                          <div key={i} className="flex items-start gap-1.5">
+                            <span className="text-emerald-400 font-bold">✓</span>
+                            <input
+                              type="text"
+                              value={p}
+                              onChange={(e) => {
+                                const newP = [...(currentCard.pros || [])];
+                                newP[i] = e.target.value;
+                                updateCurrentCard({ pros: newP });
+                              }}
+                              className="w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                              style={{ color: `#${activeTheme.subtext}` }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div 
+                      className="p-4 sm:p-5 rounded-2xl border space-y-2 shadow"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: '#f59e0b' }}
+                    >
+                      <input
+                        type="text"
+                        value={currentCard.consTitle || '⚠️ E\'tibor Qaratiladigan Xatarlar'}
+                        onChange={(e) => updateCurrentCard({ consTitle: e.target.value })}
+                        className="w-full bg-transparent text-xs sm:text-sm font-bold text-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400 rounded"
+                      />
+                      <div className="space-y-1.5 text-xs">
+                        {(currentCard.cons || []).map((c, i) => (
+                          <div key={i} className="flex items-start gap-1.5">
+                            <span className="text-amber-400 font-bold">!</span>
+                            <input
+                              type="text"
+                              value={c}
+                              onChange={(e) => {
+                                const newC = [...(currentCard.cons || [])];
+                                newC[i] = e.target.value;
+                                updateCurrentCard({ cons: newC });
+                              }}
+                              className="w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                              style={{ color: `#${activeTheme.subtext}` }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* FLOW DIAGRAM (4 QADAMLI SXEMA) */}
+              {currentCard.type === 'flow_diagram' && (
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={currentCard.title || ''}
+                    onChange={(e) => updateCurrentCard({ title: e.target.value })}
+                    className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
+                    style={{ color: `#${activeTheme.text}` }}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                    {(currentCard.flowSteps || []).slice(0, 4).map((fs, i) => (
+                      <div 
+                        key={i}
+                        className="p-3.5 rounded-xl border space-y-1.5 shadow"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                      >
+                        <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase border" style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}` }}>
+                          {fs.step || `0${i+1}`}
+                        </span>
+                        <input
+                          type="text"
+                          value={fs.title || ''}
+                          onChange={(e) => {
+                            const newFs = [...(currentCard.flowSteps || [])];
+                            newFs[i] = { ...newFs[i], title: e.target.value };
+                            updateCurrentCard({ flowSteps: newFs });
+                          }}
+                          className="w-full bg-transparent text-xs font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                          style={{ color: `#${activeTheme.text}` }}
+                        />
+                        <textarea
+                          rows={2}
+                          value={fs.desc || ''}
+                          onChange={(e) => {
+                            const newFs = [...(currentCard.flowSteps || [])];
+                            newFs[i] = { ...newFs[i], desc: e.target.value };
+                            updateCurrentCard({ flowSteps: newFs });
+                          }}
+                          className="w-full bg-transparent text-[10px] focus:outline-none focus:ring-1 focus:ring-sky-400 rounded resize-none"
+                          style={{ color: `#${activeTheme.subtext}` }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Universal Fallback Renderer for any other card type (so no slide is ever blank) */}
-              {!['hero', 'concept', 'grid4', 'split', 'pillars', 'deep_dive', 'stats', 'roadmap', 'timeline', 'quiz_slide', 'summary', 'conclusion'].includes(currentCard.type) && (
+              {!['hero', 'concept', 'grid4', 'split', 'pillars', 'deep_dive', 'stats', 'roadmap', 'timeline', 'bento_3', 'pros_cons', 'flow_diagram', 'quiz_slide', 'summary', 'conclusion'].includes(currentCard.type) && (
                 <div className="space-y-4">
                   <input
                     type="text"
@@ -1721,8 +2119,120 @@ export default function PowerPointModule() {
               </div>
             )}
 
+            {/* BENTO 3 IN FULLSCREEN */}
+            {currentCard.type === 'bento_3' && (
+              <div className="space-y-6">
+                <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
+                  {currentCard.title}
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                  <div 
+                    className="md:col-span-7 p-8 rounded-3xl border space-y-4 shadow-2xl"
+                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                  >
+                    <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border" style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}` }}>
+                      ★ Markaziy Yadro
+                    </span>
+                    <h3 className="text-xl sm:text-2xl font-bold" style={{ color: `#${activeTheme.text}` }}>
+                      {currentCard.mainBlock?.title}
+                    </h3>
+                    <p className="text-sm opacity-90 leading-relaxed" style={{ color: `#${activeTheme.subtext}` }}>
+                      {currentCard.mainBlock?.desc}
+                    </p>
+                  </div>
+                  <div className="md:col-span-5 space-y-4">
+                    {(currentCard.sideCards || []).slice(0, 2).map((sc, i) => (
+                      <div 
+                        key={i}
+                        className="p-6 rounded-2xl border space-y-2 shadow-lg"
+                        style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: i === 0 ? `#${activeTheme.accent2}` : `#${activeTheme.cardBorder}` }}
+                      >
+                        <h4 className="text-base font-bold" style={{ color: `#${activeTheme.text}` }}>
+                          {sc.title}
+                        </h4>
+                        <p className="text-xs sm:text-sm opacity-85 leading-relaxed" style={{ color: `#${activeTheme.subtext}` }}>
+                          {sc.desc}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PROS & CONS IN FULLSCREEN */}
+            {currentCard.type === 'pros_cons' && (
+              <div className="space-y-6">
+                <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
+                  {currentCard.title}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div 
+                    className="p-8 rounded-3xl border space-y-4 shadow-xl"
+                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: '#10b981' }}
+                  >
+                    <h4 className="text-xl font-bold text-emerald-400">
+                      {currentCard.prosTitle || '✅ Asosiy Afzalliklar'}
+                    </h4>
+                    <ul className="text-sm space-y-2.5 opacity-90" style={{ color: `#${activeTheme.subtext}` }}>
+                      {(currentCard.pros || []).map((p, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-emerald-400 font-bold">✓</span>
+                          <span>{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div 
+                    className="p-8 rounded-3xl border space-y-4 shadow-xl"
+                    style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: '#f59e0b' }}
+                  >
+                    <h4 className="text-xl font-bold text-amber-400">
+                      {currentCard.consTitle || '⚠️ E\'tibor Qaratiladigan Xatarlar'}
+                    </h4>
+                    <ul className="text-sm space-y-2.5 opacity-90" style={{ color: `#${activeTheme.subtext}` }}>
+                      {(currentCard.cons || []).map((c, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-amber-400 font-bold">!</span>
+                          <span>{c}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* FLOW DIAGRAM IN FULLSCREEN */}
+            {currentCard.type === 'flow_diagram' && (
+              <div className="space-y-6">
+                <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: `#${activeTheme.text}` }}>
+                  {currentCard.title}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {(currentCard.flowSteps || []).slice(0, 4).map((fs, i) => (
+                    <div 
+                      key={i}
+                      className="p-6 rounded-2xl border space-y-3 shadow-xl"
+                      style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.accent}` }}
+                    >
+                      <span className="px-3 py-1 rounded-lg text-xs font-black uppercase border" style={{ color: `#${activeTheme.accent}`, borderColor: `#${activeTheme.accent}` }}>
+                        {fs.step}
+                      </span>
+                      <h4 className="text-base font-bold" style={{ color: `#${activeTheme.text}` }}>
+                        {fs.title}
+                      </h4>
+                      <p className="text-xs opacity-85 leading-relaxed" style={{ color: `#${activeTheme.subtext}` }}>
+                        {fs.desc}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Universal Fallback in Fullscreen */}
-            {!['hero', 'concept', 'grid4', 'split', 'pillars', 'deep_dive', 'stats', 'roadmap', 'timeline', 'quiz_slide', 'summary', 'conclusion'].includes(currentCard.type) && (
+            {!['hero', 'concept', 'grid4', 'split', 'pillars', 'deep_dive', 'stats', 'roadmap', 'timeline', 'bento_3', 'pros_cons', 'flow_diagram', 'quiz_slide', 'summary', 'conclusion'].includes(currentCard.type) && (
               <div 
                 className="p-10 rounded-3xl border space-y-6"
                 style={{ backgroundColor: `#${activeTheme.cardBg}`, borderColor: `#${activeTheme.cardBorder}` }}
