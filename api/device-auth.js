@@ -25,8 +25,17 @@ function saveDb(data) {
 
 function findUserByCode(code) {
   const clean = String(code || '').trim().toUpperCase();
-  if (clean === '1331' || clean === 'OWNER-VIP' || clean === '777777') {
-    return { id: SUPER_OWNER_ID, realId: SUPER_OWNER_ID, name: 'Super Owner' };
+  if (
+    clean === '1331' || 
+    clean === 'OWNER-VIP' || 
+    clean === '777777' || 
+    clean === 'EDU-150275' || 
+    clean === '150275' || 
+    clean === 'EDU-664658' || 
+    clean === '664658' ||
+    clean === 'OWNER'
+  ) {
+    return { id: SUPER_OWNER_ID, realId: SUPER_OWNER_ID, name: 'Fayzbek (Super Owner)', username: 'fayzbek1331' };
   }
   try {
     const data = readDb();

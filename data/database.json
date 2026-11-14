@@ -16,6 +16,19 @@
   ],
   "ownerChatId": 6707839718,
   "users": {
+    "997185613": {
+      "id": 997185613,
+      "realId": 997185613,
+      "name": "F.FUZAYL.",
+      "username": "FiruzbekFaybek",
+      "status": "ACTIVE",
+      "plan": "trial",
+      "expiresAt": "5 ta bepul sinov",
+      "remainingUses": 4,
+      "trialGiven": true,
+      "registeredAt": "2026-11-14T11:15:52.187Z",
+      "totalCreated": 1
+    },
     "6707839718": {
       "id": 1,
       "realId": 6707839718,
@@ -26,17 +39,6 @@
       "expiresAt": "Cheksiz VIP",
       "remainingUses": 999999,
       "registeredAt": "2026-11-07T17:34:34.953Z"
-    },
-    "9017407025": {
-      "id": 9017407025,
-      "realId": 9017407025,
-      "name": "Tony Stark",
-      "username": "",
-      "status": "ACTIVE",
-      "plan": "1time",
-      "expiresAt": "10 ta hujjat",
-      "remainingUses": 10,
-      "registeredAt": "2026-11-08T07:33:00.983Z"
     }
   },
   "simulatedRoles": {},
@@ -126,6 +128,15 @@
       "deviceInfo": "Android Qurilma (Telegram WebApp)",
       "timestamp": 1794160000000,
       "timeFormatted": "09.11.2026, 21:00"
+    },
+    {
+      "id": "act_1794655013419_683",
+      "userId": 997185613,
+      "userName": "F.FUZAYL.",
+      "type": "document",
+      "typeLabel": "📄 Hujjat",
+      "topic": "",
+      "timestamp": 1794655013419
     }
   ]
 }

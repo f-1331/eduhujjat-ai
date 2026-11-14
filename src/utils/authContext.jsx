@@ -190,71 +190,40 @@ export function AuthProvider({ children }) {
   const requestDeviceAccess = async (inputCode) => {
     const clean = String(inputCode).trim().toUpperCase();
 
-    // 1. MASTER OWNER KODLARI (Tezkor kirish va bildirishnoma)
-    if (clean === '1331' || clean === 'OWNER-VIP' || clean === '777777') {
-      const info = {
-        code: clean,
-        deviceId: currentDeviceId,
-        deviceInfo,
-        plan: 'unlimited',
-        name: 'Fayzbek (Super Owner)',
-        userId: SUPER_OWNER_ID,
-        username: OWNER_USERNAME,
-        role: 'OWNER',
-        expiresAtTimestamp: null,
-        enteredAt: new Date().toISOString()
-      };
-      sessionStorage.setItem('eduhujjat_session_verified', 'true');
-      sessionStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
-      setAccessCodeInfo(info);
-      setUserAccessStatus('ACTIVE');
+    // Barcha kodlar (Owner 1331, EDU-150275, EDU-XXXXXX) uchun qat'iy Telegram tasdiqlash so'rovi yuboriladi
+    const pin = String(Math.floor(1000 + Math.random() * 9000));
+    const reqId = 'req_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
 
-      // Super Ownerga xavfsizlik bildirishnomasi (xavfsiz server orqali)
-      sendServerOwnerAlert(
-        `👑 **SUPER OWNER KIRISHI:**\n\nSiz yangi qurilmadan (\`${deviceInfo}\`) Master VIP kod orqali saytga kirdingiz.\n⏰ Vaqt: ${new Date().toLocaleTimeString('uz-UZ')}`
-      );
+    try {
+      const resp = await fetch('/api/device-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'request_login',
+          reqId,
+          code: clean,
+          deviceId: currentDeviceId,
+          deviceInfo,
+          pin
+        })
+      });
 
-      return { success: true, instant: true, message: "👑 Master VIP kod qabul qilindi! Cheksiz tizimga xush kelibsiz." };
-    }
-
-    // 2. ODDIY VA FOYDALANUVCHI KODLARI (EDU-XXXXXX)
-    if (clean.startsWith('EDU-') || /^\d{6}$/.test(clean)) {
-      // QAT'IY XAVFSIZLIK: Hech qachon tekshiruvsiz avtomatik kirilmaydi!
-      // Har doim foydalanuvchining shaxsiy Telegram botiga "Ruxsat Berish / Bermaslik" so'rovi yuboriladi
-      const pin = String(Math.floor(1000 + Math.random() * 9000));
-      const reqId = 'req_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
-
-      try {
-        const resp = await fetch('/api/device-auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'request_login',
-            reqId,
-            code: clean,
-            deviceId: currentDeviceId,
-            deviceInfo,
-            pin
-          })
-        });
-
-        if (resp.ok) {
-          const rData = await resp.json();
-          if (rData.success === false) {
-            return { success: false, message: rData.message || "❌ Bunday kirish kodi topilmadi!" };
-          }
-          return {
-            requiresApproval: true,
-            reqId,
-            code: clean,
-            pin,
-            user: rData.user,
-            message: "📲 Shaxsiy Telegram botingizga (@eduhujjat_bot) tasdiqlash so'rovi yuborildi. Kirish uchun botdagi [✅ Ruxsat Berish] tugmasini bosing!"
-          };
+      if (resp.ok) {
+        const rData = await resp.json();
+        if (rData.success === false) {
+          return { success: false, message: rData.message || "❌ Bunday kirish kodi topilmadi!" };
         }
-      } catch (err) {
-        return { success: false, message: "Serverga ulanishda xatolik yuz berdi. Telegram bot ishlayotganini tekshiring." };
+        return {
+          requiresApproval: true,
+          reqId,
+          code: clean,
+          pin,
+          user: rData.user,
+          message: "📲 Shaxsiy Telegram botingizga (@eduhujjat_bot) tasdiqlash so'rovi yuborildi. Kirish uchun botdagi [✅ Ruxsat Berish] tugmasini bosing!"
+        };
       }
+    } catch (err) {
+      return { success: false, message: "Serverga ulanishda xatolik yuz berdi. Telegram bot ishlayotganini tekshiring." };
     }
 
     return { 
