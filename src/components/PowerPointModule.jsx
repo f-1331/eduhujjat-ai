@@ -429,8 +429,36 @@ export default function PowerPointModule() {
   // Joriy slayd rasmini yangilash
   const handleRegenerateCardImage = () => {
     if (!currentCard) return;
-    const newUrl = resolveCardImageUrl(currentCard, promptInput.trim(), imageStyle);
+    const newUrl = resolveCardImageUrl({ ...currentCard, imageKeyword: undefined }, promptInput.trim(), imageStyle);
     updateCurrentCard({ imageUrl: newUrl });
+  };
+
+  // Rasmlar uslubini almashtirish va darhol barcha slaydlarga yangi uslubni tatbiq qilish
+  const handleImageStyleChange = (newStyle) => {
+    setImageStyle(newStyle);
+    setCards(prev => prev.map((c, i) => ({
+      ...c,
+      imageUrl: resolveCardImageUrl({ ...c, id: c.id || i + 1, imageKeyword: undefined }, promptInput.trim(), newStyle)
+    })));
+  };
+
+  // Rasmlarni yoqish/o'chirish
+  const handleToggleIncludeImages = (enabled) => {
+    setIncludeImages(enabled);
+    if (enabled) {
+      setCards(prev => prev.map((c, i) => ({
+        ...c,
+        imageUrl: resolveCardImageUrl({ ...c, id: c.id || i + 1 }, promptInput.trim(), imageStyle)
+      })));
+    }
+  };
+
+  // Barcha slaydlarning rasmlarini yangi AI seed va uslub bilan qayta chizish
+  const handleRegenerateAllImages = () => {
+    setCards(prev => prev.map((c, i) => ({
+      ...c,
+      imageUrl: resolveCardImageUrl({ ...c, id: c.id || i + 1, imageKeyword: undefined }, promptInput.trim(), imageStyle)
+    })));
   };
 
   return (
@@ -564,15 +592,15 @@ export default function PowerPointModule() {
                 </div>
 
                 {/* 3. Rasmlar va vizualizatsiya */}
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <div className="flex justify-between items-center text-slate-300 font-semibold">
-                    <span>🖼 Rasmlar:</span>
+                    <span>🖼 Rasmlar & AI Art:</span>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={includeImages}
-                        onChange={(e) => setIncludeImages(e.target.checked)}
-                        className="rounded accent-sky-400"
+                        onChange={(e) => handleToggleIncludeImages(e.target.checked)}
+                        className="rounded accent-sky-400 cursor-pointer"
                       />
                       <span className={includeImages ? "text-emerald-400 font-bold" : "text-slate-400"}>
                         {includeImages ? "Bor" : "Yo'q"}
@@ -582,14 +610,27 @@ export default function PowerPointModule() {
                   <select
                     disabled={!includeImages}
                     value={imageStyle}
-                    onChange={(e) => setImageStyle(e.target.value)}
+                    onChange={(e) => handleImageStyleChange(e.target.value)}
                     className="w-full px-2.5 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 disabled:opacity-40 cursor-pointer"
                   >
-                    <option value="realistic" className="bg-slate-900 text-white">📸 Realistik Fotosuratlar</option>
+                    <option value="realistic" className="bg-slate-900 text-white">📸 Realistik Fotosuratlar (8K)</option>
                     <option value="ai3d" className="bg-slate-900 text-white">🔮 3D Render & Octane Art</option>
                     <option value="vector" className="bg-slate-900 text-white">📐 Minimal Vektor Sxemalar</option>
+                    <option value="infographic" className="bg-slate-900 text-white">📊 Ilmiy Infografika & Sxemalar</option>
                     <option value="abstract" className="bg-slate-900 text-white">🎨 Pastel Gradient San'at</option>
                   </select>
+
+                  {includeImages && (
+                    <button
+                      type="button"
+                      onClick={handleRegenerateAllImages}
+                      className="w-full py-1.5 px-2 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 font-bold text-[10px] flex items-center justify-center gap-1 transition cursor-pointer"
+                      title="Barcha slaydlardagi rasmlarni yangi unikal AI tasvirlar bilan qayta chizish"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>🔄 Barcha Rasmlarni Yangilash (AI Re-roll)</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* 4. Axborot chuqurligi */}
@@ -1027,6 +1068,31 @@ export default function PowerPointModule() {
                     className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
                     style={{ color: `#${activeTheme.text}` }}
                   />
+
+                  {includeImages && currentCard.imageUrl && (
+                    <div className="w-full h-36 sm:h-44 rounded-2xl overflow-hidden border shadow-lg relative group">
+                      <img 
+                        src={currentCard.imageUrl} 
+                        alt={currentCard.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-3 flex items-end justify-between">
+                        <span className="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20">
+                          AI Tahlil • {imageStyle.toUpperCase()}
+                        </span>
+                        <button 
+                          onClick={handleRegenerateCardImage}
+                          className="px-2 py-0.5 rounded-md bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold backdrop-blur-md transition flex items-center gap-1 cursor-pointer"
+                          title="Rasmni yangilash"
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          <span>Yangi Rasm</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Chap Ustun */}
                     <div 
@@ -1112,6 +1178,30 @@ export default function PowerPointModule() {
                       style={{ color: `#${activeTheme.subtext}` }}
                     />
                   </div>
+
+                  {includeImages && currentCard.imageUrl && (
+                    <div className="w-full h-32 sm:h-40 rounded-2xl overflow-hidden border shadow-lg relative group">
+                      <img 
+                        src={currentCard.imageUrl} 
+                        alt={currentCard.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-3 flex items-end justify-between">
+                        <span className="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20">
+                          Poydevorlar & Asoslar • {imageStyle.toUpperCase()}
+                        </span>
+                        <button 
+                          onClick={handleRegenerateCardImage}
+                          className="px-2 py-0.5 rounded-md bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold backdrop-blur-md transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          <span>Yangi Rasm</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {(currentCard.cards || []).map((c, i) => (
                       <div 
@@ -1394,6 +1484,30 @@ export default function PowerPointModule() {
                     className="w-full bg-transparent text-xl sm:text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-lg"
                     style={{ color: `#${activeTheme.accent}` }}
                   />
+
+                  {includeImages && currentCard.imageUrl && (
+                    <div className="w-full h-40 sm:h-48 rounded-xl overflow-hidden border shadow-lg relative group">
+                      <img 
+                        src={currentCard.imageUrl} 
+                        alt={currentCard.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent p-3 flex items-end justify-between">
+                        <span className="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20">
+                          Xulosa & Tarixiy Meros • {imageStyle.toUpperCase()}
+                        </span>
+                        <button 
+                          onClick={handleRegenerateCardImage}
+                          className="px-2 py-0.5 rounded-md bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold backdrop-blur-md transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          <span>Yangi Rasm</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {currentCard.quote && (
                     <textarea
                       rows={2}
