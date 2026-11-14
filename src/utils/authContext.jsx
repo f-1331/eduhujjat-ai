@@ -107,25 +107,34 @@ export function AuthProvider({ children }) {
     ];
   });
 
-  // Access Code va unga bog'langan qurilma
+  // 1. Qat'iy Xavfsizlik: Saytga har kirilganda avtomatik kirib ketmaslik kerak!
+  // Faqat joriy sessiyada (sessionStorage) tasdiqlangan bo'lsa kiradi, aks holda PENDING (qulflangan)
   const [accessCodeInfo, setAccessCodeInfo] = useState(() => {
-    const saved = localStorage.getItem('eduhujjat_active_code');
-    if (!saved) return null;
     try {
-      const parsed = JSON.parse(saved);
-      if (parsed.expiresAtTimestamp && Date.now() > parsed.expiresAtTimestamp) {
+      if (typeof window === 'undefined') return null;
+      const isSessionVerified = sessionStorage.getItem('eduhujjat_session_verified') === 'true';
+      if (!isSessionVerified) {
+        // Avtomatik kirishlarning oldini olish uchun eski sessiyalarni tozalaymiz
         localStorage.removeItem('eduhujjat_active_code');
+        sessionStorage.removeItem('eduhujjat_active_code');
         return null;
       }
-      return parsed;
+      const saved = sessionStorage.getItem('eduhujjat_active_code');
+      if (!saved) return null;
+      return JSON.parse(saved);
     } catch(e) {
       return null;
     }
   });
 
   const [userAccessStatus, setUserAccessStatus] = useState(() => {
-    if (accessCodeInfo) return 'ACTIVE';
-    return 'PENDING';
+    try {
+      if (typeof window === 'undefined') return 'PENDING';
+      const isSessionVerified = sessionStorage.getItem('eduhujjat_session_verified') === 'true';
+      const saved = sessionStorage.getItem('eduhujjat_active_code');
+      if (isSessionVerified && saved) return 'ACTIVE';
+    } catch(e) {}
+    return 'PENDING'; // Doimo qulflangan holatda ochiladi!
   });
 
   // Bitta kod orqali faqat 1 ta qurilma ishlashini muntazam nazorat qilish (Single-Device Heartbeat)
@@ -195,8 +204,8 @@ export function AuthProvider({ children }) {
         expiresAtTimestamp: null,
         enteredAt: new Date().toISOString()
       };
-      localStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
-      localStorage.setItem(`eduhujjat_bound_${clean}`, currentDeviceId);
+      sessionStorage.setItem('eduhujjat_session_verified', 'true');
+      sessionStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
       setAccessCodeInfo(info);
       setUserAccessStatus('ACTIVE');
 
@@ -210,39 +219,8 @@ export function AuthProvider({ children }) {
 
     // 2. ODDIY VA FOYDALANUVCHI KODLARI (EDU-XXXXXX)
     if (clean.startsWith('EDU-') || /^\d{6}$/.test(clean)) {
-      let serverUser = null;
-      let isServerApproved = false;
-      try {
-        const checkResp = await fetch(`/api/device-auth?code=${encodeURIComponent(clean)}&deviceId=${encodeURIComponent(currentDeviceId)}`);
-        if (checkResp.ok) {
-          const cData = await checkResp.json();
-          if (cData && cData.valid && cData.isCurrent) {
-            isServerApproved = true;
-          }
-        }
-      } catch(e) {}
-
-      // Agar serverda ushbu qurilma tasdiqlangan bo'lsa
-      if (isServerApproved) {
-        const oneDayLater = Date.now() + 24 * 60 * 60 * 1000;
-        const info = {
-          code: clean,
-          deviceId: currentDeviceId,
-          deviceInfo,
-          plan: 'daily',
-          name: 'Faol Litsenziat',
-          userId: clean.replace('EDU-', ''),
-          username: '',
-          expiresAtTimestamp: oneDayLater,
-          enteredAt: new Date().toISOString()
-        };
-        localStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
-        setAccessCodeInfo(info);
-        setUserAccessStatus('ACTIVE');
-        return { success: true, instant: true, message: "✅ Xush kelibsiz! Ushbu qurilma tasdiqlangan." };
-      }
-
-      // YANGI QURILMA: Foydalanuvchining shaxsiy Telegram botiga ruxsat so'rovi yuboriladi
+      // QAT'IY XAVFSIZLIK: Hech qachon tekshiruvsiz avtomatik kirilmaydi!
+      // Har doim foydalanuvchining shaxsiy Telegram botiga "Ruxsat Berish / Bermaslik" so'rovi yuboriladi
       const pin = String(Math.floor(1000 + Math.random() * 9000));
       const reqId = 'req_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
 
@@ -259,25 +237,24 @@ export function AuthProvider({ children }) {
             pin
           })
         });
-        const data = await resp.json();
-        if (data && data.success === false && data.message) {
-          return { success: false, message: data.message };
-        }
-        serverUser = data?.user;
-      } catch(e) {
-        console.error("Device auth request error:", e);
-      }
 
-      return {
-        success: false,
-        requiresApproval: true,
-        reqId,
-        pin,
-        code: clean,
-        user: serverUser,
-        deviceInfo,
-        message: "⏳ Yangi qurilma aniqlandi! Sizning Telegram botingiz (@eduhujjat_bot) ga tasdiqlash xabari yuborildi."
-      };
+        if (resp.ok) {
+          const rData = await resp.json();
+          if (rData.success === false) {
+            return { success: false, message: rData.message || "❌ Bunday kirish kodi topilmadi!" };
+          }
+          return {
+            requiresApproval: true,
+            reqId,
+            code: clean,
+            pin,
+            user: rData.user,
+            message: "📲 Shaxsiy Telegram botingizga (@eduhujjat_bot) tasdiqlash so'rovi yuborildi. Kirish uchun botdagi [✅ Ruxsat Berish] tugmasini bosing!"
+          };
+        }
+      } catch (err) {
+        return { success: false, message: "Serverga ulanishda xatolik yuz berdi. Telegram bot ishlayotganini tekshiring." };
+      }
     }
 
     return { 
@@ -304,9 +281,10 @@ export function AuthProvider({ children }) {
         enteredAt: new Date().toISOString()
       };
 
-      // Oldingi qurilmani bekor qilib, ushbu qurilmaga bog'lash
-      localStorage.setItem(`eduhujjat_bound_${reqData.code}`, currentDeviceId);
-      localStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
+      // Faqat joriy sessiyada ruxsat berish (brauzer yopilganda qayta tasdiqlash talab qilinadi)
+      sessionStorage.setItem('eduhujjat_session_verified', 'true');
+      sessionStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
+      localStorage.removeItem('eduhujjat_active_code'); // Avtomatik kirishni yo'qotish
       setAccessCodeInfo(info);
       setUserAccessStatus('ACTIVE');
 
@@ -341,25 +319,26 @@ export function AuthProvider({ children }) {
       const res = await fetch(`/api/device-auth?reqId=${encodeURIComponent(reqId)}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.status === 'APPROVED') {
+        if (data.status === 'APPROVED' || data.approved) {
           const oneDayLater = Date.now() + 24 * 60 * 60 * 1000;
           const info = {
             code,
             deviceId: currentDeviceId,
             deviceInfo,
             plan: 'daily',
-            name: data.user?.name || 'Faol Litsenziat',
+            name: data.user?.name || 'Faol Foydalanuvchi',
             userId: data.user?.id || code.replace('EDU-', ''),
             username: data.user?.username || '',
             expiresAtTimestamp: oneDayLater,
             enteredAt: new Date().toISOString()
           };
-          localStorage.setItem(`eduhujjat_bound_${code}`, currentDeviceId);
-          localStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
+          sessionStorage.setItem('eduhujjat_session_verified', 'true');
+          sessionStorage.setItem('eduhujjat_active_code', JSON.stringify(info));
+          localStorage.removeItem('eduhujjat_active_code'); // Avtomatik kirishni yo'qotish
           setAccessCodeInfo(info);
           setUserAccessStatus('ACTIVE');
           return { approved: true, status: 'APPROVED' };
-        } else if (data.status === 'DENIED') {
+        } else if (data.status === 'DENIED' || data.denied) {
           return { denied: true, status: 'DENIED' };
         }
       }
@@ -381,6 +360,8 @@ export function AuthProvider({ children }) {
   };
 
   const logoutCode = () => {
+    sessionStorage.removeItem('eduhujjat_session_verified');
+    sessionStorage.removeItem('eduhujjat_active_code');
     localStorage.removeItem('eduhujjat_active_code');
     setAccessCodeInfo(null);
     setUserAccessStatus('PENDING');
