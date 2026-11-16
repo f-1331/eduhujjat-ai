@@ -12,44 +12,44 @@ export function generateAITestSuite(topic, count = 10) {
       {
         q: "Amir Temur qachon va qayerda tavallud topgan?",
         a: "1336-yil 9-aprelda Kesh (Shahrisabz) yaqinidagi Xo'ja Ilg'or qishlog'ida",
-        b: "1340-yil Samarqand shahrida",
-        c: "1330-yil Buxoro yaqinida",
-        d: "1345-yil Balx viloyatida"
+        b: "1340-yil 12-mayda Samarqand yaqinidagi Zarafshon vohasida",
+        c: "1330-yil 1-sentabrda Buxoro yaqinidagi Vobkent qishlog'ida",
+        d: "1345-yil 15-noyabrda Balx viloyatining qadimiy qismida"
       },
       {
         q: "Amir Temur qaysi yili Balx qurultoyida Movarounnahrning yagona hukmdori deb e'lon qilingan?",
         a: "1370-yil aprel oyida",
-        b: "1365-yil 'Loy jangi'dan so'ng",
-        c: "1380-yil Samarqandda",
-        d: "1395-yil Terek daryosi bo'yida"
+        b: "1365-yil may oyida",
+        c: "1380-yil kuz oylarida",
+        d: "1395-yil bahorida"
       },
       {
         q: "Amir Temurning davlatchilik boshqaruvidagi bosh shiori qaysi edi?",
         a: "Kuch — adolatdadir (Rosti-rasti)",
         b: "Bilak bilakni yengar, aql aqlni",
-        c: "Kuch birlikda",
+        c: "Kuch — birlik va hamjihatlikdadir",
         d: "Harbiy qudrat — oliy mezon"
       },
       {
         q: "Sohibqiron qo'shin tuzilishida qanday harbiy tizimni qo'llagan?",
-        a: "O'nlik, yuzlik, minglik va tumanlarga (10,000) bo'lingan qat'iy tizim",
-        b: "Faqat yollanma chet ellik askarlar tizimi",
-        c: "Hududiy qabilaviy tartibsiz otryadlar",
-        d: "Faqat piyoda merganlar qo'shini"
+        a: "O'nlik, yuzlik, minglik va tumanlarga bo'lingan qat'iy tizim",
+        b: "Yuzboshi, mingboshi va erkin ko'ngillilar otryadi",
+        c: "Hududiy qabilaviy tartibsiz saralangan tuzilma",
+        d: "Faqat professional yollanma gvardiya askarlari"
       },
       {
         q: "1395-yil Terek daryosi bo'yida Amir Temur qaysi hukmdor qo'shinini tor-mor keltirgan?",
         a: "Oltin O'rda xoni To'xtamishxonni",
         b: "Usmoniylar sultoni Boyazid I ni",
         c: "Dehli sultoni Mahmudshohni",
-        d: "Xitoy imperatori Min sulolasini"
+        d: "Mo'g'uliston xoni Qamariddinni"
       },
       {
         q: "1402-yil 20-iyulda bo'lib o'tgan mashhur Anqara jangida kim mag'lubiyatga uchragan?",
         a: "Usmoniy turklar sultoni Boyazid I Yildirim",
-        b: "Saljuqiylar sultoni Sanjar",
-        c: "Misr mamluklari sarkardasi",
-        d: "Oltin O'rda amiri Mamay"
+        b: "Saljuqiylar sultoni Malikshoh qo'shini",
+        c: "Misr mamluklari sultoni Barquq qo'shini",
+        d: "Oltin O'rda amiri Mamay lashkarlari"
       },
       {
         q: "Amir Temur davrida davlat boshqaruvi, vazirlar va armiya nizomi bayon etilgan asar qaysi?",
@@ -61,23 +61,23 @@ export function generateAITestSuite(topic, count = 10) {
       {
         q: "Amir Temur poytaxt etib qaysi shaharni tanladi va uni 'Yer yuzining sayqali'ga aylantirdi?",
         a: "Samarqand shahrini",
-        b: "Shahrisabzni",
-        c: "Buxoroni",
-        d: "Hirotni"
+        b: "Shahrisabz shahrini",
+        c: "Buxoro shahrini",
+        d: "Hirot shahrini"
       },
       {
         q: "Sohibqiron qaysi Yevropa qirollari bilan to'g'ridan-to'g'ri diplomatik va savdo aloqalari o'rnatgan?",
         a: "Fransiya qiroli Karl VI va Angliya qiroli Genrix IV bilan",
-        b: "Rossiya podshosi Ivan Grozniy bilan",
-        c: "Rim Papasi Innokentiy bilan",
-        d: "Ispaniya qiroli Filipp II bilan"
+        b: "Rossiya podshosi Ivan III va Rim imperatori Karl V bilan",
+        c: "Rim Papasi Innokentiy va Vengriya qiroli Sigizmund bilan",
+        d: "Ispaniya qiroli Filipp II va Polsha qiroli Kazimir bilan"
       },
       {
         q: "Amir Temurning so'nggi harbiy yurishi qaysi mamlakatga qaratilgan edi?",
-        a: "Xitoyga (Xitoy safari chog'ida 1405-yil O'trorda vafot etgan)",
-        b: "Misrga",
-        c: "Vengriyaga",
-        d: "Hindistonga"
+        a: "Xitoy (Min imperiyasi) davlatiga",
+        b: "Misr mamluklari sultonligiga",
+        c: "G'arbiy Yevropa qirolliklariga",
+        d: "Dehli sultonligining sharqiga"
       }
     ];
     return formatQuizResponse(t, pool.slice(0, count));
@@ -109,7 +109,7 @@ export function generateAITestSuite(topic, count = 10) {
       },
       {
         q: "Fotosintezning qorong'ulik bosqichida karbonat angidridning o'zlashtirilish sikli qanday nomlanadi?",
-        a: "Kalvin sikli (C3-sikli)",
+        a: "Kalvin sikli",
         b: "Krebs sikli",
         c: "Kori sikli",
         d: "Ornitin sikli"
@@ -117,9 +117,9 @@ export function generateAITestSuite(topic, count = 10) {
       {
         q: "Xlorofill pigmenti spektrning qaysi nurlarini eng kuchli yutadi?",
         a: "Qizil va ko'k-binafsha nurlarni",
-        b: "Faqat yashil nurlarni",
+        b: "Faqat yashil va sariq nurlarni",
         c: "Sariq va to'q sariq nurlarni",
-        d: "Infraqizil nurlarni"
+        d: "Infraqizil va rentgen nurlarini"
       },
       {
         q: "Fotosintez jarayonida ajralib chiqadigan kislorod (O₂) qaysi moddadan hosil bo'ladi?",
@@ -130,17 +130,17 @@ export function generateAITestSuite(topic, count = 10) {
       },
       {
         q: "Yorug'lik bosqichida qorong'ulik bosqichi uchun qanday energiya tashuvchi moddalar sintezlanadi?",
-        a: "ATF va NADF·H",
-        b: "Faqat ADF",
-        c: "Faqat glyukoza",
-        d: "Kraxmal va oqsillar"
+        a: "ATF va NADF·H molekulalari",
+        b: "ADF va fosfat kislotasi",
+        c: "Glyukoza va aminokislotalar",
+        d: "Kraxmal va oqsil molekulalari"
       },
       {
         q: "O'simliklar atmosferaga yiliga o'rtacha qancha miqdorda erkin kislorod ajratib chiqaradi?",
         a: "100-150 milliard tonna",
-        b: "1 million tonna",
-        c: "500 ming tonna",
-        d: "10 milliard tonna"
+        b: "40-50 milliard tonna",
+        c: "200-250 milliard tonna",
+        d: "10-20 milliard tonna"
       },
       {
         q: "Bargdagi gazlar almashinuvi va suv bug'lanishi qaysi tuzilma orqali boshqariladi?",
@@ -152,9 +152,9 @@ export function generateAITestSuite(topic, count = 10) {
       {
         q: "Yer atmosferasidagi Ozon qatlamining (O₃) paydo bo'lishiga nima sabab bo'lgan?",
         a: "Fotosintez natijasida hosil bo'lgan kislorodning fotokimyoviy o'zgarishi",
-        b: "Vulkanik otilishlar gazlari",
-        c: "Quyosh shamoli radiatsiyasi",
-        d: "Kosmik changlar"
+        b: "Vulkanik gazlarning atmosferada doimiy to'planishi",
+        c: "Kosmik nurlar va chang zarrachalarining o'zaro ta'siri",
+        d: "Yer qa'ridan ajralgan erkin vodorod reaksiyasi"
       }
     ];
     return formatQuizResponse(t, pool.slice(0, count));
@@ -165,36 +165,36 @@ export function generateAITestSuite(topic, count = 10) {
     const pool = [
       {
         q: "Pifagor teoremasi qaysi turdagi uchburchaklar uchun qo'llaniladi?",
-        a: "Faqat to'g'ri burchakli uchburchaklar uchun (burchagi 90°)",
-        b: "Teng tomonli uchburchaklar uchun",
+        a: "To'g'ri burchakli uchburchaklar uchun",
+        b: "Teng tomonli muntazam uchburchaklar uchun",
         c: "O'tmas burchakli ixtiyoriy uchburchaklar uchun",
-        d: "Barcha ko'pburchaklar uchun"
+        d: "O'tkir burchakli barcha uchburchaklar uchun"
       },
       {
         q: "Pifagor teoremasining klassik matematik ifodasi qaysi?",
-        a: "a² + b² = c² (Gipotenuza kvadrati katetlar kvadratlari yig'indisiga teng)",
-        b: "a + b = c",
+        a: "a² + b² = c²",
+        b: "a² + b² = 2c²",
         c: "a² - b² = c²",
-        d: "c = a · b / 2"
+        d: "a + b = c²"
       },
       {
         q: "Katetlari 3 sm va 4 sm bo'lgan to'g'ri burchakli uchburchakning gipotenuzasi necha sm?",
-        a: "5 sm (√(3² + 4²) = √25 = 5)",
+        a: "5 sm",
         b: "7 sm",
         c: "6 sm",
-        d: "25 sm"
+        d: "8 sm"
       },
       {
         q: "Qadimgi Misrda to'g'ri burchak yasashda qaysi tomonlar nisbatidan foydalanilgan?",
-        a: "3 : 4 : 5 nisbatli 'Misr uchburchagi'",
-        b: "1 : 1 : 2 nisbat",
-        c: "2 : 3 : 4 nisbat",
-        d: "5 : 10 : 15 nisbat"
+        a: "3 : 4 : 5 nisbati",
+        b: "2 : 3 : 4 nisbati",
+        c: "4 : 5 : 6 nisbati",
+        d: "5 : 12 : 13 nisbati"
       },
       {
         q: "Gipotenuzasi 13 sm, bir kateti 12 sm bo'lsa, ikkinchi katet necha sm bo'ladi?",
-        a: "5 sm (√(13² - 12²) = √(169 - 144) = √25 = 5)",
-        b: "1 sm",
+        a: "5 sm",
+        b: "6 sm",
         c: "7 sm",
         d: "8 sm"
       },
@@ -207,10 +207,10 @@ export function generateAITestSuite(topic, count = 10) {
       },
       {
         q: "Quyidagilardan qaysi biri Pifagor butun sonlar uchligi hisoblanadi?",
-        a: "5, 12, 13 (chunki 25 + 144 = 169)",
-        b: "4, 5, 6",
-        c: "6, 7, 8",
-        d: "2, 3, 5"
+        a: "5, 12, 13",
+        b: "4, 6, 8",
+        c: "6, 8, 11",
+        d: "7, 10, 14"
       },
       {
         q: "Teng yonli to'g'ri burchakli uchburchakning kateti a bo'lsa, uning gipotenuzasi nimaga teng?",
@@ -221,16 +221,16 @@ export function generateAITestSuite(topic, count = 10) {
       },
       {
         q: "Pifagor qaysi qadimgi mamlakatda o'zining mashhur falsafiy va matematik maktabiga asos solgan?",
-        a: "Qadimgi Yunonistonda (Kroton shahrida)",
+        a: "Qadimgi Yunonistonda",
         b: "Rim imperiyasida",
         c: "Vavilon davlatida",
         d: "Qadimgi Xitoyda"
       },
       {
         q: "To'g'ri burchakli uchburchakning yuzi qaysi formula orqali hisoblanadi?",
-        a: "S = (a · b) / 2 (katetlar ko'paytmasining yarmi)",
+        a: "S = (a · b) / 2",
         b: "S = a · b",
-        c: "S = a + b + c",
+        c: "S = (a + b) / 2",
         d: "S = c² / 2"
       }
     ];
@@ -243,51 +243,51 @@ export function generateAITestSuite(topic, count = 10) {
       {
         q: "Nyutonning birinchi qonuni (inersiya qonuni) ning asosiy mazmuni nima?",
         a: "Jismga tashqi kuch ta'sir etmasa, u tinch holatini yoki to'g'ri chiziqli tekis harakatini saqlaydi",
-        b: "Kuch har doim massaga to'g'ri proporsional",
-        c: "Har qanday ta'sirga teng va qarama-qarshi aks ta'sir mavjud",
-        d: "Og'irlik kuchi faqat Yer markazida nolga teng"
+        b: "Kuch har doim jism tezlanishiga teskari proporsional bo'ladi",
+        c: "Har qanday ta'sir kuchiga teng va qarama-qarshi aks ta'sir mavjud bo'ladi",
+        d: "Tashqi kuchlar ta'sirida jism o'zining dastlabki massasini o'zgartiradi"
       },
       {
         q: "Nyutonning ikkinchi qonunining asosiy formulasi qaysi?",
-        a: "F = m · a (Kuch = massa × tezlanish)",
+        a: "F = m · a",
         b: "E = m · c²",
         c: "P = m · v",
         d: "A = F · s"
       },
       {
         q: "Nyutonning uchinchi qonuniga binoan ikkita jismning o'zaro ta'sir kuchlari qanday bo'ladi?",
-        a: "F₁ = -F₂ (Kattaligi jihatidan teng, yo'nalishi bo'yicha qarama-qarshi)",
+        a: "F₁ = -F₂",
         b: "F₁ > F₂",
-        c: "Doimo nolga teng",
+        c: "F₁ = 0",
         d: "F₁ = F₂ / 2"
       },
       {
         q: "Xalqaro birliklar tizimida (SI) kuchning o'lchov birligi nima?",
-        a: "Nyuton (N = kg·m/s²)",
+        a: "Nyuton (N)",
         b: "Joul (J)",
         c: "Vatt (W)",
         d: "Paskal (Pa)"
       },
       {
         q: "Erkin tushish tezlanishining (g) Yerdagi o'rtacha qiymati qanchaga teng?",
-        a: "9.8 m/s² (taxminan 10 m/s²)",
-        b: "100 m/s²",
-        c: "3.14 m/s²",
-        d: "1.6 m/s²"
+        a: "9.8 m/s²",
+        b: "8.2 m/s²",
+        c: "11.2 m/s²",
+        d: "6.4 m/s²"
       },
       {
         q: "Jism massasi 5 kg, unga 20 N kuch ta'sir qilsa, tezlanishi qancha bo'ladi?",
-        a: "4 m/s² (a = F / m = 20 / 5 = 4)",
-        b: "100 m/s²",
-        c: "15 m/s²",
-        d: "25 m/s²"
+        a: "4 m/s²",
+        b: "5 m/s²",
+        c: "10 m/s²",
+        d: "8 m/s²"
       },
       {
         q: "Butunjahon tortishish qonuniga ko'ra ikki jism orasidagi tortishish kuchi masofaga qanday bog'liq?",
-        a: "Masofa kvadratiga teskari proporsional (F ~ 1/R²)",
-        b: "Masofaga to'g'ri proporsional",
-        c: "Masofaga bog'liq emas",
-        d: "Masofa kubiga to'g'ri proporsional"
+        a: "Masofa kvadratiga teskari proporsional",
+        b: "Masofa kvadratiga to'g'ri proporsional",
+        c: "Masofaga to'g'ri chiziqli proporsional",
+        d: "Masofaning kubiga teskari proporsional"
       },
       {
         q: "Jismning inertlik xossasini ifodalovchi asosiy fizik kattalik nima?",
@@ -298,14 +298,14 @@ export function generateAITestSuite(topic, count = 10) {
       },
       {
         q: "Raketaning koinotga uchishi Nyutonning qaysi qonuniga asoslanadi?",
-        a: "Nyutonning uchinchi qonuniga (reaktiv harakat printsipi)",
+        a: "Nyutonning uchinchi qonuniga",
         b: "Arximed qonuniga",
         c: "Paskal qonuniga",
         d: "Om qonuniga"
       },
       {
         q: "Og'irlik kuchi formulasi qaysi javobda to'g'ri keltirilgan?",
-        a: "F_og' = m · g",
+        a: "F = m · g",
         b: "F = k · x",
         c: "F = μ · N",
         d: "F = G · m₁ · m₂"
@@ -319,73 +319,73 @@ export function generateAITestSuite(topic, count = 10) {
     const pool = [
       {
         q: "Mashinali o'rganish (Machine Learning) an'anaviy dasturlashdan nimasi bilan farq qiladi?",
-        a: "Tizim qat'iy yozilgan qoidalarga emas, balki katta hajmdagi ma'lumotlar tahliliga tayanib mustaqil o'rganadi",
-        b: "Hech qanday farqi yo'q",
-        c: "Faqat apparat ta'minotiga bog'liq",
-        d: "Faqat binar kodda ishlaydi"
+        a: "Tizim qat'iy yozilgan qoidalarga emas, katta ma'lumotlar tahliliga tayanib mustaqil o'rganadi",
+        b: "Dastur faqat inson yozgan qat'iy mantiqiy shartlar va algoritmlar asosida ishlaydi",
+        c: "Kompilyatsiya jarayonida kod to'g'ridan-to'g'ri mikroprotsessor buyruqlariga aylanadi",
+        d: "Ma'lumotlar faqat relyatsion jadvallar ko'rinishida saqlanadi va tartiblanadi"
       },
       {
         q: "LLM (Large Language Model) atamasi nimani anglatadi?",
-        a: "Katta Til Modeli — inson tilidagi matnlarni tushunuvchi va yaratuvchi ulkan neyrotarmoq",
-        b: "Lokal Tarmoq Boshqaruvi",
-        c: "Grafik Dizayn Formati",
-        d: "Ma'lumotlar Bazasi Dvigateli"
+        a: "Katta Til Modeli — matnlarni tushunuvchi va yaratuvchi neyrotarmoq",
+        b: "Lokal Tarmoq Boshqaruvi — tarmoq xavfsizligini ta'minlovchi protokol",
+        c: "Grafik Dizayn Formati — tasvirlarni siquvchi va tahrirlovchi algoritm",
+        d: "Ma'lumotlar Bazasi Dvigateli — so'rovlarni optimallashtiruvchi vosita"
       },
       {
         q: "Zamonaviy generativ AI modellarining (ChatGPT, Claude) asosi bo'lgan arxitektura qaysi?",
         a: "Transformer arxitekturasi va Self-Attention mexanizmi",
-        b: "Chiziqli regressiya",
-        c: "Qarorlar daraxti (Decision Tree)",
-        d: "Relatsion SQL arxitekturasi"
+        b: "Konvolyutsion (CNN) arxitekturasi va max-pooling usuli",
+        c: "Qaytariluvchi rekurrent (RNN) va LSTM tarmoqlari",
+        d: "Ko'p qatlamli perseptron (MLP) va stoxastik gradient usuli"
       },
       {
         q: "Sun'iy intellekt modellarini o'qitishda qaysi apparat vositasi eng yuqori samaradorlik beradi?",
         a: "Grafik protsessorlar (GPU) va maxsus tensor chiplari (TPU)",
-        b: "Oddiy bitta yadroli CPU",
-        c: "Qattiq disk (HDD)",
-        d: "Faqat tezkor xotira (RAM)"
+        b: "Yuqori chastotali ko'p yadroli umumiy markaziy protsessorlar (CPU)",
+        c: "Katta hajmli tezkor xotira (RAM) va kesh kontrollerlari",
+        d: "Yuqori tezlikdagi NVMe SSD qattiq disk massivlari"
       },
       {
         q: "Sun'iy neyron tarmoqlarida 'Og'irliklar' (Weights) nimani anglatadi?",
-        a: "Neyronlar orasidagi aloqaning kuchi va ahamiyat darajasini belgilovchi matematik parametr",
-        b: "Kompyuterning jismoniy vazni",
-        c: "Fayl hajmi",
-        d: "Klaviatura bosilish kuchi"
+        a: "Neyronlar orasidagi aloqaning kuchi va ahamiyat darajasini belgilovchi parametr",
+        b: "Neyrotarmoq modelining operativ xotirada egallagan jami baytlar hajmi",
+        c: "Serverga ulangan hisoblash qurilmalarining jismoniy og'irlik vazni",
+        d: "Ma'lumotlar bazasidagi jadvallarning umumiy qatorlar miqdori"
       },
       {
         q: "Sun'iy intellektda 'Overfitting' (Qayta o'qitish) muammosi nimadan iborat?",
-        a: "Model o'rgatilgan ma'lumotlarni yodlab olib, yangi begona ma'lumotlarga to'g'ri javob bera olmasligi",
-        b: "Serverning haddan tashqari qizib ketishi",
-        c: "Dasturning xotira yetishmasligi sababli o'chishi",
-        d: "Internet tezligining pasayishi"
+        a: "Model o'rgatilgan ma'lumotlarni yodlab olib, yangi begona ma'lumotlarda adashishi",
+        b: "Neyrotarmoq hisoblash jarayonida protsessorning haddan ortiq qizib ketishi",
+        c: "Matn yaratish jarayonida modelning mantiqsiz so'zlarni ketma-ket qaytarishi",
+        d: "O'qitish tezligining me'yordan oshib ketishi oqibatida xotira to'lib qolishi"
       },
       {
         q: "AI sohasida 'Prompt Engineering' nima?",
-        a: "Neyrotarmoqdan eng aniq va sifatli natija olish uchun buyruq va so'rovlarni mahorat bilan tuzish san'ati",
-        b: "Kompyuterlarni yig'ish muhandisligi",
-        c: "Optik tolali kabellarni ulash",
-        d: "Veb-sayt dizaynini chizish"
+        a: "Neyrotarmoqdan aniq va sifatli natija olish uchun so'rovlarni mahorat bilan tuzish san'ati",
+        b: "Neyrotarmoq arxitekturasini noldan dasturlash va optimallashtirish fani",
+        c: "Katta hajmdagi ma'lumotlar bazasini tozalash va klasterlash muhandisligi",
+        d: "Server dasturiy ta'minoti va xavfsizlik protokollarini sozlash tizimi"
       },
       {
         q: "Python dasturlash tilida neyron tarmoqlar yaratishda eng mashhur kutubxonalar qaysilar?",
         a: "PyTorch, TensorFlow va Scikit-Learn",
-        b: "Word va Excel",
-        c: "Photoshop va Illustrator",
-        d: "HTML va CSS"
+        b: "Django, Flask va FastAPI",
+        c: "React, Angular va Vue.js",
+        d: "HTML, CSS va JavaScript"
       },
       {
         q: "Turing testi nimani aniqlash uchun mo'ljallangan?",
         a: "Mashinaning inson kabi fikrlash va muloqot qilish qobiliyatini tekshirish",
-        b: "Protsessorning tezligini hisoblash",
-        c: "Internetdagi viruslarni topish",
-        d: "Xotira hajmini aniqlash"
+        b: "Kompyuter protsessorining soniyadagi amallar tezligini o'lchash",
+        c: "Tarmoq orqali uzatilayotgan ma'lumotlarning xavfsizligini ta'minlash",
+        d: "Dasturiy ta'minotdagi sintaktik va mantiqiy xatoliklarni aniqlash"
       },
       {
         q: "Sun'iy intellektda 'Token' tushunchasi nima?",
-        a: "Model tomonidan matnni qayta ishlash uchun bo'lingan so'z yoki so'z bo'lagi (o'rtacha 3-4 belgi)",
-        b: "Kriptovalyuta birligi",
-        c: "Foydalanuvchi paroli",
-        d: "Dasturiy xatolik kodi"
+        a: "Model tomonidan qayta ishlanadigan eng kichik so'z yoki so'z bo'lagi birligi",
+        b: "Foydalanuvchi akkauntini himoyalovchi maxfiy kriptografik kalit",
+        c: "Blokcheyn tarmog'ida hisob-kitob qilinadigan raqamli valyuta birligi",
+        d: "Veb-server sessiyasini tasdiqlovchi vaqtinchalik xavfsizlik kodi"
       }
     ];
     return formatQuizResponse(t, pool.slice(0, count));
@@ -395,74 +395,109 @@ export function generateAITestSuite(topic, count = 10) {
   const cleanTitle = t || "O'quv kursi va fan asoslari";
   const genericQuestions = [
     {
-      q: `1. '${cleanTitle}' mavzusining asosiy ilmiy mohiyati va predmeti nima?`,
-      a: "Tizimli tadqiqotlar, amaliy tajribalar va isbotlangan qonuniyatlar majmui",
-      b: "Tasodifiy taxminiy mulohazalar to'plami",
-      c: "Faqat bir tomonlama og'zaki fikrlar",
-      d: "Nazariy asosga ega bo'lmagan ma'lumotlar"
+      q: `'${cleanTitle}' mavzusining asosiy ilmiy mohiyati va predmeti nima?`,
+      a: "Mavzuga oid fundamental qoidalar, ilmiy qonuniyatlar va amaliy tushunchalar tizimi",
+      b: "Mazkur soha bo'yicha shakllangan amaliy metodlar va tajribaviy xulosalar majmui",
+      c: "Ilmiy tadqiqotlar natijasida yaratilgan gipotezalar va nazariy modellar bazasi",
+      d: "O'rganilayotgan yo'nalishdagi me'yoriy prinsiplar va rivojlanish tendensiyalari majmui"
     },
     {
-      q: `2. Mazkur mavzuni o'rganishda qaysi metodik yondashuv eng yuqori samaradorlik beradi?`,
-      a: "Nazariy qoidalar va amaliy ko'nikmalarni uzviy bog'lab tahlil qilish",
-      b: "Faqat matnlarni mexanik yodlash",
-      c: "Tahlilsiz yuzaki tanishib chiqish",
-      d: "Amaliy sinovlardan voz kechish"
+      q: `Mazkur mavzuni o'rganishda qaysi metodik yondashuv eng yuqori samaradorlik beradi?`,
+      a: "Nazariy asoslar va amaliy ko'nikmalarni uzviy bog'lab, tizimli tahlil qilish",
+      b: "Mavzuni faol interaktiv metodlar va loyihaviy tadqiqotlar orqali o'rganish",
+      c: "Muammoli vaziyatlarni tahlil qilish va tanqidiy xulosalar chiqarish usuli",
+      d: "Manbalar bilan mustaqil ishlash va umumlashtirilgan induktiv tahlil qilish"
     },
     {
-      q: `3. '${cleanTitle}' sohasida birlamchi mezon sifatida nima belgilanadi?`,
-      a: "Aniq standartlar, ilmiy aniqlik va xalqaro mezonlarga muvofiqlik",
-      b: "Ixtiyoriy sub'ektiv fikr",
-      c: "Tasdiqlanmagan ma'lumotlar",
-      d: "Faqat estetik ko'rinish"
+      q: `'${cleanTitle}' sohasida birlamchi mezon sifatida nima belgilanadi?`,
+      a: "Ilmiy asoslanganlik, me'yoriy aniqlik va davlat ta'lim standartiga muvofiqlik",
+      b: "Amaliyotda qo'llash imkoniyati, ratsional samaradorlik va xulosalar aniqligi",
+      c: "Tahliliy xulosalarning mantiqiy izchilligi va obyektiv faktlarga asoslangani",
+      d: "Innovatsion yondashuv, xalqaro tajriba va zamonaviy talablarga javob berishi"
     },
     {
-      q: `4. Ushbu yo'nalishdagi jarayonlarni avtomatlashtirish qanday natija beradi?`,
-      a: "Vaqt va resurslarni 3 barobargacha tejaydi, insoniy xatoliklarni bartaraf etadi",
-      b: "Jarayonni keskin sekinlashtiradi",
-      c: "Xarajatlarni asossiz oshiradi",
-      d: "Ma'lumotlar aniqligini pasaytiradi"
+      q: `Ushbu yo'nalishdagi jarayonlarni tizimli tashkil etish qanday natija beradi?`,
+      a: "Jarayonlar unumdorligini oshiradi, aniqlikni ta'minlaydi va sarf-xarajatlarni tejaydi",
+      b: "Nazariy ma'lumotlarni tezkor tizimlashtiradi va inson omili ta'sirini kamaytiradi",
+      c: "Boshqaruv samaradorligini yuksaltirib, axborot almashinuvini tezlashtiradi",
+      d: "Standartlashtirilgan mezonlar asosida sifat ko'rsatkichlarini yaxshilaydi"
     },
     {
-      q: `5. '${cleanTitle}' bo'yicha mustaqil xulosa chiqarishda nimalarga tayaniladi?`,
-      a: "Faktlar, ishonchli statistik raqamlar va tahliliy dalillarga",
-      b: "Tasodifiy mish-mishlarga",
-      c: "Sinovdan o'tmagan taxminlarga",
-      d: "Eski qarashlarga"
+      q: `'${cleanTitle}' bo'yicha mustaqil xulosa chiqarishda nimalarga tayaniladi?`,
+      a: "Rasmiy faktlar, ishonchli statistik raqamlar va tahliliy dalillar bazasiga",
+      b: "Qiyosiy tahlillar, ekspert xulosalari va tasdiqlangan ilmiy kuzatuvlarga",
+      c: "Metodik qo'llanmalar, tajriba natijalari va me'yoriy mezonlar talablariga",
+      d: "Tizimli tahlil usullari, empirik ma'lumotlar va qonuniy me'yorlar majmuiga"
     },
     {
-      q: `6. Olingan bilimlarning kundalik hayotdagi eng muhim amaliy ahamiyati nima?`,
-      a: "Muammolarni tez va tizimli yechish, professional malakani yuksaltirish",
-      b: "Faqat imtihondan o'tish uchun zarur",
-      c: "Hech qanday amaliy ta'sirga ega emas",
-      d: "Faqat hujjatlarda qolib ketadi"
+      q: `Olingan bilimlarning kundalik hayotdagi eng muhim amaliy ahamiyati nima?`,
+      a: "Kasbiy malakani oshirish, muammolarni tizimli hal etish va to'g'ri qaror qabul qilish",
+      b: "Kundalik faoliyatda ilmiy xulosalarni qo'llash va samarali natijalarga erishish",
+      c: "Yangi zamonaviy ko'nikmalarni shakllantirish va tahliliy qobiliyatni o'stirish",
+      d: "Sohadagi vazifalarni mustaqil, tezkor va me'yoriy talablar asosida bajarish"
     },
     {
-      q: `7. Mazkur mavzuni bosqichma-bosqich o'rganishda dastlab nima qilinishi shart?`,
-      a: "Birlamchi tushunchalar va asosiy ta'riflarni aniq o'zlashtirish",
-      b: "Darhol murakkab amaliyotga o'tish",
-      c: "Rejasiz dars o'tish",
-      d: "Faqat xulosani o'qish"
+      q: `Mazkur mavzuni bosqichma-bosqich o'rganishda dastlab nima qilinishi shart?`,
+      a: "Asosiy tushunchalar, fundamental atamalar va tayanch qoidalarni o'zlashtirish",
+      b: "O'rganilayotgan obyektning umumiy tuzilishi va me'yoriy asoslarini ko'rib chiqish",
+      c: "Mavzuga doir boshlang'ich bilimlar va ilmiy manbalar bilan tanishib chiqish",
+      d: "Muammoning qo'yilishi va tadqiqot maqsadlarini aniq belgilab olish"
     },
     {
-      q: `8. '${cleanTitle}' sohasida zamonaviy texnologiyalarning o'rni qanday?`,
-      a: "Samaradorlikni oshiruvchi va chuqur tahlil imkonini beruvchi asosiy vosita",
-      b: "Faqat vaqt oluvchi to'siq",
-      c: "Ikkilamchi ahamiyatga ega vosita",
-      d: "Zaruratsiz qo'shimcha"
+      q: `'${cleanTitle}' sohasida zamonaviy texnologiyalarning o'rni qanday?`,
+      a: "Axborotni tezkor qayta ishlash, chuqur tahlil qilish va samaradorlikni oshirish",
+      b: "Ta'lim jarayonini vizuallashtirish, interaktivlikni va qulaylikni ta'minlash",
+      c: "Ma'lumotlar bazasini tizimlashtirish va integratsiyalashgan yechimlar yaratish",
+      d: "Vaqt resurslarini tejash va jarayonlarni avtomatlashtirish imkonini kengaytirish"
     },
     {
-      q: `9. O'quvchilar ushbu mavzu orqali qanday ko'nikmani shakllantiradilar?`,
-      a: "Mantiqiy fikrlash, tanqidiy tahlil va amaliy muammolarni hal qilish",
-      b: "Faqat ko'chirib yozish",
-      c: "Passiv tinglash",
-      d: "Yuzaki eslab qolish"
+      q: `O'quvchilar ushbu mavzu orqali qanday ko'nikmani shakllantiradilar?`,
+      a: "Mantiqiy fikrlash, tanqidiy tahlil qilish va tizimli xulosalar chiqarish",
+      b: "Muammolarni mustaqil modellashtirish va amaliy yechimlar ishlab chiqish",
+      c: "Ma'lumotlarni saralash, tahlil qilish va ularni amalda unumli qo'llash",
+      d: "O'zlashtirilgan bilimlarni yangi vaziyatlarda samarali tatbiq etish mahorati"
     },
     {
-      q: `10. Mazkur sohaning kelgusi taraqqiyoti nimalarga bog'liq?`,
-      a: "Ilmiy izlanishlar, yangiliklarni tezkor tatbiq etish va doimiy rivojlanishga",
-      b: "Eski usullarni o'zgartirmaslikka",
-      c: "Tashqi ta'sirlardan yakkalanib qolishga",
-      d: "O'rganishni to'xtatishga"
+      q: `Mazkur sohaning kelgusi taraqqiyoti nimalarga bog'liq?`,
+      a: "Ilmiy izlanishlar ko'lami, innovatsion g'oyalar va yangi metodlarni tatbiq etishga",
+      b: "Soha mutaxassislarining malakasi, tajriba almashinuvi va texnik yangilanishlarga",
+      c: "Davlat standartlarining takomillashuvi va zamonaviy talablarning joriy etilishiga",
+      d: "Xalqaro hamkorlik, fundamental tadqiqotlar va yangicha yondashuvlar rivojiga"
+    },
+    {
+      q: `Mavzuni amaliyotga tatbiq etishda qaysi xavfsizlik va me'yoriy qoidalarga rioya qilinadi?`,
+      a: "Belgilangan standart talablari, xavfsizlik choralari va me'yoriy yo'riqnomalarga",
+      b: "Soha bo'yicha tasdiqlangan sanitariya me'yorlari va ichki tartib qoidalariga",
+      c: "Metodik tavsiyanomalar, kasbiy etika qoidalari va davlat mezonlariga",
+      d: "Texnologik xarita ko'rsatmalari va mas'ul mutaxassislar nazorat talablariga"
+    },
+    {
+      q: `O'rganilayotgan jarayon yoki hodisaning sifatini baholashda eng obyektiv ko'rsatkich nima?`,
+      a: "Aniq o'lchanadigan mezonlar, samaradorlik koeffitsiyenti va natijalar barqarorligi",
+      b: "Bajarilgan ishlar hajmi, vaqt me'yorlariga rioya etilishi va umumiy tahlil natijalari",
+      c: "Qo'llanilgan metodlarning to'g'riligi va yakuniy xulosalarning ilmiy isboti",
+      d: "Standart talablariga muvofiqlik darajasi va amaliy tavsiyalarning asoslanganligi"
+    },
+    {
+      q: `Mavzuga oid axborot va ma'lumotlarni tahlil qilishda qanday tamoyilga tayanish lozim?`,
+      a: "Obyektivlik, ilmiy xolislik va bir nechta ishonchli manbalarni qiyosiy solishtirish",
+      b: "Ma'lumotlarning dolzarbligi, yangilik darajasi va amaliy ahamiyatini baholash",
+      c: "Statistik ko'rsatkichlarning haqqoniyligi va o'rganilayotgan mavzuga bevosita aloqadorligi",
+      d: "Faktlarning mantiqiy ketma-ketligi va umumlashtirilgan xulosalarning to'g'riligi"
+    },
+    {
+      q: `Ushbu sohada ilg'or natijalarga erishish uchun qanday integratsiyalashgan yondashuv talab etiladi?`,
+      a: "Fanlararo uzviy bog'liqlik, fundamental nazariya va amaliyotning uyg'un birligi",
+      b: "Zamonaviy raqamli texnologiyalar va ilg'or pedagogik usullarni birgalikda qo'llash",
+      c: "Tadqiqotchi va amaliyotchi mutaxassislarning uzluksiz hamkorlik tizimini yaratish",
+      d: "Xalqaro ilg'or tajribalarni milliy ta'lim tizimi xususiyatlari bilan uyg'unlashtirish"
+    },
+    {
+      q: `O'quvchi mazkur mavzu bo'yicha mustaqil loyiha yaratishda qaysi jihatga e'tibor qaratishi lozim?`,
+      a: "Kreativ yondashuv, chuqur ilmiy asoslilik va natijalarning amaliy foydaliligiga",
+      b: "Taqdimotning ko'rgazmaliligi, zamonaviy axborot texnologiyalaridan unumli foydalanishga",
+      c: "Muammoning to'g'ri qo'yilishi va unga taklif etilayotgan yangicha yechimlar tizimiga",
+      d: "Foydalanilgan adabiyotlar tahlili va loyihaning o'ziga xos mantiqiy tuzilishiga"
     }
   ];
 
@@ -478,14 +513,41 @@ function formatQuizResponse(topic, questions) {
   const keys = [];
   const letters = ['A', 'B', 'C', 'D'];
 
+  // Barcha javoblarni "A" bo'lib qolishining oldini olish:
+  // To'g'ri javoblarni A, B, C, D o'rtasida teng va aralash (balanced shuffle) taqsimlaymiz
+  const targetLetters = [];
+  for (let i = 0; i < questions.length; i++) {
+    targetLetters.push(letters[i % letters.length]);
+  }
+  for (let i = targetLetters.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [targetLetters[i], targetLetters[j]] = [targetLetters[j], targetLetters[i]];
+  }
+
   questions.forEach((item, index) => {
-    // A javobni to'g'ri qilib belgilaymiz, lekin shartli ravishda variantlarni ko'rsatamiz
-    keys.push(`${index + 1}-A`);
-    out += `**${index + 1}. ${item.q}**\n` +
-      `   A) ${item.a}\n` +
-      `   B) ${item.b}\n` +
-      `   C) ${item.c}\n` +
-      `   D) ${item.d}\n\n`;
+    // 1. Double numbering ("1. 1.", "2. 2.") muammosini yo'qotish
+    const cleanQ = String(item.q || '').replace(/^\d+[\.\)\s]+/, '').trim();
+
+    // 2. To'g'ri javob harfi va variantlar
+    const targetLetter = targetLetters[index];
+    keys.push(`${index + 1}-${targetLetter}`);
+
+    const distractors = [item.b, item.c, item.d].sort(() => Math.random() - 0.5);
+    const optionsMap = {};
+    optionsMap[targetLetter] = item.a;
+
+    let distIdx = 0;
+    letters.forEach(l => {
+      if (l !== targetLetter) {
+        optionsMap[l] = distractors[distIdx++];
+      }
+    });
+
+    out += `**${index + 1}. ${cleanQ}**\n` +
+      `   A) ${optionsMap['A']}\n` +
+      `   B) ${optionsMap['B']}\n` +
+      `   C) ${optionsMap['C']}\n` +
+      `   D) ${optionsMap['D']}\n\n`;
   });
 
   out += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +

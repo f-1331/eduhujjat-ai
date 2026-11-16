@@ -153,9 +153,13 @@ export async function generateAITestWithGemini(topic, count = 10) {
     "Siz O'zbekiston Respublikasi Maktabgacha va Maktab Ta'limi Vazirligi hamda Milliy Baholash Markazining bosh ekspert-metodisti va xalqaro olimpiada hakamisiz. " +
     "Siz tuzadigan testlar qolipdan chiqqan, yuksak ilmiy saviyadagi, mantiqiy va chuqur o'ylantiradigan durdona testlar bo'lishi shart. " +
     "Savollar 3 ta tafakkur darajasiga ajratilsin: 1) Bilish va tushunish, 2) Amaliy qo'llash va hisoblash, 3) Yuqori tahlil va muammoli sintez (Olimpiada darajasi). " +
-    "Javob variantlari (A, B, C, D) jiddiy, professional tuzilsin. Hech qachon 'barchasi to'g'ri' yoki jo'n variantlar bo'lmasin. " +
-    "Matematik formulalar va kasrlarni oddiy tushunarli matn formatida yozing (masalan: 7/12, x^2, H2SO4), dollar ($) yoki LaTeX ishlatmang! " +
-    "Test oxirida har bir savolning to'g'ri javobi nima uchun aynan shu ekani darslik va ilmiy qonuniyatlar bilan to'liq asoslab berilsin.";
+    "QAT'IY QOIDALAR:\n" +
+    "1. TO'G'RI JAVOBLAR TAQSIMOTI: To'g'ri javoblar A, B, C, D variantlari bo'yicha teng va tasodifiy taqsimlansin (hech qachon barcha javoblar A bo'lmasin, har bir harfga taxminan 25% to'g'ri javob to'g'ri kelsin)!\n" +
+    "2. VARIANTLARNING TENG UZUNLIGI: Noto'g'ri variantlar (distraktorlar) ham xuddi to'g'ri variant kabi ilmiy, jiddiy, professional va bir xil hajmda bo'lsin. O'quvchi javobni uzunligiga qarab oson topib ololmasin!\n" +
+    "3. RAQAMLASH: Savollar boshiga faqat bir marta tartib raqami qo'yilsin (1., 2., 3. shaklida, hech qachon '1. 1.' yoki '2. 2.' deb yozmang).\n" +
+    "4. Hech qachon 'Barchasi to'g'ri' yoki jo'n variantlar bo'lmasin.\n" +
+    "5. Matematik formulalar va kasrlarni oddiy tushunarli matn formatida yozing (masalan: 7/12, x^2, H2SO4), dollar ($) yoki LaTeX ishlatmang!\n" +
+    "6. Test oxirida '🔑 O'QITUVCHI UCHUN JAVOBLAR KALITI:' sarlavhasi ostida qisqa kalitlar (masalan: 1-C | 2-A | ...) va har birining ilmiy asosi berilsin.";
 
   const prompt = 
     `Mavzu: "${topic}"\n` +
@@ -166,10 +170,14 @@ export async function generateAITestWithGemini(topic, count = 10) {
     `🟢 I DARAJA: BAZAVIY BILIM VA KONSEPTUAL TUSHUNISH (1-4-savollar)\n` +
     `🟡 II DARAJA: AMALIY QO'LLASH VA TAHLIL (5-8-savollar)\n` +
     `🔴 III DARAJA: YUQORI MANTIQ VA CHUQUR SINTEZ (9-${count}-savollar - Olimpiada darajasi)\n\n` +
-    `Har bir savol aniq raqamlangan bo'lsin: 1., 2., ... ${count}.\n` +
-    `Variantlar: A), B), C), D).\n\n` +
+    `MUHIM FORMAT TALABLARI:\n` +
+    `1. Har bir savol faqat bitta raqam bilan boshlansin: 1., 2., 3. (Hech qachon '1. 1.' qilib yozmang!).\n` +
+    `2. Variantlar: A), B), C), D). Barcha 4 ta variant bir xil hajmda, bir xil ilmiy uslubda bo'lsin.\n` +
+    `3. To'g'ri javoblar A, B, C, D harflari bo'ylab aralash taqsimlansin (hamma javob A bo'lib qolmasin!).\n\n` +
     `Oxirida qat'iy ravishda:\n` +
-    `🔑 JAVOBLAR KALITI VA ILMIY ISBOTLAR:\n` +
+    `🔑 O'QITUVCHI UCHUN JAVOBLAR KALITI:\n` +
+    `1-[Harf] | 2-[Harf] | 3-[Harf] ... shaklida qisqa kalitlar.\n\n` +
+    `ILMIY ISBOTLAR VA SHARHLAR:\n` +
     `Har bir to'g'ri javob uchun 1-2 jumlalik ilmiy dalil, qonuniyat yoki darslik sahifasiga oid asos yozilsin.\n` +
     `Sof, ravon, mukammal o'zbek adabiy tilida bo'lsin.`;
 

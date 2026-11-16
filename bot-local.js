@@ -3,7 +3,7 @@ import { Bot, InlineKeyboard, Keyboard, InputFile } from 'grammy';
 import * as XLSX from 'xlsx';
 import { 
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, 
-  WidthType, AlignmentType, BorderStyle, HeadingLevel 
+  WidthType, AlignmentType, BorderStyle, HeadingLevel, PageBreak 
 } from 'docx';
 import pptxgen from 'pptxgenjs';
 import mammoth from 'mammoth';
@@ -1902,15 +1902,27 @@ async function generateTestWordBuffer(rawText, customTestText = "", count = 15) 
   ];
 
   testLines.forEach(line => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('━━━━━━━━') || trimmed.startsWith('🎲') || trimmed.startsWith('📌') || trimmed.startsWith('🏛') || trimmed.startsWith('✨')) {
+    let trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('━━━━━━━━') || trimmed.startsWith('🎲') || trimmed.startsWith('📌') || trimmed.startsWith('🏛') || trimmed.startsWith('✨') || trimmed.startsWith('📎')) {
       return;
     }
+
+    // 1. Double numbering ("1. 1.", "2. 2.", "**1. 1.") tozalash
+    trimmed = trimmed.replace(/^(\*\*?)(\d+)[\.\)]\s*(\d+)[\.\)]\s*/, '$1$2. ');
+    trimmed = trimmed.replace(/^(\d+)[\.\)]\s*(\d+)[\.\)]\s*/, '$1. ');
+
     if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
       docChildren.push(new Paragraph({ children: [new TextRun({ text: trimmed.replace(/\*\*/g, ''), bold: true })] }));
-    } else if (trimmed.startsWith('🔑')) {
-      docChildren.push(new Paragraph({ text: "" }));
-      docChildren.push(new Paragraph({ children: [new TextRun({ text: trimmed.replace(/\*\*/g, ''), bold: true })], heading: HeadingLevel.HEADING_2 }));
+    } else if (trimmed.startsWith('🔑') || /javoblar kaliti/i.test(trimmed)) {
+      // 2. O'qituvchi uchun javoblar kalitini YANGI BETGA (Keyingi sahifaga) o'tkazish
+      docChildren.push(new Paragraph({
+        children: [new PageBreak()]
+      }));
+      docChildren.push(new Paragraph({
+        children: [new TextRun({ text: trimmed.replace(/\*\*/g, ''), bold: true })],
+        heading: HeadingLevel.HEADING_2,
+        pageBreakBefore: true
+      }));
     } else {
       docChildren.push(new Paragraph({ text: trimmed.replace(/\*\*/g, '') }));
     }
