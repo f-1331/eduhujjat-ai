@@ -72,7 +72,7 @@ export default function EduAIModule() {
     else if (lower.includes('xarakteristika') || lower.includes('tavsifnoma')) type = 'reference';
 
     try {
-      const apiEndpoint = window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini';
+      const apiEndpoint = window.location.hostname === 'localhost' ? 'http://localhost:10000/api/gemini' : '/api/gemini';
       const res = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

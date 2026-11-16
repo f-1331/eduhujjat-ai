@@ -386,7 +386,7 @@ export function getStudentStats(students) {
 // Gemini AI orqali har qanday chalkash matndan o'quvchilarni ajratib olish
 export async function parseStudentsWithGemini(rawText) {
   try {
-    const apiEndpoint = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini';
+    const apiEndpoint = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:10000/api/gemini' : '/api/gemini';
     const res = await fetch(apiEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -515,7 +515,7 @@ export function executeTableTransformWithPrompt(students, instruction) {
 // Butun hujjatni (Word yoki matn) AI orqali buyruq bilan tahrirlash
 export async function executeDocumentTransformWithAI(documentText, instruction) {
   try {
-    const apiEndpoint = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini';
+    const apiEndpoint = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:10000/api/gemini' : '/api/gemini';
     const res = await fetch(apiEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

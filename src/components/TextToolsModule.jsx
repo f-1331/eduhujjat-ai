@@ -57,7 +57,7 @@ export default function TextToolsModule({ t }) {
     setIsAiLoading(true);
 
     try {
-      const apiEndpoint = window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini';
+      const apiEndpoint = window.location.hostname === 'localhost' ? 'http://localhost:10000/api/gemini' : '/api/gemini';
       const prompt = `Quyidagi o'zbekcha matnni imlo, tinish belgilari, grammatik va uslubiy qoidalar bo'yicha to'liq tekshirib to'g'rilab ber. 
 Faqat to'g'rilangan yakuniy toza matnni qaytar (qo'shimcha tushuntirishlarsiz, sof matn):
 

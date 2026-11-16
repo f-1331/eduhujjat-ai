@@ -5082,7 +5082,7 @@ const apiServer = http.createServer((req, res) => {
   res.end(JSON.stringify({ notFound: true }));
 });
 
-const API_PORT = process.env.PORT || process.env.API_PORT || 3001;
+const API_PORT = process.env.PORT || process.env.API_PORT || 10000;
 apiServer.listen(API_PORT, () => {
   console.log(`🌐 Local Device Auth HTTP API running on port ${API_PORT}`);
 });

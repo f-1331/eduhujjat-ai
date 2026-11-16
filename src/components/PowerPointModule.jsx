@@ -326,7 +326,7 @@ export default function PowerPointModule() {
     let generated = null;
     try {
       const endpoints = [
-        window.location.hostname === 'localhost' ? 'http://localhost:3001/api/gemini' : '/api/gemini',
+        window.location.hostname === 'localhost' ? 'http://localhost:10000/api/gemini' : '/api/gemini',
         '/api/gemini',
         'https://eduhujjat-bot.onrender.com/api/gemini'
       ];

@@ -29,6 +29,24 @@ dist-ssr
 .env.local
 .env.production
 .vercel
+
+# Python & Failover
+__pycache__/
+*.py[cod]
+cloudflared.exe
+*.exe
+tunnel_url.txt
+failover_state.json
+
 # data/
 
 .vercel
+
+# Python & Failover
+__pycache__/
+*.py[cod]
+cloudflared.exe
+*.exe
+tunnel_url.txt
+failover_state.json
+
