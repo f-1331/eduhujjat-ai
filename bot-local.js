@@ -1888,22 +1888,24 @@ function parseApplicationDetails(text) {
 }
 
 async function generateStudentExplanationWordBuffer(data = {}) {
-  const isBlank = !!data.isBlank;
   const school = data.school || "Uchtepa tumani 283-maktab";
   const director = data.director || "N.A.Kambarovaga";
   const className = data.className || "9 “A” sinf";
-  const studentName = data.studentName || "";
-  const dateStr = data.date || "";
-  const reason = data.reason || "";
+  const studentName = data.studentName || "Aliyev Sardor";
+  const dateStr = data.date || "15-noyabr";
+  const reason = data.reason || "sog'lig'im yomonlashgani (shamollab, tana haroratim ko'tarilgani) sababli";
+
+  const dirHeader = director.endsWith("ga") ? director : `${director}ga`;
 
   const docChildren = [
+    // Header (O'ng tomondan)
     new Paragraph({
       alignment: AlignmentType.RIGHT,
       children: [new TextRun({ text: `${school} direktori`, font: "Times New Roman", size: 24 })]
     }),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
-      children: [new TextRun({ text: director, font: "Times New Roman", size: 24 })]
+      children: [new TextRun({ text: dirHeader, font: "Times New Roman", size: 24 })]
     }),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
@@ -1911,87 +1913,50 @@ async function generateStudentExplanationWordBuffer(data = {}) {
     }),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
-      children: [new TextRun({ text: studentName ? `${studentName}dan` : "______________________dan", font: "Times New Roman", size: 24 })]
+      children: [new TextRun({ text: `${studentName}dan`, font: "Times New Roman", size: 24 })]
     }),
     new Paragraph({ text: "" }),
     new Paragraph({ text: "" }),
+
+    // Sarlavha
     new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [new TextRun({ text: "TUSHUNTIRISH XATI", bold: true, font: "Times New Roman", size: 30 })]
     }),
-    new Paragraph({ text: "" })
-  ];
+    new Paragraph({ text: "" }),
 
-  if (isBlank) {
-    docChildren.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: "Men 9 “a” sinf oquvchisi  __________________ maktabga __________ sanada",
-            font: "Times New Roman",
-            size: 24
-          })
-        ]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "__________________________________________________ kelmadim", font: "Times New Roman", size: 24 })]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "____________________.", font: "Times New Roman", size: 24 })]
-      })
-    );
-  } else {
-    const sName = studentName || "__________________";
-    const dStr = dateStr || "«___» ________ 202___-yil";
-    const rStr = reason || "sog'lig'im yomonlashgani (shamollab qolganim) sababli";
-    docChildren.push(
-      new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        children: [
-          new TextRun({
-            text: `    Men, ${className} o'quvchisi ${sName}, maktabga ${dStr} sanasida ${rStr} kelmadim.`,
-            font: "Times New Roman",
-            size: 24
-          })
-        ]
-      }),
-      new Paragraph({ text: "" }),
-      new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        children: [
-          new TextRun({
-            text: `    Keltirilgan noqulayliklar uchun uzr so'rayman hamda ushbu kunlarda o'tilgan barcha dars mavzularini mustaqil ravishda to'liq o'zlashtirib olishimni ma'lum qilaman.`,
-            font: "Times New Roman",
-            size: 24
-          })
-        ]
-      })
-    );
-  }
-
-  docChildren.push(
+    // Asosiy rasmiy matn (Ideal to'ldirilgan)
+    new Paragraph({
+      alignment: AlignmentType.JUSTIFIED,
+      children: [
+        new TextRun({
+          text: `    Men, ${className} o'quvchisi ${studentName}, ${school}ga ${dateStr} sanasida ${reason} dars mashg'ulotlariga kela olmadim.`,
+          font: "Times New Roman",
+          size: 24
+        })
+      ]
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      alignment: AlignmentType.JUSTIFIED,
+      children: [
+        new TextRun({
+          text: `    Dars mashg'ulotlarini qoldirganim sababli keltirilgan noqulayliklar uchun uzr so'rayman hamda o'tilgan barcha dars mavzulari va uyga berilgan vazifalarni fan o'qituvchilari ko'rsatmasi asosida mustaqil ravishda to'liq o'zlashtirib olishimni ma'lum qilaman.`,
+          font: "Times New Roman",
+          size: 24
+        })
+      ]
+    }),
     new Paragraph({ text: "" }),
     new Paragraph({ text: "" }),
     new Paragraph({
       children: [
-        new TextRun({ text: `Sana: ${dateStr || "«____» ____________ 202___ yil"}          `, font: "Times New Roman", size: 24 }),
+        new TextRun({ text: `Sana: ${dateStr.includes('.') || dateStr.includes('yil') ? dateStr : dateStr + ', 2026-yil'}          `, font: "Times New Roman", size: 24 }),
         new TextRun({ text: "Imzo: ____________          ", font: "Times New Roman", size: 24 }),
-        new TextRun({ text: `F.I.SH: ${studentName || "________________________"}`, font: "Times New Roman", size: 24 })
+        new TextRun({ text: `F.I.SH: ${studentName}`, font: "Times New Roman", size: 24 })
       ]
     })
-  );
+  ];
 
   const doc = new Document({
     sections: [{
@@ -2003,14 +1968,17 @@ async function generateStudentExplanationWordBuffer(data = {}) {
 }
 
 async function generateParentApplicationWordBuffer(data = {}) {
-  const isBlank = !!data.isBlank;
   const school = data.school || "Uchtepa tumani 283-maktab";
-  const director = data.director || "Direktori N.Kambarovaga";
-  const className = data.className || "9 “A” sinf o’quvchisi";
-  const studentName = data.studentName || "";
-  const parentName = data.parentName || "";
-  const dateStr = data.date || "";
-  const reason = data.reason || "";
+  const director = data.director || "N.Kambarovaga";
+  const className = data.className || "9 “A” sinf";
+  const studentName = data.studentName || "Aliyev Sardor";
+  const parentName = data.parentName || "Aliyeva Munira";
+  const dateStr = data.date || "16-18 noyabr";
+  const reason = data.reason || "oilaviy zarur sharoit va safar munosabati bilan";
+
+  const dirHeader = director.startsWith("Direktor") 
+    ? director 
+    : `Direktori ${director.endsWith("ga") ? director : director + "ga"}`;
 
   const docChildren = [
     new Paragraph({
@@ -2019,92 +1987,61 @@ async function generateParentApplicationWordBuffer(data = {}) {
     }),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
-      children: [new TextRun({ text: director.startsWith("Direktor") ? director : `Direktori ${director}`, font: "Times New Roman", size: 24 })]
+      children: [new TextRun({ text: dirHeader, font: "Times New Roman", size: 24 })]
     }),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
-      children: [new TextRun({ text: className.includes("o’quvchisi") || className.includes("o'quvchisi") ? className : `${className} o'quvchisi`, font: "Times New Roman", size: 24 })]
+      children: [new TextRun({ text: `${className} o'quvchisi`, font: "Times New Roman", size: 24 })]
     }),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
-      children: [new TextRun({ text: studentName ? `${studentName}ning` : "_______________________ning", font: "Times New Roman", size: 24 })]
+      children: [new TextRun({ text: `${studentName}ning`, font: "Times New Roman", size: 24 })]
     }),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
-      children: [new TextRun({ text: parentName ? `Ota-onasi ${parentName}dan` : "Ota-onasi __________________________________dan", font: "Times New Roman", size: 24 })]
+      children: [new TextRun({ text: `Ota-onasi ${parentName}dan`, font: "Times New Roman", size: 24 })]
     }),
     new Paragraph({ text: "" }),
     new Paragraph({ text: "" }),
+
     new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [new TextRun({ text: "ARIZA", bold: true, font: "Times New Roman", size: 30 })]
     }),
-    new Paragraph({ text: "" })
-  ];
+    new Paragraph({ text: "" }),
 
-  if (isBlank) {
-    docChildren.push(
-      new Paragraph({
-        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: "____________________________", font: "Times New Roman", size: 24 })]
-      })
-    );
-  } else {
-    const sName = studentName || "farzandim";
-    const pReason = reason || "oilaviy sharoitimiz tufayli dars mashg'ulotlaridan vaqtincha javob berishingizni so'rayman";
-    docChildren.push(
-      new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        children: [
-          new TextRun({
-            text: `    Sizdan ${className} o'quvchisi ${sName}ga ${pReason}.`,
-            font: "Times New Roman",
-            size: 24
-          })
-        ]
-      }),
-      new Paragraph({ text: "" }),
-      new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        children: [
-          new TextRun({
-            text: `    Farzandimning dars qoldirilgan kunlardagi o'quv dasturi mavzularini to'liq o'zlashtirishi hamda uning darsdan tashqari vaqtdagi hayoti va xavfsizligi uchun shaxsan o'zim javobgarlikni to'liq zimmamga olaman.`,
-            font: "Times New Roman",
-            size: 24
-          })
-        ]
-      })
-    );
-  }
-
-  docChildren.push(
+    // Asosiy rasmiy ariza matni (Ideal to'ldirilgan)
+    new Paragraph({
+      alignment: AlignmentType.JUSTIFIED,
+      children: [
+        new TextRun({
+          text: `    Sizdan ${className} o'quvchisi bo'lgan farzandim ${studentName}ga ${reason} sababli ${dateStr} kunlari dars mashg'ulotlaridan javob berishingizni so'rayman.`,
+          font: "Times New Roman",
+          size: 24
+        })
+      ]
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      alignment: AlignmentType.JUSTIFIED,
+      children: [
+        new TextRun({
+          text: `    Farzandimning dars qoldirilgan davrdagi barcha o'quv dasturi mavzularini to'liq o'zlashtirishi hamda uning maktabdan tashqarida bo'lgan vaqtdagi hayoti, sog'lig'i va xavfsizligi uchun shaxsan o'zim to'liq moddiy va ma'naviy javobgarlikni zimmamga olaman.`,
+          font: "Times New Roman",
+          size: 24
+        })
+      ]
+    }),
     new Paragraph({ text: "" }),
     new Paragraph({ text: "" }),
     new Paragraph({
       children: [
-        new TextRun({ text: `Sana: ${dateStr || "«____» ____________ 202___ yil"}          `, font: "Times New Roman", size: 24 }),
+        new TextRun({ text: `Sana: ${dateStr.includes('.') || dateStr.includes('yil') ? dateStr : '16.11.2026'}          `, font: "Times New Roman", size: 24 }),
         new TextRun({ text: "Imzo: ____________          ", font: "Times New Roman", size: 24 }),
-        new TextRun({ text: `F.I.SH: ${parentName || "________________________"}`, font: "Times New Roman", size: 24 })
+        new TextRun({ text: `F.I.SH: ${parentName}`, font: "Times New Roman", size: 24 })
       ]
     })
-  );
+  ];
 
   const doc = new Document({
     sections: [{
@@ -3916,83 +3853,33 @@ bot.on('callback_query:data', async (ctx) => {
 
   if (data === 'doc_tushuntirish' || data === 'doc_ariza') {
     await ctx.answerCallbackQuery();
-    const kb = new InlineKeyboard()
-      .text("📄 Bo'sh Shablon (Chop etishga)", "blank_tushuntirish")
-      .row()
-      .text("✍️ Ma'lumotlarni Kiritish", "fill_tushuntirish");
-    return ctx.reply(
-      `✍️ **O'QUVCHI TUSHUNTIRISH XATI (Maktabga kelmaganligi sababli):**\n\n` +
-      `Qanday shaklda tayyorlaymiz?\n\n` +
-      `1️⃣ **📄 Bo'sh Shablon:** Maktab me'yori bo'yicha chiziqli bo'sh shablon (chop etib qo'lda to'ldirish uchun).\n` +
-      `2️⃣ **✍️ Ma'lumotlarni Kiritish:** Maktab, sinf, o'quvchi ismi, sana va sababini kiritsangiz, bot tayyor to'ldirilgan .docx qilib beradi.\n\n` +
-      `👇 **Tanlang:**`,
-      { parse_mode: 'Markdown', reply_markup: kb }
-    );
-  }
-
-  if (data === 'blank_tushuntirish') {
-    await ctx.answerCallbackQuery({ text: "Bo'sh shablon tayyorlanmoqda..." });
-    const buf = await generateStudentExplanationWordBuffer({ isBlank: true });
-    await ctx.replyWithDocument(new InputFile(buf, "Tushuntirish_Xati_Shablon.docx"), {
-      caption: "✍️ **O'quvchi Tushuntirish Xati bo'sh shabloni tayyor!** (.docx)\n\n📌 Maktab standarti bo'yicha chiziqli, chop etib qo'lda to'ldirish uchun mo'ljallangan."
-    });
-    return consumeUserUse(userId, 'tushuntirish_blank');
-  }
-
-  if (data === 'fill_tushuntirish') {
-    await ctx.answerCallbackQuery();
     userDialogState.set(userId, { step: 'awaiting_tushuntirish_data' });
     return ctx.reply(
-      `✍️ **Tushuntirish xati ma'lumotlarini kiriting:**\n\n` +
-      `Quyidagi ma'lumotlarni xabar sifatida yozib yuboring:\n` +
-      `• **Maktab:** (masalan: Uchtepa tumani 283-maktab)\n` +
-      `• **Direktor:** (masalan: N.A.Kambarovaga)\n` +
-      `• **Sinf:** (masalan: 9 "A" sinf)\n` +
-      `• **O'quvchi:** (masalan: Aliyev Sardor)\n` +
-      `• **Kelmagan sana:** (masalan: 15-noyabr)\n` +
-      `• **Sababi:** (masalan: sog'lig'im yomonlashgani / shamollab qolganim sababli)\n\n` +
-      `💡 *Yoki qisqacha bir qatorda yozing: "Uchtepa 283-maktab, N.A.Kambarovaga, 9-A, Aliyev Sardor, 15-noyabr, shamollab qolganim sababli"*`,
+      `✍️ **O'QUVCHI TUSHUNTIRISH XATINI TAYYORLASH:**\n\n` +
+      `Hujjatni rasmiy qonuniy me'yorda va ideal to'ldirib berishim uchun quyidagi ma'lumotlarni yozib yuboring:\n\n` +
+      `• **Maktab va tuman:** (masalan: *Uchtepa tumani 283-maktab*)\n` +
+      `• **Direktor F.I.SH:** (masalan: *N.A.Kambarovaga*)\n` +
+      `• **Sinf:** (masalan: *9 "A" sinf*)\n` +
+      `• **O'quvchi F.I.SH:** (masalan: *Aliyev Sardor*)\n` +
+      `• **Kelmagan sana:** (masalan: *15-noyabr*)\n` +
+      `• **Sababi:** (masalan: *sog'lig'im yomonlashgani, shamollab qolganim sababli*)\n\n` +
+      `💡 *Barchasini bitta xabarda erkin yozishingiz ham mumkin (masalan: "Uchtepa 283-maktab, N.A.Kambarovaga, 9-A, Aliyev Sardor, 15-noyabrda shamollab qolgani sababli") — bot barchasini to'liq tushunib, rasmiy Word (.docx) formatida ideal to'ldirib beradi.*`,
       { parse_mode: 'Markdown' }
     );
   }
 
   if (data === 'doc_ariza_parent') {
     await ctx.answerCallbackQuery();
-    const kb = new InlineKeyboard()
-      .text("📄 Bo'sh Shablon (Chop etishga)", "blank_ariza_parent")
-      .row()
-      .text("✍️ Ma'lumotlarni Kiritish", "fill_ariza_parent");
-    return ctx.reply(
-      `📄 **OTA-ONA ARIZASI (Darsdan javob so'rash bo'yicha):**\n\n` +
-      `Qanday shaklda tayyorlaymiz?\n\n` +
-      `1️⃣ **📄 Bo'sh Shablon:** Maktab me'yori bo'yicha chiziqli bo'sh shablon (chop etib qo'lda to'ldirish uchun).\n` +
-      `2️⃣ **✍️ Ma'lumotlarni Kiritish:** Maktab, direktor, sinf, o'quvchi, ota-ona ismi va sababini kiritsangiz, bot tayyor to'ldirilgan .docx qilib beradi.\n\n` +
-      `👇 **Tanlang:**`,
-      { parse_mode: 'Markdown', reply_markup: kb }
-    );
-  }
-
-  if (data === 'blank_ariza_parent') {
-    await ctx.answerCallbackQuery({ text: "Bo'sh shablon tayyorlanmoqda..." });
-    const buf = await generateParentApplicationWordBuffer({ isBlank: true });
-    await ctx.replyWithDocument(new InputFile(buf, "Ota_ona_Arizasi_Shablon.docx"), {
-      caption: "📄 **Ota-ona Arizasi bo'sh shabloni tayyor!** (.docx)\n\n📌 Maktab standarti bo'yicha chiziqli, chop etib qo'lda to'ldirish uchun mo'ljallangan."
-    });
-    return consumeUserUse(userId, 'ariza_blank');
-  }
-
-  if (data === 'fill_ariza_parent') {
-    await ctx.answerCallbackQuery();
     userDialogState.set(userId, { step: 'awaiting_ariza_parent_data' });
     return ctx.reply(
-      `📄 **Ota-ona arizasi ma'lumotlarini kiriting:**\n\n` +
-      `Quyidagi ma'lumotlarni xabar sifatida yozib yuboring:\n` +
-      `• **Maktab:** (masalan: Uchtepa tumani 283-maktab)\n` +
-      `• **Direktor:** (masalan: N.Kambarovaga)\n` +
-      `• **Sinf va O'quvchi:** (masalan: 9 "A" sinf o'quvchisi Aliyev Sardor)\n` +
-      `• **Ota-onasi:** (masalan: Aliyeva Munira)\n` +
-      `• **Ariza sababi:** (masalan: 16-noyabrdan 18-noyabrgacha oilaviy sabab tufayli javob berishingizni so'rayman)\n\n` +
-      `💡 *Yoki qisqacha bir qatorda yozing: "Uchtepa 283-maktab, N.Kambarovaga, 9-A Aliyev Sardor, onasi Aliyeva Munira, 3 kunga oilaviy sabab bilan javob so'rayman"*`,
+      `📄 **OTA-ONA ARIZASINI TAYYORLASH (Darsdan javob so'rash):**\n\n` +
+      `Hujjatni rasmiy qonuniy me'yorda va ideal to'ldirib berishim uchun quyidagi ma'lumotlarni yozib yuboring:\n\n` +
+      `• **Maktab va tuman:** (masalan: *Uchtepa tumani 283-maktab*)\n` +
+      `• **Direktor F.I.SH:** (masalan: *N.Kambarovaga*)\n` +
+      `• **Sinf va O'quvchi:** (masalan: *9 "A" sinf o'quvchisi Aliyev Sardor*)\n` +
+      `• **Ota-onasi F.I.SH:** (masalan: *Aliyeva Munira*)\n` +
+      `• **Javob so'ralgan muddat va sababi:** (masalan: *16-18 noyabr kunlari oilaviy zarur safar sababli*)\n\n` +
+      `💡 *Barchasini bitta xabarda erkin yozsangiz ham bo'ladi — bot barcha ma'lumotlarni to'liq qamrab olib, rasmiy Word (.docx) formatida ideal to'ldirib beradi.*`,
       { parse_mode: 'Markdown' }
     );
   }
@@ -4483,17 +4370,18 @@ async function processIntelligentMessage(ctx, userPrompt) {
       );
     }
 
-    const kb = new InlineKeyboard()
-      .text("📄 Bo'sh Shablon (Chop etishga)", "blank_tushuntirish")
-      .row()
-      .text("✍️ Ma'lumotlarni Kiritish", "fill_tushuntirish");
+    userDialogState.set(userId, { step: 'awaiting_tushuntirish_data' });
     return ctx.reply(
-      `✍️ **O'QUVCHI TUSHUNTIRISH XATI (Maktabga kelmaganligi sababli):**\n\n` +
-      `Qanday shaklda tayyorlaymiz?\n\n` +
-      `1️⃣ **📄 Bo'sh Shablon:** Maktab me'yori bo'yicha chiziqli bo'sh shablon (chop etib qo'lda to'ldirish uchun).\n` +
-      `2️⃣ **✍️ Ma'lumotlarni Kiritish:** Maktab, sinf, o'quvchi ismi, sana va sababini kiritsangiz, bot tayyor to'ldirilgan .docx qilib beradi.\n\n` +
-      `👇 **Tanlang:**`,
-      { parse_mode: 'Markdown', reply_markup: kb }
+      `✍️ **O'QUVCHI TUSHUNTIRISH XATINI TAYYORLASH:**\n\n` +
+      `Hujjatni rasmiy me'yorda va ideal qilib to'ldirib berishim uchun quyidagi ma'lumotlarni yozib yuboring:\n\n` +
+      `1. **Maktab va tuman:** (masalan: *Uchtepa tumani 283-maktab*)\n` +
+      `2. **Direktor F.I.SH:** (masalan: *N.A.Kambarovaga*)\n` +
+      `3. **Sinf:** (masalan: *9 "A" sinf*)\n` +
+      `4. **O'quvchi F.I.SH:** (masalan: *Aliyev Sardor*)\n` +
+      `5. **Kelmagan sana:** (masalan: *15-noyabr*)\n` +
+      `6. **Sababi:** (masalan: *sog'lig'im yomonlashgani, shamollab qolganim sababli*)\n\n` +
+      `💡 *Barchasini bitta xabarda erkin qatorda yozishingiz ham mumkin — bot barcha ma'lumotlarni to'liq qamrab olib, tayyor to'ldirilgan Word (.docx) faylini beradi.*`,
+      { parse_mode: 'Markdown' }
     );
   }
 
@@ -4508,26 +4396,26 @@ async function processIntelligentMessage(ctx, userPrompt) {
       });
       consumeUserUse(userId, 'ariza_parent', parsed.parentName);
       return ctx.reply(
-        `📄 **Ariza matni:**\n\n` +
+        `📄 **Ariza rasmiy matni:**\n\n` +
         `«${parsed.school} direktori ${parsed.director}ga\n` +
         `${parsed.className} o'quvchisi ${parsed.studentName || '________'}ning ota-onasi ${parsed.parentName || '________'}dan\n\n` +
         `ARIZA\n\n` +
-        `Sizdan farzandimga ${parsed.reason}...»\n\n` +
-        `📎 *To'liq rasmiy hujjat yuqoridagi .docx faylida yuklandi.*`
+        `Sizdan ${parsed.className} o'quvchisi bo'lgan farzandim ${parsed.studentName}ga ${parsed.reason} sababli ${parsed.date} kunlari dars mashg'ulotlaridan javob berishingizni so'rayman...»\n\n` +
+        `📎 *Hujjat to'liq va ideal to'ldirilib, yuqoridagi .docx faylda yuklandi.*`
       );
     }
 
-    const kb = new InlineKeyboard()
-      .text("📄 Bo'sh Shablon (Chop etishga)", "blank_ariza_parent")
-      .row()
-      .text("✍️ Ma'lumotlarni Kiritish", "fill_ariza_parent");
+    userDialogState.set(userId, { step: 'awaiting_ariza_parent_data' });
     return ctx.reply(
-      `📄 **OTA-ONA ARIZASI (Darsdan javob so'rash bo'yicha):**\n\n` +
-      `Qanday shaklda tayyorlaymiz?\n\n` +
-      `1️⃣ **📄 Bo'sh Shablon:** Maktab me'yori bo'yicha chiziqli bo'sh shablon (chop etib qo'lda to'ldirish uchun).\n` +
-      `2️⃣ **✍️ Ma'lumotlarni Kiritish:** Maktab, direktor, sinf, o'quvchi, ota-ona ismi va sababini kiritsangiz, bot tayyor to'ldirilgan .docx qilib beradi.\n\n` +
-      `👇 **Tanlang:**`,
-      { parse_mode: 'Markdown', reply_markup: kb }
+      `📄 **OTA-ONA ARIZASINI TAYYORLASH (Darsdan javob so'rash):**\n\n` +
+      `Hujjatni rasmiy me'yorda va ideal qilib to'ldirib berishim uchun quyidagi ma'lumotlarni yozib yuboring:\n\n` +
+      `1. **Maktab va tuman:** (masalan: *Uchtepa tumani 283-maktab*)\n` +
+      `2. **Direktor F.I.SH:** (masalan: *N.Kambarovaga*)\n` +
+      `3. **Sinf va O'quvchi:** (masalan: *9 "A" sinf o'quvchisi Aliyev Sardor*)\n` +
+      `4. **Ota-onasi F.I.SH:** (masalan: *Aliyeva Munira*)\n` +
+      `5. **Javob so'ralgan muddat va sababi:** (masalan: *16-18 noyabr kunlari oilaviy zarur safar sababli*)\n\n` +
+      `💡 *Barchasini bitta xabarda erkin qatorda yozishingiz ham mumkin — bot barcha ma'lumotlarni to'liq qamrab olib, tayyor to'ldirilgan Word (.docx) faylini beradi.*`,
+      { parse_mode: 'Markdown' }
     );
   }
 
