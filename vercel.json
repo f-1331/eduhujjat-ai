@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://selected-skiing-transmitted-fruit.trycloudflare.com/health"
+      "destination": "https://preston-investigators-consider-ambassador.trycloudflare.com/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://selected-skiing-transmitted-fruit.trycloudflare.com/api/$1"
+      "destination": "https://preston-investigators-consider-ambassador.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",
