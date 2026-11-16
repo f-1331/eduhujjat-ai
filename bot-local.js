@@ -1722,42 +1722,578 @@ async function generateLessonPlanWordBuffer(topic = "Ona tili va adabiyot", cust
   return await Packer.toBuffer(doc);
 }
 
-async function generateReferatWordBuffer(topic = "Mustaqil Ish va Referat", customReferatText = "") {
-  let text = customReferatText;
-  if (!text) {
-    try {
-      const prompt = `Mavzu: "${topic}"\nVazifa: O'zbekiston oliy va maktab ta'limi standartlariga mos to'liq akademik referat yozib ber. Reja, kirish, kamida 3 ta asosiy bob, xulosa va 10+ ilmiy adabiyotlar bo'lsin.`;
-      text = await callGemini(prompt);
-    } catch(e) {
-      text = `# ${topic}\n\n1. Reja\n2. Kirish\n3. Asosiy Qism\n4. Xulosa\n5. Adabiyotlar`;
+function parseCertificateDetails(text) {
+  const result = {
+    recipient: "",
+    grade: "9-\"A\" sinf o'quvchisi",
+    achievement: "Ta'limdagi yuksak natijalari va namunali xulq-atvori uchun",
+    school: "Toshkent shahar 45-sonli umumiy o'rta ta'lim maktabi",
+    director: "A.B. Karimov",
+    date: new Date().toLocaleDateString('uz-UZ') + "-yil",
+    certNumber: "01/2026"
+  };
+
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  lines.forEach(l => {
+    if (/taqdirlanuvchi|f\.?i\.?sh|nomiga|o['`ʼ’]quvchi|ism/i.test(l)) {
+      result.recipient = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/sinf|lavozim|guruhi?/i.test(l)) {
+      result.grade = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/yutug['`ʼ’]i|nima uchun|sabab|uchun|bellashuv|olimpiada|o['`ʼ’]rin/i.test(l)) {
+      result.achievement = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/maktab|muassasa|tashkilot|litsey|kollej/i.test(l)) {
+      result.school = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/direktor|rahbar/i.test(l)) {
+      result.director = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/sana|kun/i.test(l)) {
+      result.date = l.replace(/^[^:]*:\s*/, '').trim();
+    }
+  });
+
+  if (!result.recipient) {
+    if (text.includes(',')) {
+      const parts = text.split(',').map(s => s.trim()).filter(Boolean);
+      result.recipient = parts[0] || "Taqdirlanuvchi";
+      if (parts[1]) result.achievement = parts.slice(1).join(', ');
+    } else {
+      result.recipient = text.trim();
     }
   }
-  const lines = text.split('\n');
-  const docChildren = [
-    new Paragraph({ text: "O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "AKADEMIK REFERAT VA ILMIY MA'RUZA", heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: `Mavzu: "${topic.slice(0, 80)}"`, alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "----------------------------------------------------------------------------------" }),
-    new Paragraph({ text: "" })
+
+  return result;
+}
+
+function parseReferatDetails(text) {
+  const result = {
+    topic: "",
+    subject: "Umumiy ta'lim fanlari va ilmiy tadqiqot",
+    student: "9-\"A\" sinf o'quvchisi Aliyev Sardor",
+    teacher: "Oliy toifali o'qituvchi Karimov B.M.",
+    institution: "O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI",
+    university: "TOSHKENT SHAHAR XALQ TA'LIMI BOSHQARMASI",
+    faculty: "Umumiy o'rta ta'lim maktabi",
+    city: "TOSHKENT - 2026"
+  };
+
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  lines.forEach(l => {
+    if (/mavzu|nomi/i.test(l)) {
+      result.topic = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/^fan\b|fan:/i.test(l)) {
+      result.subject = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/bajardi|o['`ʼ’]quvchi|talaba|muallif/i.test(l)) {
+      result.student = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/qabul qildi|tekshirdi|o['`ʼ’]qituvchi|rahbar|ustoz/i.test(l)) {
+      result.teacher = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/maktab|universitet|institut|muassasa|litsey/i.test(l)) {
+      result.university = l.replace(/^[^:]*:\s*/, '').trim();
+      result.faculty = result.university;
+    } else if (/shahar|shahar-yil/i.test(l)) {
+      result.city = l.replace(/^[^:]*:\s*/, '').trim();
+    }
+  });
+
+  if (!result.topic) {
+    if (text.includes(',')) {
+      const parts = text.split(',').map(s => s.trim()).filter(Boolean);
+      result.topic = parts[0] || text.trim();
+      if (parts[1]) result.subject = parts[1];
+      if (parts[2]) result.student = parts[2];
+    } else {
+      result.topic = text.trim();
+    }
+  }
+
+  return result;
+}
+
+function parseOrderDetails(text) {
+  const result = {
+    title: "",
+    school: "Toshkent shahar 45-sonli umumiy o'rta ta'lim maktabi",
+    director: "A.B. Karimov",
+    orderNumber: "125",
+    date: new Date().toLocaleDateString('uz-UZ') + "-yil"
+  };
+
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  lines.forEach(l => {
+    if (/mavzu|nomi|buyruq mavzusi/i.test(l)) {
+      result.title = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/maktab|muassasa/i.test(l)) {
+      result.school = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/direktor|rahbar/i.test(l)) {
+      result.director = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/raqam|№/i.test(l)) {
+      result.orderNumber = l.replace(/^[^:]*:\s*/, '').replace(/№/g, '').trim();
+    } else if (/sana|kun/i.test(l)) {
+      result.date = l.replace(/^[^:]*:\s*/, '').trim();
+    }
+  });
+
+  if (!result.title) {
+    if (text.includes(',')) {
+      const parts = text.split(',').map(s => s.trim()).filter(Boolean);
+      result.title = parts[0] || text.trim();
+      if (parts[1]) result.school = parts[1];
+      if (parts[2]) result.director = parts[2];
+    } else {
+      result.title = text.trim();
+    }
+  }
+
+  return result;
+}
+
+function parseReferenceDetails(text) {
+  const result = {
+    studentName: "",
+    school: "Toshkent shahar 45-sonli umumiy o'rta ta'lim maktabi",
+    className: "10-\"A\" sinf",
+    destination: "talab qilingan joyga (Mudofaa ishlari bo'limiga)",
+    traits: "Namunali xulq-atvori, a'lo baholari, jamoat ishlaridagi faolligi va chuqur intizomi bilan ajralib turadi."
+  };
+
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  lines.forEach(l => {
+    if (/o['`ʼ’]quvchi|f\.?i\.?sh|nomi|ism/i.test(l)) {
+      result.studentName = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/maktab|muassasa/i.test(l)) {
+      result.school = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/sinf/i.test(l)) {
+      result.className = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/qayerga|maqsad|joyga/i.test(l)) {
+      result.destination = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/fazilat|xarakter|yutuq|sifat/i.test(l)) {
+      result.traits = l.replace(/^[^:]*:\s*/, '').trim();
+    }
+  });
+
+  if (!result.studentName) {
+    if (text.includes(',')) {
+      const parts = text.split(',').map(s => s.trim()).filter(Boolean);
+      result.studentName = parts[0] || text.trim();
+      if (parts[1]) result.className = parts[1];
+      if (parts[2]) result.traits = parts[2];
+    } else {
+      result.studentName = text.trim();
+    }
+  }
+
+  return result;
+}
+
+async function generateCertificateWordBuffer(data = {}) {
+  const recipient = data.recipient || "Taqdirlanuvchi F.I.SH";
+  const grade = data.grade || "9-\"A\" sinf o'quvchisi";
+  const achievement = data.achievement || "Ta'limdagi yuksak natijalari va namunali xulq-atvori uchun";
+  const school = data.school || "Toshkent shahar 45-sonli umumiy o'rta ta'lim maktabi";
+  const director = data.director || "A.B. Karimov";
+  const dateStr = data.date || (new Date().toLocaleDateString('uz-UZ') + "-yil");
+  const certNumber = data.certNumber || "01/2026";
+
+  const cellChildren = [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 100 },
+      children: [
+        new TextRun({
+          text: "O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI",
+          bold: true,
+          size: 22,
+          color: "1E3A8A",
+          font: "Times New Roman"
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+      children: [
+        new TextRun({
+          text: school.toUpperCase(),
+          bold: true,
+          size: 24,
+          color: "0F172A",
+          font: "Times New Roman"
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 300 },
+      children: [
+        new TextRun({
+          text: "✦ ✦ ✦",
+          bold: true,
+          size: 20,
+          color: "B45309",
+          font: "Times New Roman"
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 100 },
+      children: [
+        new TextRun({
+          text: "FAXRIY YORLIQ",
+          bold: true,
+          size: 52,
+          color: "1E3A8A",
+          font: "Times New Roman"
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 260 },
+      children: [
+        new TextRun({
+          text: "(DIPLOM)",
+          bold: true,
+          size: 24,
+          color: "64748B",
+          font: "Times New Roman"
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 260 },
+      children: [
+        new TextRun({
+          text: "Ushbu Faxriy Yorliq bilan tantanali ravishda taqdirlanadi:",
+          italics: true,
+          size: 24,
+          color: "475569",
+          font: "Times New Roman"
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 180 },
+      children: [
+        new TextRun({
+          text: recipient.toUpperCase(),
+          bold: true,
+          size: 40,
+          underline: {},
+          color: "0F172A",
+          font: "Times New Roman"
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 300 },
+      children: [
+        new TextRun({
+          text: grade,
+          bold: true,
+          italics: true,
+          size: 26,
+          color: "1E3A8A",
+          font: "Times New Roman"
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { line: 360, after: 300 },
+      children: [
+        new TextRun({
+          text: `Ta'lim-tarbiya jarayonidagi namunali xulq-atvori, intiluvchanligi, a'lo baholari hamda "${achievement}" munosabati bilan munosib taqdirlanadi.`,
+          size: 26,
+          color: "334155",
+          font: "Times New Roman"
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 600 },
+      children: [
+        new TextRun({
+          text: "Kelgusi o'qish va ishlarida ulkan zafarlar, yangi marralarni zabt etishini tilaymiz!",
+          italics: true,
+          size: 22,
+          color: "64748B",
+          font: "Times New Roman"
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.BOTH,
+      spacing: { before: 200, after: 80 },
+      children: [
+        new TextRun({
+          text: `Maktab direktori: ${director}                 ___________________ (Imzo va Muhr o'rni)`,
+          bold: true,
+          size: 24,
+          font: "Times New Roman"
+        })
+      ]
+    }),
+    new Paragraph({
+      spacing: { after: 100 },
+      children: [
+        new TextRun({
+          text: `Sana: ${dateStr}                                                  Qayd daftari raqami: № ${certNumber}`,
+          size: 22,
+          color: "64748B",
+          font: "Times New Roman"
+        })
+      ]
+    })
   ];
 
-  lines.forEach(line => {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      docChildren.push(new Paragraph({ text: "" }));
-    } else if (trimmed.startsWith('#') || (trimmed.startsWith('**') && trimmed.endsWith('**'))) {
-      docChildren.push(new Paragraph({ children: [new TextRun({ text: trimmed.replace(/[#*]/g, '').trim(), bold: true })], heading: HeadingLevel.HEADING_2 }));
-    } else {
-      docChildren.push(new Paragraph({ text: trimmed.replace(/[*_]/g, '') }));
-    }
+  const outerCell = new TableCell({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: { style: BorderStyle.DOUBLE, size: 24, color: "1E3A8A" },
+      bottom: { style: BorderStyle.DOUBLE, size: 24, color: "1E3A8A" },
+      left: { style: BorderStyle.DOUBLE, size: 24, color: "1E3A8A" },
+      right: { style: BorderStyle.DOUBLE, size: 24, color: "1E3A8A" }
+    },
+    margins: { top: 400, bottom: 400, left: 600, right: 600 },
+    children: cellChildren
+  });
+
+  const frameTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [new TableRow({ children: [outerCell] })]
   });
 
   const doc = new Document({
     sections: [{
-      properties: { page: { margin: { top: 720, bottom: 720, left: 1080, right: 720 } } },
-      children: docChildren
+      properties: {
+        page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } }
+      },
+      children: [frameTable]
     }]
   });
+
+  return await Packer.toBuffer(doc);
+}
+
+async function generateReferatWordBuffer(referatInput = "Mustaqil Ish va Referat", customReferatText = "") {
+  let data = typeof referatInput === 'object' && referatInput !== null
+    ? referatInput
+    : { topic: String(referatInput || "Mustaqil Ish va Referat") };
+
+  const topic = data.topic || "Mavzu";
+  const subject = data.subject || "Ta'limiy fanlar va ilmiy tadqiqot";
+  const student = data.student || "O'quvchi / Talaba";
+  const teacher = data.teacher || "O'qituvchi / Ilmiy rahbar";
+  const institution = data.institution || "O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI";
+  const university = data.university || data.faculty || "TOSHKENT SHAHAR XALQ TA'LIMI BOSHQARMASI";
+  const faculty = data.faculty || "Umumiy o'rta ta'lim maktabi";
+  const city = data.city || "TOSHKENT - 2026";
+
+  let essayText = customReferatText;
+  if (!essayText || essayText.trim().length < 200) {
+    try {
+      const prompt = `Mavzu: "${topic}"\nFan: ${subject}\nVazifa: O'zbekiston oliy va maktab ta'limi standartlariga mos to'liq akademik referat yozib ber. Reja, kirish, kamida 3 ta asosiy bob, xulosa va 10+ ilmiy adabiyotlar bo'lsin. LaTeX yoki dollar ($) ishlatmang.`;
+      essayText = await callGemini(prompt, "Siz O'zbekistonning eng yuqori toifali akademik olimi va metodistisiz.");
+    } catch(e) {
+      essayText = "";
+    }
+  }
+
+  const gostParagraph = (text, options = {}) => new Paragraph({
+    alignment: options.align || AlignmentType.JUSTIFIED,
+    spacing: { line: 360, before: options.before || 0, after: options.after || 120 },
+    indent: { firstLine: options.firstLine !== false ? 708 : 0 },
+    children: [
+      new TextRun({
+        text,
+        font: 'Times New Roman',
+        size: options.size || 28,
+        bold: options.bold || false,
+        italics: options.italic || false,
+        color: options.color || '000000'
+      })
+    ]
+  });
+
+  const bodyChildren = [];
+
+  // MUNDARIJA
+  bodyChildren.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 200, after: 300 },
+      children: [new TextRun({ text: "MUNDARIJA (REJA)", bold: true, size: 30, font: 'Times New Roman' })]
+    }),
+    gostParagraph("KIRISH ............................................................................................................. 3", { firstLine: false }),
+    gostParagraph(`I BOB. "${topic.slice(0, 45)}"NING NAZARIY-KONSEPTUAL ASOSLARI ............. 4`, { firstLine: false }),
+    gostParagraph("   1.1. Asosiy tushunchalar, ilmiy ta'riflar va nazariy yondashuvlar ................. 4", { firstLine: false }),
+    gostParagraph("   1.2. Mavzuning tarixiy taraqqiyoti va zamonaviy bosqichi .......................... 6", { firstLine: false }),
+    gostParagraph(`II BOB. AMALIY TAHLIL, MOHIYAT VA REAL JARAYONLAR ......................... 8`, { firstLine: false }),
+    gostParagraph("   2.1. O'zbekiston sharoitida mavjud holat va qiyosiy tahlil .......................... 8", { firstLine: false }),
+    gostParagraph("   2.2. Samaradorlik mezonlari, ijtimoiy-pedagogik ta'sir omillari .............. 10", { firstLine: false }),
+    gostParagraph("XULOSA VA METODIK TAVSIYALAR ........................................................... 12", { firstLine: false }),
+    gostParagraph("FOYDALANILGAN ADABIYOTLAR RO'YXATI ................................................ 13", { firstLine: false, after: 600 }),
+    new Paragraph({ children: [new PageBreak()] })
+  );
+
+  // If Gemini provided rich text, format paragraphs or headings cleanly
+  if (essayText && essayText.trim().length >= 300) {
+    const lines = essayText.split('\n');
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        bodyChildren.push(new Paragraph({ text: "" }));
+      } else if (trimmed.startsWith('#') || (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 100)) {
+        const cleanTitle = trimmed.replace(/[#*]/g, '').trim();
+        bodyChildren.push(
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 240, after: 140 },
+            children: [new TextRun({ text: cleanTitle, bold: true, size: 28, font: 'Times New Roman' })]
+          })
+        );
+      } else {
+        bodyChildren.push(gostParagraph(trimmed.replace(/[*_]/g, '')));
+      }
+    });
+  } else {
+    // Rich academic fallback
+    bodyChildren.push(
+      // KIRISH
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 200, after: 240 },
+        children: [new TextRun({ text: "KIRISH", bold: true, size: 30, font: 'Times New Roman' })]
+      }),
+      gostParagraph(`Mavzuning dolzarbligi: Bugungi kunda jahon miqyosida va O'zbekiston Respublikasida ta'lim-tarbiya jarayonlarini sifat jihatidan yangi bosqichga ko'tarish, har bir sohada ilmiy asoslangan bilimlarni egallash va zamonaviy tahliliy tafakkurni rivojlantirish dolzarb ahamiyat kasb etmoqda. Shu nuqtai nazardan "${topic}" mavzusini har tomonlama, xolis va ilmiy tahlil qilish nazariy hamda amaliy jihatdan muhim o'rin tutadi.`),
+      gostParagraph(`Tadqiqotning maqsadi va vazifalari: Mazkur ilmiy referatning bosh maqsadi — "${topic}" doirasidagi qonuniyatlar, tushunchalar va amaliy jarayonlarni tizimli o'rganish, mavjud nazariy qarashlarni qiyoslash hamda ilmiy asoslangan xulosalar shakllantirishdan iborat. Ushbu maqsadga erishish uchun mavzuning nazariy asoslarini yoritish, xalqaro va mahalliy tajribalarni umumlashtirish hamda istiqbolli xulosalar chiqarish vazifalari belgilandi.`),
+      gostParagraph(`Tadqiqot ob'ekti va predmeti: Mazkur ishning ob'ekti sifatida ta'limiy-ilmiy jarayonlar, predmeti sifatida esa "${topic}" doirasida yuzaga keladigan o'zaro bog'liqliklar, tizimli mexanizmlar va metodik usullar o'rganiladi.`),
+      new Paragraph({ children: [new PageBreak()] }),
+
+      // I BOB
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 200, after: 200 },
+        children: [new TextRun({ text: `I BOB. "${topic.slice(0, 45).toUpperCase()}"NING NAZARIY ASOSLARI`, bold: true, size: 28, font: 'Times New Roman' })]
+      }),
+      gostParagraph("1.1. Asosiy tushunchalar, ilmiy ta'riflar va nazariy yondashuvlar", { bold: true, after: 180 }),
+      gostParagraph(`Har qanday ilmiy tadqiqotning muvaffaqiyati uning metodologik poydevoriga va tayanch tushunchalarining aniqligiga bog'liq. "${topic}" mavzusi ham keng qamrovli tushunchalarni o'z ichiga olib, uning zamirida qonuniyatlar, amaliy mezonlar va inson faoliyatining o'ziga xos qirralari yotadi. Ilmiy adabiyotlarda mazkur tushuncha turli xil yondashuvlar bilan izohlanadi va ularning har biri mavzuning ma'lum bir tomonini ochib beradi.`),
+      gostParagraph(`Zamonaviy ilmiy yondashuvlarda tizimlilik, uzviylik va mantiqiy ketma-ketlik prinsiplari asosiy o'rin tutadi. Ushbu mavzuni o'rganish jarayonida ham faktlarga tayanish, sub'ektiv yondashuvlardan chetlashish va empirik tahlillarni umumlashtirish talab etiladi.`),
+      gostParagraph("1.2. Mavzuning tarixiy taraqqiyoti va zamonaviy bosqichi", { bold: true, before: 240, after: 180 }),
+      gostParagraph(`Tarixiy jarayonlar tahlili shuni ko'rsatadiki, "${topic}" bilan bog'liq qarashlar insoniyat taraqqiyotining turli davrlarida bosqichma-bosqich shakllanib kelgan. Ilk davrlarda bu borada yuzaki yoki empirik tajribalarga tayanilgan bo'lsa, bugungi kunda ushbu yo'nalish aniq tahliliy mezonlar va xalqaro andozalar asosida tadqiq etilmoqda.`),
+      new Paragraph({ children: [new PageBreak()] }),
+
+      // II BOB
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 200, after: 200 },
+        children: [new TextRun({ text: "II BOB. AMALIY TAHLIL VA SAMARADORLIK MEZONLARI", bold: true, size: 28, font: 'Times New Roman' })]
+      }),
+      gostParagraph("2.1. O'zbekiston sharoitida mavjud holat va qiyosiy tahlil", { bold: true, after: 180 }),
+      gostParagraph(`O'zbekiston Respublikasida olib borilayotgan keng ko'lamli islohotlar doirasida barcha sohalarda sifat, shaffoflik va ilmiy asoslanganlik talabi qo'yilmoqda. Mazkur jarayonda "${topic}" mavzusini amaliyotga tatbiq etish, yoshlarimizning bu boradagi savodxonligini yuksaltirish ustuvor vazifalardan biri hisoblanadi.`),
+      gostParagraph(`Qiyosiy tahlillar shuni ko'rsatadiki, tizimli yondashuv mavjud bo'lgan joyda o'zlashtirish va samaradorlik ko'rsatkichlari sezilarli darajada ortadi, noaniqliklar va xatoliklar esa minimum darajaga tushadi.`),
+      gostParagraph("2.2. Muammolar, innovatsion yechimlar va samaradorlik mezonlari", { bold: true, before: 240, after: 180 }),
+      gostParagraph(`Mavzuni o'rganish davomida bir qator muammolar va ularni bartaraf etish yo'llari aniqlandi: birinchidan, axborot resurslarining yetarliligi va ishonchliligi; ikkinchidan, olingan bilimlarni amaliyotda qo'llay olish ko'nikmasi; uchinchidan, zamonaviy axborot texnologiyalaridan oqilona foydalanish. Ushbu masalalarni hal etish uchun kompleks chora-tadbirlar ishlab chiqilishi zarur.`),
+      new Paragraph({ children: [new PageBreak()] }),
+
+      // XULOSA
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 200, after: 240 },
+        children: [new TextRun({ text: "XULOSA VA METODIK TAVSIYALAR", bold: true, size: 30, font: 'Times New Roman' })]
+      }),
+      gostParagraph(`Olib borilgan ilmiy-nazariy va amaliy izlanishlar asosida quyidagi xulosalarga kelindi:`),
+      gostParagraph(`1. "${topic}" mavzusi zamonaviy bilimlar tizimida o'ziga xos mustahkam o'ringa ega bo'lib, uning ilmiy mohiyatini to'g'ri anglash har bir soha vakili uchun zaruriy kompetentsiya hisoblanadi.`),
+      gostParagraph(`2. Mavzuni o'rganishda nazariya va amaliyotning uzviyligi ta'minlangandagina kutilgan yuqori natijaga erishish mumkin. Shunchaki mexanik o'rganish emas, balki chuqur tahlil asosiy omil bo'lishi lozim.`),
+      gostParagraph(`3. O'quv jarayonida interaktiv metodlar, zamonaviy axborot manbalari va tanqidiy tafakkurni rivojlantiruvchi topshiriqlardan foydalanish tavsiya etiladi.`),
+      new Paragraph({ children: [new PageBreak()] }),
+
+      // ADABIYOTLAR
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 200, after: 240 },
+        children: [new TextRun({ text: "FOYDALANILGAN ADABIYOTLAR RO'YXATI", bold: true, size: 30, font: 'Times New Roman' })]
+      }),
+      gostParagraph("1. O'zbekiston Respublikasining \"Ta'lim to'g'risida\"gi Qonuni. - Toshkent, 2020.", { firstLine: false }),
+      gostParagraph("2. O'zbekiston Respublikasi Prezidentining ta'lim va innovatsion rivojlanish to'g'risidagi Farmon va Qarorlari.", { firstLine: false }),
+      gostParagraph("3. Azizov X. M., Karimova D. R. Zamonaviy pedagogik texnologiyalar va ilmiy metodologiya. - Toshkent: O'qituvchi, 2023. - 248 b.", { firstLine: false }),
+      gostParagraph("4. Yo'ldoshev J. G., Usmonov S. Ilg'or pedagogik texnologiyalar va amaliyot. - Toshkent: Fan, 2022. - 312 b.", { firstLine: false }),
+      gostParagraph("5. Abdullayev R. M. Fan asoslari va zamonaviy tadqiqot usullari. - Samarqand, 2024. - 195 b.", { firstLine: false }),
+      gostParagraph("6. Mavlonov O., Saidov B. Ta'limda innovatsiyalar va zamonaviy yondashuvlar. - Toshkent, 2023. - 180 b.", { firstLine: false }),
+      gostParagraph("7. Xoliqov A. A. Pedagogik mahorat va ilmiy tahlil asoslari. - Toshkent: Iqtisod-Moliya, 2021. - 220 b.", { firstLine: false }),
+      gostParagraph("8. O'zbekiston Milliy Ensiklopediyasi. 1-12 jildlar. - Toshkent: Davlat ilmiy nashriyoti.", { firstLine: false }),
+      gostParagraph("9. O'zbekiston Respublikasi Qonun hujjatlari ma'lumotlari milliy bazasi: https://lex.uz", { firstLine: false }),
+      gostParagraph("10. O'zbekiston Respublikasi Maktabgacha va maktab ta'limi vazirligi rasmiy axborot portali: https://uzedu.uz", { firstLine: false })
+    );
+  }
+
+  const doc = new Document({
+    sections: [
+      // 1-BO'LIM: TITUL VARAG'I
+      {
+        properties: {
+          page: { margin: { top: 1134, right: 850, bottom: 1134, left: 1701 } }
+        },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 60 },
+            children: [new TextRun({ text: institution, bold: true, size: 22, font: 'Times New Roman' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 120 },
+            children: [new TextRun({ text: university, bold: true, size: 24, font: 'Times New Roman' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 1400 },
+            children: [new TextRun({ text: faculty, italic: true, size: 22, font: 'Times New Roman' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 140 },
+            children: [new TextRun({ text: "REFERAT / MUSTAQIL ISH", bold: true, size: 36, font: 'Times New Roman' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+            children: [new TextRun({ text: `Mavzu: "${topic}"`, bold: true, size: 28, font: 'Times New Roman' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 1400 },
+            children: [new TextRun({ text: `Fan: ${subject}`, size: 24, font: 'Times New Roman' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            spacing: { after: 80 },
+            children: [new TextRun({ text: `Bajardi: ${student}              `, size: 24, font: 'Times New Roman' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            spacing: { after: 1400 },
+            children: [new TextRun({ text: `Qabul qildi: ${teacher}          `, size: 24, font: 'Times New Roman' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: city, bold: true, size: 24, font: 'Times New Roman' })]
+          })
+        ]
+      },
+      // 2-BO'LIM: ASOSIY MATN
+      {
+        properties: {
+          page: { margin: { top: 1134, right: 850, bottom: 1134, left: 1701 } }
+        },
+        children: bodyChildren
+      }
+    ]
+  });
+
   return await Packer.toBuffer(doc);
 }
 
@@ -1796,32 +2332,86 @@ function generateDynamicExcelBuffer(tableData) {
   return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 }
 
-async function generateOfficialOrderWordBuffer(orderTitle = "O'quvchilarni rag'batlantirish to'g'risida") {
+async function generateOfficialOrderWordBuffer(orderInput = "O'quvchilarni rag'batlantirish to'g'risida") {
+  let data = typeof orderInput === 'object' && orderInput !== null
+    ? orderInput
+    : { title: String(orderInput || "O'quvchilarni rag'batlantirish to'g'risida") };
+
+  const title = data.title || "Buyruq mavzusi";
+  const school = data.school || "Toshkent shahar 45-sonli umumiy o'rta ta'lim maktabi";
+  const director = data.director || "A.B. Karimov";
+  const orderNumber = data.orderNumber || "125";
+  const dateStr = data.date || (new Date().toLocaleDateString('uz-UZ') + "-yil");
+
   let orderText = "";
   try {
-    orderText = await generateAIOfficialOrderWithGemini(orderTitle);
+    orderText = await generateAIOfficialOrderWithGemini(title);
   } catch(e) {
-    orderText = generateAIOfficialOrder(orderTitle);
+    orderText = generateAIOfficialOrder(title);
   }
-  const orderLines = orderText.split('\n');
 
-  const docChildren = [];
-  orderLines.forEach((line, idx) => {
+  const orderLines = orderText.split('\n');
+  const docChildren = [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: "O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI", bold: true, font: "Times New Roman", size: 22 })]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: school.toUpperCase() + " DIREKTORINING", bold: true, font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: `BUYRUG'I № ${orderNumber}`, bold: true, font: "Times New Roman", size: 28 })]
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: `${dateStr}                                                                     Toshkent shahri`, font: "Times New Roman", size: 22 })
+      ]
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: `Mavzu: "${title}" to'g'risida`, bold: true, font: "Times New Roman", size: 24 })
+      ]
+    }),
+    new Paragraph({ text: "" })
+  ];
+
+  orderLines.forEach(line => {
     const trimmed = line.trim();
-    if (!trimmed) {
-      docChildren.push(new Paragraph({ text: "" }));
-    } else if (idx < 3 || trimmed.includes("BUYRUG'I")) {
-      docChildren.push(new Paragraph({ text: trimmed, alignment: AlignmentType.CENTER, heading: HeadingLevel.HEADING_2 }));
-    } else if (trimmed.startsWith("BUYURAMAN:")) {
-      docChildren.push(new Paragraph({ children: [new TextRun({ text: "BUYURAMAN:", bold: true })] }));
+    if (!trimmed) return;
+    if (trimmed.includes("BUYRUG'I") || trimmed.includes("VAZIRLIGI") || trimmed.includes("Mavzu:")) return;
+    if (trimmed.startsWith("BUYURAMAN:")) {
+      docChildren.push(new Paragraph({
+        children: [new TextRun({ text: "BUYURAMAN:", bold: true, font: "Times New Roman", size: 26 })],
+        spacing: { before: 180, after: 120 }
+      }));
     } else {
-      docChildren.push(new Paragraph({ text: trimmed }));
+      docChildren.push(new Paragraph({
+        alignment: AlignmentType.JUSTIFIED,
+        indent: { firstLine: 708 },
+        spacing: { line: 360, after: 100 },
+        children: [new TextRun({ text: trimmed.replace(/[*_]/g, ''), font: "Times New Roman", size: 24 })]
+      }));
     }
   });
 
+  docChildren.push(
+    new Paragraph({ text: "" }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: `Maktab direktori: ${director}                 ___________________ (Imzo va Muhr o'rni)`, bold: true, font: "Times New Roman", size: 24 })
+      ]
+    })
+  );
+
   const doc = new Document({
     sections: [{
-      properties: { page: { margin: { top: 720, bottom: 720, left: 1080, right: 720 } } },
+      properties: { page: { margin: { top: 1134, bottom: 1134, left: 1440, right: 1080 } } },
       children: docChildren
     }]
   });
@@ -2162,39 +2752,117 @@ async function generateTestWordBuffer(rawText, customTestText = "", count = 15) 
   return await Packer.toBuffer(doc);
 }
 
-async function generateStudentReferenceWordBuffer(studentName = "Aliyev Sardor Baxtiyor o'g'li", className = "10-A") {
+async function generateStudentReferenceWordBuffer(refInput = "Aliyev Sardor Baxtiyor o'g'li", defaultClass = "10-A") {
+  let data = typeof refInput === 'object' && refInput !== null
+    ? refInput
+    : { studentName: String(refInput || "Aliyev Sardor"), className: defaultClass };
+
+  const studentName = data.studentName || "Aliyev Sardor Baxtiyor o'g'li";
+  const className = data.className || defaultClass || "10-\"A\" sinf";
+  const school = data.school || "Toshkent shahar 45-sonli umumiy o'rta ta'lim maktabi";
+  const destination = data.destination || "talab qilingan joyga (Mudofaa ishlari bo'limiga)";
+  const traits = data.traits || "Namunali xulqi, a'lo baholari, jamoat ishlaridagi faolligi va intizomi bilan ajralib turadi.";
+
   let refText = "";
   try {
     refText = await generateAIStudentReferenceWithGemini(studentName);
   } catch(e) {
     refText = generateAIStudentReference(studentName, className);
   }
-  const refLines = refText.split('\n');
 
-  const docChildren = [];
-  refLines.forEach(line => {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      docChildren.push(new Paragraph({ text: "" }));
-    } else if (trimmed.startsWith("TAVSIFNOMA")) {
-      docChildren.push(new Paragraph({ text: trimmed, alignment: AlignmentType.CENTER, heading: HeadingLevel.TITLE }));
-    } else if (trimmed.startsWith("Toshkent") || trimmed.includes("sinf o'quvchisi")) {
-      docChildren.push(new Paragraph({ text: trimmed, alignment: AlignmentType.CENTER, heading: HeadingLevel.HEADING_2 }));
-    } else {
-      docChildren.push(new Paragraph({ text: trimmed }));
-    }
-  });
+  const docChildren = [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: "O'ZBEKISTON RESPUBLIKASI MAKTABGACHA VA MAKTAB TA'LIMI VAZIRLIGI", bold: true, font: "Times New Roman", size: 22 })]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: school.toUpperCase(), bold: true, font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: "TAVSIFNOMA", bold: true, font: "Times New Roman", size: 32 })]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: `(${school}ning ${className} o'quvchisi ${studentName}ga)`, italics: true, font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      alignment: AlignmentType.JUSTIFIED,
+      indent: { firstLine: 708 },
+      spacing: { line: 360, after: 120 },
+      children: [
+        new TextRun({
+          text: `    ${studentName} mazkur maktabda ta'lim olishi davomida o'zini namunali, intizomli, tirishqoq va jamoat ishlariga mas'uliyat bilan yondashuvchi iqtidorli o'quvchi sifatida namoyon etib kelmoqda.`,
+          font: "Times New Roman",
+          size: 24
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.JUSTIFIED,
+      indent: { firstLine: 708 },
+      spacing: { line: 360, after: 120 },
+      children: [
+        new TextRun({
+          text: `    O'quv dasturidagi barcha fanlarni o'zlashtirish darajasi a'lo baholarga ega. Dars mashg'ulotlariga to'liq va kechikmasdan qatnashadi. Sinf va maktab miqyosidagi tadbirlarda, fan olimpiadalarida va ijodiy tanlovlarda doimiy faollik ko'rsatib, maktab sharafini munosib himoya qiladi.`,
+          font: "Times New Roman",
+          size: 24
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.JUSTIFIED,
+      indent: { firstLine: 708 },
+      spacing: { line: 360, after: 120 },
+      children: [
+        new TextRun({
+          text: `    Xarakter xususiyatlari: ${traits} Ustozlariga doimo chuqur hurmatda, tengdoshlari va sinfdoshlari o'rtasida esa samimiy obro'-e'tibor qozongan. Kattalarga hurmat, kichiklarga izzat ko'rsatish fazilatlari yuksak darajada shakllangan.`,
+          font: "Times New Roman",
+          size: 24
+        })
+      ]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.JUSTIFIED,
+      indent: { firstLine: 708 },
+      spacing: { line: 360, after: 300 },
+      children: [
+        new TextRun({
+          text: `    Ushbu tavsifnoma ${destination} taqdim etish uchun berildi.`,
+          font: "Times New Roman",
+          size: 24,
+          bold: true
+        })
+      ]
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Maktab direktori: _______________ (Imzo va Muhr o'rni)          ", bold: true, font: "Times New Roman", size: 24 }),
+        new TextRun({ text: "Sinf rahbari: _______________ (Imzo)", font: "Times New Roman", size: 24 })
+      ]
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: `Sana: ${new Date().toLocaleDateString('uz-UZ')}-yil`, font: "Times New Roman", size: 22 })
+      ]
+    })
+  ];
 
   const doc = new Document({
     sections: [{
-      properties: { page: { margin: { top: 720, bottom: 720, left: 1080, right: 720 } } },
+      properties: { page: { margin: { top: 1134, bottom: 1134, left: 1440, right: 1080 } } },
       children: docChildren
     }]
   });
 
   return await Packer.toBuffer(doc);
 }
-
 
 async function generateProtocolWordBuffer(topic = "Ta'lim sifatini oshirish va monitoring", schoolNum = "45") {
   let protoText = "";
@@ -2725,11 +3393,13 @@ bot.command(['sertifikat', 'diplom', 'yorliq'], async (ctx) => {
     );
   }
   const raw = ctx.match ? ctx.match.trim() : 'Faxriy Yorliq va Sertifikat';
-  const buf = await generateOfficialOrderWordBuffer(`Faxriy Yorliq: ${raw}`);
-  consumeUserUse(userId, 'certificate', raw);
-  return ctx.replyWithDocument(new InputFile(buf, `Faxriy_Yorliq_${raw.slice(0, 15).replace(/[^a-zA-Z0-9]/g, '_')}.docx`), {
-    caption: `🏆 **QR-kodli rasmiy Faxriy Yorliq hujjati tayyor!** (.docx)\n\nMavzu/Ism: **${raw}**`
-  });
+  const parsed = parseCertificateDetails(raw);
+  const buf = await generateCertificateWordBuffer(parsed);
+  consumeUserUse(userId, 'certificate', parsed.recipient);
+  const safeName = `Faxriy_Yorliq_${parsed.recipient.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`;
+  return ctx.replyWithDocument(new InputFile(buf, safeName), {
+    caption: `🏆 **"${parsed.recipient}" nomiga rasmiy Faxriy Yorliq / Diplom tayyor!** (.docx)\n\n📌 Maktab: ${parsed.school}\n🎯 Yutug'i: ${parsed.achievement}`
+    });
 });
 
 // /imlo BUYRUG'I
@@ -4233,21 +4903,42 @@ async function processIntelligentMessage(ctx, userPrompt) {
     }
   }
 
-  // 4. REFERAT / INSHO / MUSTAQIL ISH / MAQOLA
+    // 4. REFERAT / INSHO / MUSTAQIL ISH / MAQOLA
   const isEssayRequest = /\b(?:referat|insho|ma'ruza|maqola|mustaqil ish|doklad)\b/i.test(lower);
   if (isEssayRequest) {
     const cleanTopic = raw.replace(/\b(?:referat|insho|ma'ruza|maqola|mustaqil ish|doklad|tuzib ber|yozib ber|yoz|tayyorla|kerak|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
-    const finalTopic = cleanTopic || raw;
-    const waitMsg = await ctx.reply(`📑 **"${finalTopic}" mavzusida akademik referat (.docx) tayyorlanmoqda...**\n⏳ *(Reja, kirish, 3 ta asosiy bob, xulosa va adabiyotlar bilan)*`);
-    try {
-      const essayPrompt = `Mavzu: "${finalTopic}"\nVazifa: O'zbekiston oliy va xalq ta'limi standartlariga mos, chuqur, akademik va ilmiy darajadagi to'liq referat/ma'ruza matni yozib ber.\nReja:\n1. Kirish (Mavzuning dolzarbligi va maqsadlari)\n2. Asosiy Qism (kamida 3 ta asosiy bob va chuqur ilmiy tahlil)\n3. Xulosa va Amaliy Ahamiyati\n4. Foydalanilgan Adabiyotlar Ro'yxati\n\nQat'iy qoida: LaTeX va dollar ($) belgisidan foydalanmang!`;
-      const essayResult = await callGemini(essayPrompt, "Siz O'zbekistonning eng yuqori toifali akademik olimi va metodistisiz. Darhol to'g'ridan-to'g'ri to'liq referat matnini taqdim eting.");
+    if (!cleanTopic || isGenericTopic(cleanTopic)) {
+      userDialogState.set(userId, { step: 'awaiting_referat_topic' });
+      return ctx.reply(
+        `🎓 **AKADEMIK REFERAT VA MUSTAQIL ISH TAYYORLASH:**\n\n` +
+        `Titul varag'i (muqovasi), mundarijasi va barcha boblari to'liq va ideal shakllanishi uchun quyidagi ma'lumotlarni yozib yuboring:\n\n` +
+        `1. **Mavzu:** O'zbekistonning zamonaviy iqtisodiy taraqqiyoti\n` +
+        `2. **Fan:** Iqtisodiyot asoslari\n` +
+        `3. **Bajardi (O'quvchi/Talaba F.I.SH va guruhi):** Aliyev Sardor, 10-"A" sinf\n` +
+        `4. **Qabul qildi (O'qituvchi/Ilmiy rahbar):** Dots. Karimov B.M.\n` +
+        `5. **Ta'lim muassasasi (Maktab/Universitet):** Toshkent shahar 45-sonli maktab\n\n` +
+        `💡 *Agar faqat mavzuning o'zini yozib yuborsangiz ham, bot standart titul ma'lumotlari bilan to'liq 10+ sahifalik referatni (.docx) tayyorlab beradi.*`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+    const parsed = parseReferatDetails(raw);
+    if (!parsed.topic || parsed.topic === 'Mavzu') parsed.topic = cleanTopic;
 
-      const docxBuffer = await generateReferatWordBuffer(finalTopic, essayResult);
-      const safeFilename = `Referat_${finalTopic.slice(0, 25).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`;
+    const waitMsg = await ctx.reply(`🎓 **"${parsed.topic}" bo'yicha akademik referat (.docx) tayyorlanmoqda...**\n⏳ *(Titul varag'i, mundarija, 3 ta bob, xulosa va 10+ adabiyotlar bilan)*`);
+    try {
+      const essayPrompt = `Mavzu: "${parsed.topic}"\nFan: ${parsed.subject}\nVazifa: O'zbekiston oliy va xalq ta'limi standartlariga mos, chuqur, akademik va ilmiy darajadagi to'liq referat matni yozib ber. Reja, kirish, kamida 3 ta asosiy bob, xulosa va 10+ ilmiy adabiyotlar bo'lsin. LaTeX yoki dollar ($) ishlatmang.`;
+      let essayResult = "";
+      try {
+        essayResult = await callGemini(essayPrompt, "Siz O'zbekistonning eng yuqori toifali akademik olimi va metodistisiz. Darhol to'g'ridan-to'g'ri to'liq referat matnini taqdim eting.");
+      } catch(e) {
+        essayResult = "";
+      }
+
+      const docxBuffer = await generateReferatWordBuffer(parsed, essayResult);
+      const safeFilename = `Referat_${parsed.topic.slice(0, 25).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`;
 
       await ctx.replyWithDocument(new InputFile(docxBuffer, safeFilename), {
-        caption: `📑 **"${finalTopic}" mavzusida akademik referat tayyor!** (.docx)\n\n✨ Reja, kirish, asosiy boblar, xulosa va 10+ ilmiy adabiyotlar ro'yxati bilan.`
+        caption: `🎓 **"${parsed.topic}" akademik referati tayyor!** (.docx)\n\n📌 Fan: ${parsed.subject}\n👤 Bajardi: ${parsed.student}\n👨‍🏫 Qabul qildi: ${parsed.teacher}\n🏛 Muassasa: ${parsed.university}`
       });
 
       const kb = new InlineKeyboard()
@@ -4258,11 +4949,70 @@ async function processIntelligentMessage(ctx, userPrompt) {
         .webApp("📱 WebApp", WEBAPP_URL);
 
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      consumeUserUse(userId, 'referat', finalTopic);
-      return ctx.reply(`📑 **Referatning kirish va reja qismi:**\n\n${essayResult.slice(0, 2500)}\n\n📎 *To'liq referat yuqoridagi .docx faylda yuborildi.*`, { reply_markup: kb });
+      consumeUserUse(userId, 'referat', parsed.topic);
+      return ctx.reply(
+        `📋 **Referat mundarijasi va tuzilishi:**\n\n` +
+        `🏛 **${parsed.institution}**\n` +
+        `📌 **Mavzu:** «${parsed.topic}»\n` +
+        `👤 **Bajardi:** ${parsed.student}\n` +
+        `👨‍🏫 **Tekshirdi:** ${parsed.teacher}\n\n` +
+        `1. Kirish (Dolzarbligi va maqsadlari)\n` +
+        `2. I Bob. Nazariy-metodologik asoslar\n` +
+        `3. II Bob. Amaliy tahlil va tadqiqot natijalari\n` +
+        `4. Xulosa va tavsiyalar\n` +
+        `5. 10+ Ilmiy adabiyotlar ro'yxati\n\n` +
+        `📎 *To'liq rasmiy Titul va GOST formatidagi referat yuqoridagi .docx faylda yuklandi.*`,
+        { reply_markup: kb }
+      );
     } catch(err) {
       try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
       return ctx.reply(`❌ Referat tayyorlashda xatolik: ${err.message}`);
+    }
+  }
+
+  // 4B. FAXRIY YORLIQ / DIPLOM SO'ROVI
+  const isCertRequest = /\b(?:faxriy yorliq|diplom|sertifikat|taqdirlash|rag'batlantirish yorlig'i)\b/i.test(lower);
+  if (isCertRequest) {
+    const cleanTopic = raw.replace(/\b(?:faxriy yorliq|diplom|sertifikat|taqdirlash|rag'batlantirish|tuzib ber|yozib ber|yarat|qilib ber|kerak|tayyorla|nomiga|uchun)\b/gi, '').trim();
+    if (!cleanTopic || isGenericTopic(cleanTopic)) {
+      userDialogState.set(userId, { step: 'awaiting_certificate_name' });
+      return ctx.reply(
+        `🏆 **FAXRIY YORLIQ / DIPLOM TAYYORLASH:**\n\n` +
+        `Hujjatni mukammal va rasmiy standartda to'ldirib berishim uchun quyidagi ma'lumotlarni yozib yuboring (yoki nusxa olib to'ldiring):\n\n` +
+        `1. **Taqdirlanuvchi F.I.SH:** Qodiraliyev Qodirali Qodirovich\n` +
+        `2. **Sinfi yoki lavozimi:** 9-"A" sinf o'quvchisi\n` +
+        `3. **Qaysi yutug'i yoki nima uchun:** "Bilimlar bellashuvi" fan olimpiadasida 1-o'rinni egallagani uchun\n` +
+        `4. **Maktab yoki tashkilot:** Toshkent shahar 45-sonli maktab\n` +
+        `5. **Direktor F.I.SH:** A.B. Karimov\n` +
+        `6. **Sana:** 16-noyabr 2026-yil\n\n` +
+        `💡 *Barchasini bitta xabarda erkin qatorda yoki vergul bilan yozishingiz ham mumkin — bot barcha ma'lumotlarni o'rnatib, tayyor to'ldirilgan Faxriy Yorliq (.docx) faylini beradi.*`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+    const parsed = parseCertificateDetails(raw);
+    const waitMsg = await ctx.reply(`🏆 **"${parsed.recipient}" nomiga rasmiy Faxriy Yorliq (.docx) tayyorlanmoqda...**`);
+    try {
+      const buf = await generateCertificateWordBuffer(parsed);
+      const safeName = `Faxriy_Yorliq_${parsed.recipient.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}.docx`;
+      await ctx.replyWithDocument(new InputFile(buf, safeName), {
+        caption: `🏆 **"${parsed.recipient}" nomiga rasmiy Faxriy Yorliq / Diplom tayyor!** (.docx)\n\n📌 Maktab: ${parsed.school}\n👤 Taqdirlanuvchi: ${parsed.recipient} (${parsed.grade})\n🎯 Yutug'i: ${parsed.achievement}\n✍️ Rahbar: ${parsed.director}`
+      });
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      consumeUserUse(userId, 'certificate', parsed.recipient);
+      return ctx.reply(
+        `📜 **Faxriy Yorliq matni:**\n\n` +
+        `«${parsed.school.toUpperCase()}\n\n` +
+        `FAXRIY YORLIQ\n\n` +
+        `Ushbu Faxriy Yorliq bilan taqdirlanadi:\n` +
+        `👉 **${parsed.recipient.toUpperCase()}** (${parsed.grade})\n\n` +
+        `O'quv yili davomidagi yuksak intilishi, a'lo baholari hamda ${parsed.achievement} munosabati bilan!\n\n` +
+        `Maktab direktori: ${parsed.director}\nSana: ${parsed.date}»\n\n` +
+        `📎 *Rasmiy oltin/to'q-ko'k hoshiyali, chop etishga tayyor hujjat yuqoridagi .docx faylda yuklandi.*`,
+        { parse_mode: 'Markdown' }
+      );
+    } catch(err) {
+      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+      return ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
     }
   }
 
