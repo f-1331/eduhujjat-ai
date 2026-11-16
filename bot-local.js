@@ -1828,6 +1828,293 @@ async function generateOfficialOrderWordBuffer(orderTitle = "O'quvchilarni rag'b
   return await Packer.toBuffer(doc);
 }
 
+function parseApplicationDetails(text) {
+  const result = {
+    school: "Uchtepa tumani 283-maktab",
+    director: "N.A.Kambarovaga",
+    className: "9 “A” sinf",
+    studentName: "",
+    parentName: "",
+    date: "",
+    reason: ""
+  };
+
+  const lines = text.split('\n');
+  lines.forEach(line => {
+    const l = line.trim();
+    if (!l) return;
+    if (/maktab/i.test(l)) {
+      result.school = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/direktor/i.test(l)) {
+      result.director = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/sinf/i.test(l)) {
+      result.className = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/o['`ʼ’]quvchi|bola|farzand/i.test(l)) {
+      result.studentName = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/ota|ona|valiy/i.test(l)) {
+      result.parentName = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/sana|kun/i.test(l)) {
+      result.date = l.replace(/^[^:]*:\s*/, '').trim();
+    } else if (/sabab|mazmun|uchun/i.test(l)) {
+      result.reason = l.replace(/^[^:]*:\s*/, '').trim();
+    }
+  });
+
+  if (!result.studentName && text.includes(',')) {
+    const parts = text.split(',').map(s => s.trim());
+    if (parts.length >= 2) {
+      parts.forEach(p => {
+        if (/maktab/i.test(p)) result.school = p;
+        else if (/direktor|kambarova/i.test(p)) result.director = p;
+        else if (/sinf/i.test(p)) result.className = p;
+        else if (/\b(?:\d{1,2}-(?:[a-zа-я]+|noyabr|dekabr|yanvar|fevral|mart|aprel|may|iyun|iyul|avgust|sentabr|oktabr)|\d{1,2}\.\d{1,2})/i.test(p)) result.date = p;
+        else if (/sabab|kelmadi|davolanish|shamollash|sharoit/i.test(p)) result.reason = p;
+        else if (!result.studentName) result.studentName = p;
+        else if (!result.parentName) result.parentName = p;
+      });
+    }
+  }
+
+  if (!result.studentName) {
+    const match = text.match(/([A-ZА-ЯЁ][a-zа-яё]+(?:voy|yev|v|va|yeva)?\s+[A-ZА-ЯЁ][a-zа-яё]+)/);
+    if (match) result.studentName = match[1];
+  }
+
+  if (!result.reason) {
+    result.reason = text.slice(0, 300);
+  }
+
+  return result;
+}
+
+async function generateStudentExplanationWordBuffer(data = {}) {
+  const isBlank = !!data.isBlank;
+  const school = data.school || "Uchtepa tumani 283-maktab";
+  const director = data.director || "N.A.Kambarovaga";
+  const className = data.className || "9 “A” sinf";
+  const studentName = data.studentName || "";
+  const dateStr = data.date || "";
+  const reason = data.reason || "";
+
+  const docChildren = [
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [new TextRun({ text: `${school} direktori`, font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [new TextRun({ text: director, font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [new TextRun({ text: `${className} o'quvchisi`, font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [new TextRun({ text: studentName ? `${studentName}dan` : "______________________dan", font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: "TUSHUNTIRISH XATI", bold: true, font: "Times New Roman", size: 30 })]
+    }),
+    new Paragraph({ text: "" })
+  ];
+
+  if (isBlank) {
+    docChildren.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "Men 9 “a” sinf oquvchisi  __________________ maktabga __________ sanada",
+            font: "Times New Roman",
+            size: 24
+          })
+        ]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "__________________________________________________ kelmadim", font: "Times New Roman", size: 24 })]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "____________________.", font: "Times New Roman", size: 24 })]
+      })
+    );
+  } else {
+    const sName = studentName || "__________________";
+    const dStr = dateStr || "«___» ________ 202___-yil";
+    const rStr = reason || "sog'lig'im yomonlashgani (shamollab qolganim) sababli";
+    docChildren.push(
+      new Paragraph({
+        alignment: AlignmentType.JUSTIFIED,
+        children: [
+          new TextRun({
+            text: `    Men, ${className} o'quvchisi ${sName}, maktabga ${dStr} sanasida ${rStr} kelmadim.`,
+            font: "Times New Roman",
+            size: 24
+          })
+        ]
+      }),
+      new Paragraph({ text: "" }),
+      new Paragraph({
+        alignment: AlignmentType.JUSTIFIED,
+        children: [
+          new TextRun({
+            text: `    Keltirilgan noqulayliklar uchun uzr so'rayman hamda ushbu kunlarda o'tilgan barcha dars mavzularini mustaqil ravishda to'liq o'zlashtirib olishimni ma'lum qilaman.`,
+            font: "Times New Roman",
+            size: 24
+          })
+        ]
+      })
+    );
+  }
+
+  docChildren.push(
+    new Paragraph({ text: "" }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: `Sana: ${dateStr || "«____» ____________ 202___ yil"}          `, font: "Times New Roman", size: 24 }),
+        new TextRun({ text: "Imzo: ____________          ", font: "Times New Roman", size: 24 }),
+        new TextRun({ text: `F.I.SH: ${studentName || "________________________"}`, font: "Times New Roman", size: 24 })
+      ]
+    })
+  );
+
+  const doc = new Document({
+    sections: [{
+      properties: { page: { margin: { top: 1440, bottom: 1440, left: 1440, right: 1080 } } },
+      children: docChildren
+    }]
+  });
+  return await Packer.toBuffer(doc);
+}
+
+async function generateParentApplicationWordBuffer(data = {}) {
+  const isBlank = !!data.isBlank;
+  const school = data.school || "Uchtepa tumani 283-maktab";
+  const director = data.director || "Direktori N.Kambarovaga";
+  const className = data.className || "9 “A” sinf o’quvchisi";
+  const studentName = data.studentName || "";
+  const parentName = data.parentName || "";
+  const dateStr = data.date || "";
+  const reason = data.reason || "";
+
+  const docChildren = [
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [new TextRun({ text: school, font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [new TextRun({ text: director.startsWith("Direktor") ? director : `Direktori ${director}`, font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [new TextRun({ text: className.includes("o’quvchisi") || className.includes("o'quvchisi") ? className : `${className} o'quvchisi`, font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [new TextRun({ text: studentName ? `${studentName}ning` : "_______________________ning", font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [new TextRun({ text: parentName ? `Ota-onasi ${parentName}dan` : "Ota-onasi __________________________________dan", font: "Times New Roman", size: 24 })]
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: "ARIZA", bold: true, font: "Times New Roman", size: 30 })]
+    }),
+    new Paragraph({ text: "" })
+  ];
+
+  if (isBlank) {
+    docChildren.push(
+      new Paragraph({
+        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "__________________________________________________________________", font: "Times New Roman", size: 24 })]
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: "____________________________", font: "Times New Roman", size: 24 })]
+      })
+    );
+  } else {
+    const sName = studentName || "farzandim";
+    const pReason = reason || "oilaviy sharoitimiz tufayli dars mashg'ulotlaridan vaqtincha javob berishingizni so'rayman";
+    docChildren.push(
+      new Paragraph({
+        alignment: AlignmentType.JUSTIFIED,
+        children: [
+          new TextRun({
+            text: `    Sizdan ${className} o'quvchisi ${sName}ga ${pReason}.`,
+            font: "Times New Roman",
+            size: 24
+          })
+        ]
+      }),
+      new Paragraph({ text: "" }),
+      new Paragraph({
+        alignment: AlignmentType.JUSTIFIED,
+        children: [
+          new TextRun({
+            text: `    Farzandimning dars qoldirilgan kunlardagi o'quv dasturi mavzularini to'liq o'zlashtirishi hamda uning darsdan tashqari vaqtdagi hayoti va xavfsizligi uchun shaxsan o'zim javobgarlikni to'liq zimmamga olaman.`,
+            font: "Times New Roman",
+            size: 24
+          })
+        ]
+      })
+    );
+  }
+
+  docChildren.push(
+    new Paragraph({ text: "" }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: `Sana: ${dateStr || "«____» ____________ 202___ yil"}          `, font: "Times New Roman", size: 24 }),
+        new TextRun({ text: "Imzo: ____________          ", font: "Times New Roman", size: 24 }),
+        new TextRun({ text: `F.I.SH: ${parentName || "________________________"}`, font: "Times New Roman", size: 24 })
+      ]
+    })
+  );
+
+  const doc = new Document({
+    sections: [{
+      properties: { page: { margin: { top: 1440, bottom: 1440, left: 1440, right: 1080 } } },
+      children: docChildren
+    }]
+  });
+  return await Packer.toBuffer(doc);
+}
+
 async function generatePowerPointBuffer(students, title = "SmartOffice Taqdimoti") {
   const pptx = new pptxgen();
   pptx.layout = 'LAYOUT_16x9';
@@ -2197,20 +2484,20 @@ function getActionInlineKeyboard() {
 
 function getDocumentFactoryKeyboard() {
   return new InlineKeyboard()
+    .text("✍️ Tushuntirish Xati (O'quvchi)", "doc_tushuntirish")
+    .text("📄 Ota-ona Arizasi (.docx)", "doc_ariza_parent")
+    .row()
     .text("📋 Maktab Buyrug'i (.docx)", "doc_order")
     .text("📝 Dars Ishlanmasi (.docx)", "doc_lesson")
     .row()
     .text("🎓 Referat / Titul (.docx)", "doc_referat")
-    .text("📄 Rasmiy Ariza (.docx)", "doc_ariza")
-    .row()
-    .text("🏆 Faxriy Yorliq (.docx)", "doc_certificate")
     .text("🔍 O'quvchi Tavsifnoma (.docx)", "doc_tavsif")
     .row()
+    .text("🏆 Faxriy Yorliq (.docx)", "doc_certificate")
     .text("📊 Davomat Tabeli (.xlsx)", "doc_davomat")
-    .text("📈 Baholar Jurnali (.xlsx)", "doc_grades")
     .row()
-    .text("🗂 Dars Jadvali (.xlsx)", "doc_schedule")
-    .text("🎲 2 Variantli Test (.docx)", "act_export_test");
+    .text("📈 Baholar Jurnali (.xlsx)", "doc_grades")
+    .text("🗂 Dars Jadvali (.xlsx)", "doc_schedule");
 }
 
 function downloadTelegramFile(fileUrl) {
@@ -3627,58 +3914,145 @@ bot.on('callback_query:data', async (ctx) => {
     }
   }
 
-  if (data === 'doc_order') {
-    await ctx.answerCallbackQuery({ text: "Buyruq hujjati..." });
-    const buf = await generateOfficialOrderWordBuffer("O'quvchilarni rag'batlantirish to'g'risida");
-    await ctx.replyWithDocument(new InputFile(buf, "Maktab_Direktori_Buyrugi.docx"), {
-      caption: "📋 **Rasmiy maktab buyrug'i shabloni tayyor!** (.docx)\n\n📌 GOST standarti va vazirlik rekvizitlari bilan."
+  if (data === 'doc_tushuntirish' || data === 'doc_ariza') {
+    await ctx.answerCallbackQuery();
+    const kb = new InlineKeyboard()
+      .text("📄 Bo'sh Shablon (Chop etishga)", "blank_tushuntirish")
+      .row()
+      .text("✍️ Ma'lumotlarni Kiritish", "fill_tushuntirish");
+    return ctx.reply(
+      `✍️ **O'QUVCHI TUSHUNTIRISH XATI (Maktabga kelmaganligi sababli):**\n\n` +
+      `Qanday shaklda tayyorlaymiz?\n\n` +
+      `1️⃣ **📄 Bo'sh Shablon:** Maktab me'yori bo'yicha chiziqli bo'sh shablon (chop etib qo'lda to'ldirish uchun).\n` +
+      `2️⃣ **✍️ Ma'lumotlarni Kiritish:** Maktab, sinf, o'quvchi ismi, sana va sababini kiritsangiz, bot tayyor to'ldirilgan .docx qilib beradi.\n\n` +
+      `👇 **Tanlang:**`,
+      { parse_mode: 'Markdown', reply_markup: kb }
+    );
+  }
+
+  if (data === 'blank_tushuntirish') {
+    await ctx.answerCallbackQuery({ text: "Bo'sh shablon tayyorlanmoqda..." });
+    const buf = await generateStudentExplanationWordBuffer({ isBlank: true });
+    await ctx.replyWithDocument(new InputFile(buf, "Tushuntirish_Xati_Shablon.docx"), {
+      caption: "✍️ **O'quvchi Tushuntirish Xati bo'sh shabloni tayyor!** (.docx)\n\n📌 Maktab standarti bo'yicha chiziqli, chop etib qo'lda to'ldirish uchun mo'ljallangan."
     });
-    return consumeUserUse(userId);
+    return consumeUserUse(userId, 'tushuntirish_blank');
+  }
+
+  if (data === 'fill_tushuntirish') {
+    await ctx.answerCallbackQuery();
+    userDialogState.set(userId, { step: 'awaiting_tushuntirish_data' });
+    return ctx.reply(
+      `✍️ **Tushuntirish xati ma'lumotlarini kiriting:**\n\n` +
+      `Quyidagi ma'lumotlarni xabar sifatida yozib yuboring:\n` +
+      `• **Maktab:** (masalan: Uchtepa tumani 283-maktab)\n` +
+      `• **Direktor:** (masalan: N.A.Kambarovaga)\n` +
+      `• **Sinf:** (masalan: 9 "A" sinf)\n` +
+      `• **O'quvchi:** (masalan: Aliyev Sardor)\n` +
+      `• **Kelmagan sana:** (masalan: 15-noyabr)\n` +
+      `• **Sababi:** (masalan: sog'lig'im yomonlashgani / shamollab qolganim sababli)\n\n` +
+      `💡 *Yoki qisqacha bir qatorda yozing: "Uchtepa 283-maktab, N.A.Kambarovaga, 9-A, Aliyev Sardor, 15-noyabr, shamollab qolganim sababli"*`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  if (data === 'doc_ariza_parent') {
+    await ctx.answerCallbackQuery();
+    const kb = new InlineKeyboard()
+      .text("📄 Bo'sh Shablon (Chop etishga)", "blank_ariza_parent")
+      .row()
+      .text("✍️ Ma'lumotlarni Kiritish", "fill_ariza_parent");
+    return ctx.reply(
+      `📄 **OTA-ONA ARIZASI (Darsdan javob so'rash bo'yicha):**\n\n` +
+      `Qanday shaklda tayyorlaymiz?\n\n` +
+      `1️⃣ **📄 Bo'sh Shablon:** Maktab me'yori bo'yicha chiziqli bo'sh shablon (chop etib qo'lda to'ldirish uchun).\n` +
+      `2️⃣ **✍️ Ma'lumotlarni Kiritish:** Maktab, direktor, sinf, o'quvchi, ota-ona ismi va sababini kiritsangiz, bot tayyor to'ldirilgan .docx qilib beradi.\n\n` +
+      `👇 **Tanlang:**`,
+      { parse_mode: 'Markdown', reply_markup: kb }
+    );
+  }
+
+  if (data === 'blank_ariza_parent') {
+    await ctx.answerCallbackQuery({ text: "Bo'sh shablon tayyorlanmoqda..." });
+    const buf = await generateParentApplicationWordBuffer({ isBlank: true });
+    await ctx.replyWithDocument(new InputFile(buf, "Ota_ona_Arizasi_Shablon.docx"), {
+      caption: "📄 **Ota-ona Arizasi bo'sh shabloni tayyor!** (.docx)\n\n📌 Maktab standarti bo'yicha chiziqli, chop etib qo'lda to'ldirish uchun mo'ljallangan."
+    });
+    return consumeUserUse(userId, 'ariza_blank');
+  }
+
+  if (data === 'fill_ariza_parent') {
+    await ctx.answerCallbackQuery();
+    userDialogState.set(userId, { step: 'awaiting_ariza_parent_data' });
+    return ctx.reply(
+      `📄 **Ota-ona arizasi ma'lumotlarini kiriting:**\n\n` +
+      `Quyidagi ma'lumotlarni xabar sifatida yozib yuboring:\n` +
+      `• **Maktab:** (masalan: Uchtepa tumani 283-maktab)\n` +
+      `• **Direktor:** (masalan: N.Kambarovaga)\n` +
+      `• **Sinf va O'quvchi:** (masalan: 9 "A" sinf o'quvchisi Aliyev Sardor)\n` +
+      `• **Ota-onasi:** (masalan: Aliyeva Munira)\n` +
+      `• **Ariza sababi:** (masalan: 16-noyabrdan 18-noyabrgacha oilaviy sabab tufayli javob berishingizni so'rayman)\n\n` +
+      `💡 *Yoki qisqacha bir qatorda yozing: "Uchtepa 283-maktab, N.Kambarovaga, 9-A Aliyev Sardor, onasi Aliyeva Munira, 3 kunga oilaviy sabab bilan javob so'rayman"*`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  if (data === 'doc_order') {
+    await ctx.answerCallbackQuery();
+    userDialogState.set(userId, { step: 'awaiting_order_topic' });
+    return ctx.reply(
+      `📋 **Maktab buyrug'i yaratish:**\n\n` +
+      `Qaysi mavzuda rasmiy buyruq loyihasi kerak?\n` +
+      `Iltimos, buyruq mavzusini yozib yuboring:\n` +
+      `*(Masalan: \`Maktab fan olimpiadasini o'tkazish to'g'risida\` yoki \`O'quvchilarni rag'batlantirish haqida\`)*`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
   if (data === 'doc_lesson') {
-    await ctx.answerCallbackQuery({ text: "Dars ishlanmasi..." });
-    const buf = await generateLessonPlanWordBuffer("Ona tili va adabiyot darsi");
-    await ctx.replyWithDocument(new InputFile(buf, "45_Daqiqalik_Dars_Ishlanmasi.docx"), {
-      caption: "📝 **45 daqiqalik namunaviy dars ishlanmasi (konspekt) tayyor!** (.docx)\n\n📌 Darsning 6 bosqichli xronometraji va metodlari bilan."
-    });
-    return consumeUserUse(userId);
+    await ctx.answerCallbackQuery();
+    userDialogState.set(userId, { step: 'awaiting_lesson_topic' });
+    return ctx.reply(
+      `📝 **45 daqiqalik dars konspekti:**\n\n` +
+      `Qaysi fan va mavzudan dars ishlanmasi kerak?\n` +
+      `Iltimos, fanni, sinfni va mavzuni yozing:\n` +
+      `*(Masalan: \`9-sinf Fizika Nyuton qonunlari\` yoki \`8-sinf Ona tili So'z birikmasi\`)*`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
   if (data === 'doc_referat') {
-    await ctx.answerCallbackQuery({ text: "Referat shabloni..." });
-    const buf = await generateLessonPlanWordBuffer("Referat va Mustaqil ish (GOST)");
-    await ctx.replyWithDocument(new InputFile(buf, "Referat_Titul_va_Reja.docx"), {
-      caption: "🎓 **Titul varag'i va GOST standartidagi referat shabloni tayyor!** (.docx)"
-    });
-    return consumeUserUse(userId);
-  }
-
-  if (data === 'doc_ariza') {
-    await ctx.answerCallbackQuery({ text: "Ariza shabloni..." });
-    const buf = await generateOfficialOrderWordBuffer("Direktor nomiga rasmiy ariza");
-    await ctx.replyWithDocument(new InputFile(buf, "Rasmiy_Ariza_Shabloni.docx"), {
-      caption: "📄 **Direktor nomiga rasmiy ariza va tushuntirish xati tayyor!** (.docx)"
-    });
-    return consumeUserUse(userId);
+    await ctx.answerCallbackQuery();
+    userDialogState.set(userId, { step: 'awaiting_referat_topic' });
+    return ctx.reply(
+      `🎓 **Referat / Mustaqil ish tayyorlash:**\n\n` +
+      `Qaysi mavzuda referat kerak?\n` +
+      `Iltimos, mavzuni yozib yuboring:\n` +
+      `*(Masalan: \`Amir Temurning harbiy san'ati\` yoki \`Ekologiya va atrof-muhit muhofazasi\`)*`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
   if (data === 'doc_certificate') {
-    await ctx.answerCallbackQuery({ text: "Faxriy yorliq..." });
-    const buf = await generateOfficialOrderWordBuffer("Faxriy Yorliq va Sertifikat");
-    await ctx.replyWithDocument(new InputFile(buf, "Faxriy_Yorliq_EduHujjat.docx"), {
-      caption: "🏆 **QR-kodli namunaviy Faxriy Yorliq hujjati tayyor!** (.docx)"
-    });
-    return consumeUserUse(userId);
+    await ctx.answerCallbackQuery();
+    userDialogState.set(userId, { step: 'awaiting_certificate_name' });
+    return ctx.reply(
+      `🏆 **Faxriy yorliq tayyorlash:**\n\n` +
+      `Faxriy yorliq kimning nomiga beriladi va qaysi yutug'i uchun?\n` +
+      `*(Masalan: \`Aliyev Sardor, 'Bilimlar bellashuvi' 1-o'rin sohibiga\`)*`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
   if (data === 'doc_tavsif') {
-    await ctx.answerCallbackQuery({ text: "Tavsifnoma..." });
-    const buf = await generateOfficialOrderWordBuffer("O'quvchiga rasmiy xarakteristika");
-    await ctx.replyWithDocument(new InputFile(buf, "Oquvchi_Xarakteristika.docx"), {
-      caption: "🔍 **O'quvchiga ijobiy xarakteristika / tavsifnoma hujjati tayyor!** (.docx)"
-    });
-    return consumeUserUse(userId);
+    await ctx.answerCallbackQuery();
+    userDialogState.set(userId, { step: 'awaiting_tavsif_data' });
+    return ctx.reply(
+      `🔍 **O'quvchiga rasmiy tavsifnoma (xarakteristika):**\n\n` +
+      `Iltimos, o'quvchining F.I.SH va sinfini yozing:\n` +
+      `*(Masalan: \`Aliyev Sardor Baxtiyor o'g'li, 10-"A" sinf\`)*`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
   if (data === 'doc_davomat') {
@@ -4089,6 +4463,74 @@ async function processIntelligentMessage(ctx, userPrompt) {
     }
   }
 
+  // 7B. TUSHUNTIRISH XATI (O'QUVCHI / BOLA UCHUN)
+  if (/\b(?:tushuntirish|tushuntirish xati|tushuntirish xat|kelmadi|darsga bormadi|kelmaganlik|sababli kelmadim)\b/i.test(lower)) {
+    if (raw.length > 25 && (/maktab|sinf|direktor|sababli/i.test(raw) || raw.includes(','))) {
+      const parsed = parseApplicationDetails(raw);
+      const buf = await generateStudentExplanationWordBuffer(parsed);
+      const safeName = parsed.studentName ? `Tushuntirish_${parsed.studentName.replace(/\s+/g, '_')}.docx` : "Tushuntirish_Xati.docx";
+      await ctx.replyWithDocument(new InputFile(buf, safeName), {
+        caption: `✍️ **O'quvchi Tushuntirish Xati tayyor!** (.docx)\n\n📌 Maktab: ${parsed.school}\n👤 O'quvchi: ${parsed.studentName || "Belgilanmagan"}\n📅 Sana: ${parsed.date || "Kiritilgan sana"}\n❓ Sababi: ${parsed.reason.slice(0, 80)}`
+      });
+      consumeUserUse(userId, 'tushuntirish', parsed.studentName);
+      return ctx.reply(
+        `📄 **Tushuntirish xati matni:**\n\n` +
+        `«${parsed.school} direktori ${parsed.director}ga\n` +
+        `${parsed.className} o'quvchisi ${parsed.studentName || '________'}dan\n\n` +
+        `TUSHUNTIRISH XATI\n\n` +
+        `Men, ${parsed.className} o'quvchisi ${parsed.studentName || '________'}, maktabga ${parsed.date || 'belgilangan'} sanasida ${parsed.reason} kelmadim...»\n\n` +
+        `📎 *To'liq rasmiy hujjat yuqoridagi .docx faylida yuklandi.*`
+      );
+    }
+
+    const kb = new InlineKeyboard()
+      .text("📄 Bo'sh Shablon (Chop etishga)", "blank_tushuntirish")
+      .row()
+      .text("✍️ Ma'lumotlarni Kiritish", "fill_tushuntirish");
+    return ctx.reply(
+      `✍️ **O'QUVCHI TUSHUNTIRISH XATI (Maktabga kelmaganligi sababli):**\n\n` +
+      `Qanday shaklda tayyorlaymiz?\n\n` +
+      `1️⃣ **📄 Bo'sh Shablon:** Maktab me'yori bo'yicha chiziqli bo'sh shablon (chop etib qo'lda to'ldirish uchun).\n` +
+      `2️⃣ **✍️ Ma'lumotlarni Kiritish:** Maktab, sinf, o'quvchi ismi, sana va sababini kiritsangiz, bot tayyor to'ldirilgan .docx qilib beradi.\n\n` +
+      `👇 **Tanlang:**`,
+      { parse_mode: 'Markdown', reply_markup: kb }
+    );
+  }
+
+  // 7C. OTA-ONA ARIZASI (DARSDAN JAVOB SO'RASH)
+  if (/\b(?:ariza|arizasi|arizam|ota-ona arizasi|javob so'rash|javob berishingizni)\b/i.test(lower)) {
+    if (raw.length > 25 && (/maktab|sinf|direktor|farzand|javob/i.test(raw) || raw.includes(','))) {
+      const parsed = parseApplicationDetails(raw);
+      const buf = await generateParentApplicationWordBuffer(parsed);
+      const safeName = parsed.parentName ? `Ariza_${parsed.parentName.replace(/\s+/g, '_')}.docx` : "Ota_ona_Arizasi.docx";
+      await ctx.replyWithDocument(new InputFile(buf, safeName), {
+        caption: `📄 **Ota-ona Arizasi tayyor!** (.docx)\n\n📌 Maktab: ${parsed.school}\n👨‍👩‍👧 Ota-ona: ${parsed.parentName || "Ota-onasi"}\n👤 O'quvchi: ${parsed.studentName || "Farzandi"}\n📝 Mazmuni: ${parsed.reason.slice(0, 80)}`
+      });
+      consumeUserUse(userId, 'ariza_parent', parsed.parentName);
+      return ctx.reply(
+        `📄 **Ariza matni:**\n\n` +
+        `«${parsed.school} direktori ${parsed.director}ga\n` +
+        `${parsed.className} o'quvchisi ${parsed.studentName || '________'}ning ota-onasi ${parsed.parentName || '________'}dan\n\n` +
+        `ARIZA\n\n` +
+        `Sizdan farzandimga ${parsed.reason}...»\n\n` +
+        `📎 *To'liq rasmiy hujjat yuqoridagi .docx faylida yuklandi.*`
+      );
+    }
+
+    const kb = new InlineKeyboard()
+      .text("📄 Bo'sh Shablon (Chop etishga)", "blank_ariza_parent")
+      .row()
+      .text("✍️ Ma'lumotlarni Kiritish", "fill_ariza_parent");
+    return ctx.reply(
+      `📄 **OTA-ONA ARIZASI (Darsdan javob so'rash bo'yicha):**\n\n` +
+      `Qanday shaklda tayyorlaymiz?\n\n` +
+      `1️⃣ **📄 Bo'sh Shablon:** Maktab me'yori bo'yicha chiziqli bo'sh shablon (chop etib qo'lda to'ldirish uchun).\n` +
+      `2️⃣ **✍️ Ma'lumotlarni Kiritish:** Maktab, direktor, sinf, o'quvchi, ota-ona ismi va sababini kiritsangiz, bot tayyor to'ldirilgan .docx qilib beradi.\n\n` +
+      `👇 **Tanlang:**`,
+      { parse_mode: 'Markdown', reply_markup: kb }
+    );
+  }
+
   // 8. UNIVERSAL CHAT / PEDAGOGIK MASLAHAT VA ILMIY SAVOL-JAVOB (MASALAN: 9-kimyo ko'payish)
   const waitMsg = await ctx.reply("⚡ **EduAI tahlil qilmoqda va ilmiy material tayyorlamoqda...**");
   try {
@@ -4223,6 +4665,128 @@ bot.on('message:text', async (ctx) => {
       return ctx.replyWithDocument(new InputFile(buf, `Faxriy_Yorliq_${recipient.slice(0, 15).replace(/\s+/g, '_')}.docx`), {
         caption: `🏆 **"${recipient}" nomiga rasmiy Faxriy Yorliq hujjati tayyor!** (.docx)`
       });
+    }
+
+    if (dlg.step === 'awaiting_tushuntirish_data') {
+      const waitMsg = await ctx.reply("✍️ **Tushuntirish xati (.docx) shakllantirilmoqda...**");
+      try {
+        const parsed = parseApplicationDetails(text.trim());
+        const buf = await generateStudentExplanationWordBuffer(parsed);
+        const safeName = parsed.studentName ? `Tushuntirish_${parsed.studentName.replace(/\s+/g, '_')}.docx` : "Tushuntirish_Xati.docx";
+        await ctx.replyWithDocument(new InputFile(buf, safeName), {
+          caption: `✍️ **O'quvchi Tushuntirish Xati tayyor!** (.docx)\n\n📌 Maktab: ${parsed.school}\n👤 O'quvchi: ${parsed.studentName || "Belgilanmagan"}\n📅 Sana: ${parsed.date || "Kiritilgan sana"}\n❓ Sababi: ${parsed.reason.slice(0, 80)}`
+        });
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        consumeUserUse(userId, 'tushuntirish', parsed.studentName);
+        return ctx.reply(
+          `📄 **Tushuntirish xati matni:**\n\n` +
+          `«${parsed.school} direktori ${parsed.director}ga\n` +
+          `${parsed.className} o'quvchisi ${parsed.studentName || '________'}dan\n\n` +
+          `TUSHUNTIRISH XATI\n\n` +
+          `Men, ${parsed.className} o'quvchisi ${parsed.studentName || '________'}, maktabga ${parsed.date || 'belgilangan'} sanasida ${parsed.reason} kelmadim...»\n\n` +
+          `📎 *To'liq rasmiy hujjat yuqoridagi .docx faylida yuklandi.*`
+        );
+      } catch(err) {
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        return ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
+      }
+    }
+
+    if (dlg.step === 'awaiting_ariza_parent_data') {
+      const waitMsg = await ctx.reply("📄 **Ota-ona arizasi (.docx) shakllantirilmoqda...**");
+      try {
+        const parsed = parseApplicationDetails(text.trim());
+        const buf = await generateParentApplicationWordBuffer(parsed);
+        const safeName = parsed.parentName ? `Ariza_${parsed.parentName.replace(/\s+/g, '_')}.docx` : "Ota_ona_Arizasi.docx";
+        await ctx.replyWithDocument(new InputFile(buf, safeName), {
+          caption: `📄 **Ota-ona Arizasi tayyor!** (.docx)\n\n📌 Maktab: ${parsed.school}\n👨‍👩‍👧 Ota-ona: ${parsed.parentName || "Ota-onasi"}\n👤 O'quvchi: ${parsed.studentName || "Farzandi"}\n📝 Mazmuni: ${parsed.reason.slice(0, 80)}`
+        });
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        consumeUserUse(userId, 'ariza_parent', parsed.parentName);
+        return ctx.reply(
+          `📄 **Ariza matni:**\n\n` +
+          `«${parsed.school} direktori ${parsed.director}ga\n` +
+          `${parsed.className} o'quvchisi ${parsed.studentName || '________'}ning ota-onasi ${parsed.parentName || '________'}dan\n\n` +
+          `ARIZA\n\n` +
+          `Sizdan farzandimga ${parsed.reason}...»\n\n` +
+          `📎 *To'liq rasmiy hujjat yuqoridagi .docx faylida yuklandi.*`
+        );
+      } catch(err) {
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        return ctx.reply(`❌ Xatolik yuz berdi: ${err.message}`);
+      }
+    }
+
+    if (dlg.step === 'awaiting_order_topic') {
+      const orderTopic = text.trim();
+      const waitMsg = await ctx.reply(`📋 **"${orderTopic}" mavzusida maktab direktori buyrug'i tayyorlanmoqda...**`);
+      try {
+        const buf = await generateOfficialOrderWordBuffer(orderTopic);
+        await ctx.replyWithDocument(new InputFile(buf, `Buyruq_${orderTopic.slice(0, 20).replace(/\s+/g, '_')}.docx`), {
+          caption: `📋 **"${orderTopic}" bo'yicha maktab buyrug'i tayyor!** (.docx)\n\n✨ GOST va vazirlik standarti bilan.`
+        });
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        return consumeUserUse(userId, 'official_order', orderTopic);
+      } catch(err) {
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        return ctx.reply(`❌ Xatolik: ${err.message}`);
+      }
+    }
+
+    if (dlg.step === 'awaiting_lesson_topic') {
+      const lessonTopic = text.trim();
+      const waitMsg = await ctx.reply(`📝 **"${lessonTopic}" bo'yicha 45 daqiqalik dars konspekti tayyorlanmoqda...**`);
+      try {
+        let lessonResult = "";
+        try {
+          lessonResult = await generateAILessonPlanWithGemini(lessonTopic);
+        } catch(e) {
+          lessonResult = generateAILessonPlan(lessonTopic);
+        }
+        const buf = await generateLessonPlanWordBuffer(lessonTopic, lessonResult);
+        await ctx.replyWithDocument(new InputFile(buf, `Konspekt_${lessonTopic.slice(0, 20).replace(/\s+/g, '_')}.docx`), {
+          caption: `📝 **"${lessonTopic}" dars konspekti tayyor!** (.docx)\n\n✨ 6 bosqichli xronometraj va metodlar bilan.`
+        });
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        return consumeUserUse(userId, 'lesson_plan', lessonTopic);
+      } catch(err) {
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        return ctx.reply(`❌ Xatolik: ${err.message}`);
+      }
+    }
+
+    if (dlg.step === 'awaiting_referat_topic') {
+      const referatTopic = text.trim();
+      const waitMsg = await ctx.reply(`🎓 **"${referatTopic}" bo'yicha akademik referat tayyorlanmoqda...**`);
+      try {
+        const essayPrompt = `Mavzu: "${referatTopic}"\nVazifa: O'zbekiston oliy va xalq ta'limi standartlariga mos to'liq referat matnini yozib ber.`;
+        const essayResult = await callGemini(essayPrompt, "Siz oliy toifali akademik olimsiz.");
+        const buf = await generateReferatWordBuffer(referatTopic, essayResult);
+        await ctx.replyWithDocument(new InputFile(buf, `Referat_${referatTopic.slice(0, 20).replace(/\s+/g, '_')}.docx`), {
+          caption: `🎓 **"${referatTopic}" referati tayyor!** (.docx)`
+        });
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        return consumeUserUse(userId, 'referat', referatTopic);
+      } catch(err) {
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        return ctx.reply(`❌ Xatolik: ${err.message}`);
+      }
+    }
+
+    if (dlg.step === 'awaiting_tavsif_data') {
+      const tavsifData = text.trim();
+      const waitMsg = await ctx.reply(`🔍 **"${tavsifData}" uchun rasmiy tavsifnoma yozilmoqda...**`);
+      try {
+        const buf = await generateStudentReferenceWordBuffer(tavsifData, "10-A");
+        await ctx.replyWithDocument(new InputFile(buf, `Tavsifnoma_${tavsifData.slice(0, 15).replace(/\s+/g, '_')}.docx`), {
+          caption: `🔍 **"${tavsifData}" tavsifnomasi tayyor!** (.docx)`
+        });
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        return consumeUserUse(userId, 'tavsifnoma', tavsifData);
+      } catch(err) {
+        try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+        return ctx.reply(`❌ Xatolik: ${err.message}`);
+      }
     }
   }
 
