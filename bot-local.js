@@ -195,11 +195,35 @@ const db = {
 const slideWizardState = new Map();
 // 5 tadan ko'p slaydlar uchun admin tasdig'i navbati
 const pendingSlideApprovals = new Map();
+// Matnli muloqot holatlari (Test, Excel, Hujjat mavzusini kutish)
+const userDialogState = new Map();
+
+function isGenericTopic(str) {
+  if (!str) return true;
+  const clean = String(str)
+    .replace(/^[\s\p{Emoji}\p{Symbol}\p{Punctuation}]+/gu, '')
+    .replace(/[\s\p{Emoji}\p{Symbol}\p{Punctuation}]+$/gu, '')
+    .trim()
+    .toLowerCase();
+
+  if (clean.length < 3) return true;
+
+  const genericWords = [
+    'test', 'testlar', 'testi', 'testlari', 'test generatori', 'generatori', 'generator',
+    'nazorat', 'nazorat ishi', 'savol', 'savollar', 'savollari',
+    'slayd', 'slaydlar', 'slaydi', 'slaydlari', 'slayd yasash', 'taqdimot', 'taqdimoti', 'prezentatsiya', 'prezentatsiyasi',
+    'gamma', 'gamma ai', 'gamma ai taqdimot', 'powerpoint', 'pptx', 'yasash',
+    'hujjat', 'hujjatlar', 'hujjat fabrikasi', 'fabrikasi', 'fabrika',
+    'excel', 'jadval', 'jadvallar', 'jadvali', 'xlsx', 'tabel', 'tabeli', 'jurnal', 'jurnali',
+    'referat', 'dars ishlanmasi', 'konspekt', 'ariza', 'buyruq', 'faxriy yorliq'
+  ];
+  return genericWords.includes(clean);
+}
 
 function startSlideWizard(ctx, initialTopic = '') {
   const userId = ctx.from.id;
-  const isGenericButton = /^(?:🎨|📊|💻)?\s*(?:Gamma AI(?: Taqdimot)?|Slayd Yasash|taqdimot|slayd)\s*$/i.test(String(initialTopic || '').trim());
-  const cleanTopic = isGenericButton ? '' : String(initialTopic || '').trim();
+  const isGeneric = isGenericTopic(initialTopic);
+  const cleanTopic = isGeneric ? '' : String(initialTopic || '').trim();
 
   if (!cleanTopic) {
     slideWizardState.set(userId, {
@@ -216,7 +240,7 @@ function startSlideWizard(ctx, initialTopic = '') {
     return ctx.reply(
       `🎨 **GAMMA & GENSPARK AI TAQDIMOT YARATUVCHISI (1/6)**\n\n` +
       `📌 **Taqdimot mavzusini yozing:**\n` +
-      `Masalan: \`8-sinf biologiya Qon tarkibi va vazifalari\` yoki \`8-sinf fizika Kulon qonuni\`\n\n` +
+      `Masalan: \`Huquq nima va uning sohalari\` yoki \`8-sinf biologiya Qon tarkibi va vazifalari\`\n\n` +
       `*(Mavzuni to'g'ridan-to'g'ri xabar sifatida yozib yuboring)*`,
       { parse_mode: 'Markdown' }
     );
@@ -2188,12 +2212,16 @@ function downloadTelegramFile(fileUrl) {
   });
 }
 
-// 7. /start BUYRUG'I
-bot.command('start', async (ctx) => {
+// 7. /start BUYRUG'I VA BOSHQARUVCHI FUNKSIYA
+async function handleStartCommand(ctx) {
   const user = ctx.from;
   const userId = user.id;
   const username = user.username || '';
   const fullName = `${user.first_name} ${user.last_name || ''}`.trim();
+
+  // Dialog va slayd holatlarini tozalash
+  userDialogState.delete(userId);
+  slideWizardState.delete(userId);
 
   if (isRealSuperOwner(ctx)) {
     db.ownerChatId = ctx.chat.id;
@@ -2276,7 +2304,8 @@ bot.command('start', async (ctx) => {
     `📎 **Word (.docx), Excel (.xlsx) faylini tashlang yoki matn yuboring** — tizim 3 soniyada tayyorlab beradi!`,
     { parse_mode: 'Markdown', reply_markup: replyKeyboard }
   );
-});
+}
+bot.command('start', handleStartCommand);
 
 // =========================================================================
 // UNIVERSAL TO'G'RIDAN-TO'G'RI BUYRUQLAR (PREDELDAN YUQORI DARAJA)
@@ -2794,7 +2823,7 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   if (data.startsWith('sw_cnt_')) {
-    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "EduAI" };
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "O'qituvchi" };
     if (data === 'sw_cnt_custom') {
       sw.step = 'awaiting_custom_count';
       slideWizardState.set(userId, sw);
@@ -2817,7 +2846,7 @@ bot.on('callback_query:data', async (ctx) => {
 
   if (data.startsWith('sw_det_')) {
     const level = data.replace('sw_det_', '');
-    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "EduAI", slideCount: 5 };
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "O'qituvchi", slideCount: 5 };
     sw.detailLevel = level;
     sw.step = 'awaiting_image_density';
     slideWizardState.set(userId, sw);
@@ -2827,7 +2856,7 @@ bot.on('callback_query:data', async (ctx) => {
 
   if (data.startsWith('sw_idens_')) {
     const density = data.replace('sw_idens_', '');
-    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "EduAI", slideCount: 5 };
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "O'qituvchi", slideCount: 5 };
     sw.imageDensity = density;
     sw.includeImages = density !== 'low';
     sw.step = 'awaiting_image_style';
@@ -2838,7 +2867,7 @@ bot.on('callback_query:data', async (ctx) => {
 
   if (data.startsWith('sw_isty_')) {
     const imgStyle = data.replace('sw_isty_', '');
-    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "EduAI", slideCount: 5 };
+    const sw = slideWizardState.get(userId) || { topic: db.userSessions.get(userId) || "Ta'limiy taqdimot", authorName: ctx.from?.first_name || "O'qituvchi", slideCount: 5 };
     sw.imageStyle = imgStyle;
     sw.step = 'awaiting_style';
     slideWizardState.set(userId, sw);
@@ -3062,12 +3091,23 @@ bot.on('callback_query:data', async (ctx) => {
       );
     }
     const action = data.replace('ai_gen_', '');
-    const currentText = db.userSessions.get(userId) || "Ta'lim va zamonaviy pedagogika";
-    const topic = currentText.split(/\r?\n/)[0].slice(0, 80) || "Ta'lim va zamonaviy pedagogika";
+    const currentText = db.userSessions.get(userId) || "";
+    const isGeneric = isGenericTopic(currentText);
+    const topic = isGeneric ? "" : (currentText.split(/\r?\n/)[0].slice(0, 80) || "");
 
     if (action === 'gamma') {
       await ctx.answerCallbackQuery({ text: "Slayd yaratish bosqichlari boshlandi..." });
       return startSlideWizard(ctx, topic);
+    }
+
+    if (action === 'test' && !topic) {
+      await ctx.answerCallbackQuery();
+      userDialogState.set(userId, { step: 'awaiting_test_topic' });
+      return ctx.reply(
+        `🎲 **Test tuzish uchun mavzuni yozing:**\n\n` +
+        `Iltimos, fanning nomi yoki mavzusini yozib yuboring (Masalan: \`9-sinf Huquq asoslari 15 talik\`):`,
+        { parse_mode: 'Markdown' }
+      );
     }
 
     if (action === 'lesson') {
@@ -3768,6 +3808,51 @@ bot.on('callback_query:data', async (ctx) => {
   }
 });
 
+// 9.5 DINAMIK TEST YARATISH MOTORSI
+async function handleDynamicTestCreation(ctx, rawTopic, preferredCount = null) {
+  const userId = ctx.from.id;
+  const countMatch = String(rawTopic || '').match(/(\d+)\s*(?:ta|talik|savol|test)/i);
+  const count = preferredCount || (countMatch ? Math.min(Math.max(1, parseInt(countMatch[1], 10)), 50) : 15);
+  const cleanTopic = String(rawTopic || '').replace(/\b(?:test|testlar|testlari|testi|nazorat ishi|nazorat|tuzib ber|tuz|yarat|ber|kerak|yoz|varianti|variant|\d+\s*talik|\d+\s*ta|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
+  const finalTopic = cleanTopic || rawTopic;
+
+  db.userSessions.set(userId, finalTopic);
+
+  const waitMsg = await ctx.reply(`🎯 **"${finalTopic}" bo'yicha ${count} talik nazorat testi va Word (.docx) hujjati tuzilmoqda...**\n⏳ *(DTS standartlari, 3 ta tafakkur darajasi va javoblar kaliti bilan)*`);
+  try {
+    let testResult = "";
+    try {
+      testResult = await generateAITestWithGemini(finalTopic, count);
+    } catch (err) {
+      testResult = generateAITestSuite(finalTopic, count);
+    }
+
+    // Word (.docx) faylini yaratish va darhol foydalanuvchiga yuborish
+    const docxBuffer = await generateTestWordBuffer(finalTopic, testResult, count);
+    const safeFilename = `Test_${finalTopic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}_${count}talik.docx`;
+
+    await ctx.replyWithDocument(new InputFile(docxBuffer, safeFilename), {
+      caption: `🎯 **"${finalTopic}" bo'yicha ${count} talik test tayyor!** (.docx)\n\n✨ Rasmiy maktab me'yori, A, B, C, D variantlar va oxirida o'qituvchi uchun javoblar kaliti (ilmiy asosi bilan).`
+    });
+
+    const kb = new InlineKeyboard()
+      .text("📊 Slayd (.pptx) qilish", "ai_gen_gamma")
+      .text("📝 Dars konspekti (.docx)", "ai_gen_lesson")
+      .row()
+      .text("📊 Excel jadval (.xlsx)", "excel_master")
+      .webApp("📱 WebApp-da Ochish", WEBAPP_URL);
+
+    try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    consumeUserUse(userId, 'test', finalTopic);
+
+    const previewLines = testResult.split('\n').slice(0, 25).join('\n');
+    return ctx.reply(`📋 **Testdan namunaviy savollar:**\n\n${previewLines.slice(0, 3000)}\n\n📎 *To'liq ${count} ta savol va tahliliy javoblar kaliti yuqoridagi .docx faylda yuklandi.*`, { reply_markup: kb });
+  } catch(err) {
+    try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
+    return ctx.reply(`❌ Test tuzishda xatolik yuz berdi: ${err.message}`);
+  }
+}
+
 // 10. MATN BUYRUQLARI VA KLAVIATURA BOSILGANDA
 // =========================================================================
 // UNIVERSAL INTELLIGENT AI ENGINE (ODAM NIMA HOHLAYOTGANINI ANIQ TUSHUNISH)
@@ -3791,65 +3876,50 @@ async function processIntelligentMessage(ctx, userPrompt) {
   const raw = userPrompt.trim();
   if (!raw) return;
 
-  db.userSessions.set(userId, raw);
+  // Generic tugma nomlari sessiyaga saqlanmaydi
+  if (!isGenericTopic(raw)) {
+    db.userSessions.set(userId, raw);
+  }
   const lower = raw.toLowerCase();
 
   // 1. SLAYD / TAQDIMOT ISTAGI (MASALAN: Amir Temur slayd, fotosintez prezentatsiya, slayd tuzib ber)
   const isSlideRequest = /\b(?:slayd|slaydi|slaydlar|slaydlari|taqdimot|taqdimoti|prezentatsiya|prezentatsiyasi|powerpoint|pptx)\b/i.test(lower);
   if (isSlideRequest) {
     const cleanTopic = raw.replace(/\b(?:slayd|slaydi|slaydlar|slaydlari|taqdimot|taqdimoti|prezentatsiya|prezentatsiyasi|powerpoint|pptx|tuzib ber|tuz|yarat|qilib ber|kerak|yasash|tayyorla|qil|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
-    return startSlideWizard(ctx, cleanTopic || raw);
+    if (!cleanTopic || isGenericTopic(cleanTopic)) {
+      return startSlideWizard(ctx, '');
+    }
+    return startSlideWizard(ctx, cleanTopic);
   }
 
   // 1B. EXCEL JADVAL SO'ROVI (MASALAN: 8-sinf kimyo jadval, davomat tabeli excel, baholar jurnali xlsx)
   const isExcelRequest = /\b(?:excel|jadval|jadvallar|jadvallari|jadvali|tabel|tabeli|jurnal|jurnali|xlsx)\b/i.test(lower);
   if (isExcelRequest) {
     const cleanTopic = raw.replace(/\b(?:excel|jadval|jadvallar|jadvallari|jadvali|tabel|tabeli|jurnal|jurnali|xlsx|tuzib ber|tuz|yarat|qilib ber|kerak|yasash|tayyorla|qil|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
-    return handleDynamicExcelCreation(ctx, cleanTopic || raw);
+    if (!cleanTopic || isGenericTopic(cleanTopic)) {
+      return sendExcelMenu(ctx);
+    }
+    return handleDynamicExcelCreation(ctx, cleanTopic);
   }
 
   // 2. TEST SO'ROVI (MASALAN: 9-sinf huquq 100talik test, 15 talik test, fizika testlari)
   const isTestRequest = /\b(?:test|testlar|testlari|testi|nazorat ishi|nazorat|savollar|savollari)\b/i.test(lower) || /\d+\s*(?:ta|talik)\s*(?:test|savol)/i.test(lower);
-
   if (isTestRequest) {
+    const cleanTopic = raw.replace(/\b(?:test|testlar|testlari|testi|nazorat ishi|nazorat|tuzib ber|tuz|yarat|ber|kerak|yoz|varianti|variant|\d+\s*talik|\d+\s*ta|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
+    if (!cleanTopic || isGenericTopic(cleanTopic)) {
+      userDialogState.set(userId, { step: 'awaiting_test_topic' });
+      return ctx.reply(
+        `🎲 **EDUHUJJAT TEST GENERATORI (DTS Standartida):**\n\n` +
+        `📌 **Qaysi mavzu yoki fandan test tuzaylik?**\n\n` +
+        `Iltimos, mavzuni va kerakli savollar sonini xabar sifatida yozib yuboring:\n` +
+        `*(Masalan: \`9-sinf Huquq asoslari 15 talik\` yoki \`Biologiya Fotosintez 20 ta\` yoki \`Huquq nima?\`)*\n\n` +
+        `💡 *Standart holda 15 talik, 4 variantli (A, B, C, D) va javoblar kaliti bilan to'liq .docx fayl tayyorlab beriladi.*`,
+        { parse_mode: 'Markdown' }
+      );
+    }
     const countMatch = raw.match(/(\d+)\s*(?:ta|talik|savol|test)/i);
     const count = countMatch ? Math.min(Math.max(1, parseInt(countMatch[1], 10)), 50) : 15;
-    const cleanTopic = raw.replace(/\b(?:test|testlar|testlari|testi|nazorat ishi|nazorat|tuzib ber|tuz|yarat|ber|kerak|yoz|varianti|variant|\d+\s*talik|\d+\s*ta|menga|iltimos|haqida|mavzusida)\b/gi, '').trim();
-    const finalTopic = cleanTopic || raw;
-
-    const waitMsg = await ctx.reply(`🎯 **"${finalTopic}" bo'yicha ${count} talik nazorat testi va Word (.docx) hujjati tuzilmoqda...**\n⏳ *(DTS standartlari, 3 ta tafakkur darajasi va javoblar kaliti bilan)*`);
-    try {
-      let testResult = "";
-      try {
-        testResult = await generateAITestWithGemini(finalTopic, count);
-      } catch (err) {
-        testResult = generateAITestSuite(finalTopic, count);
-      }
-
-      // Word (.docx) faylini yaratish va darhol foydalanuvchiga yuborish
-      const docxBuffer = await generateTestWordBuffer(finalTopic, testResult, count);
-      const safeFilename = `Test_${finalTopic.slice(0, 20).replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}_${count}talik.docx`;
-
-      await ctx.replyWithDocument(new InputFile(docxBuffer, safeFilename), {
-        caption: `🎯 **"${finalTopic}" bo'yicha ${count} talik test tayyor!** (.docx)\n\n✨ Rasmiy maktab me'yori, A, B, C, D variantlar va oxirida o'qituvchi uchun javoblar kaliti (ilmiy asosi bilan).`
-      });
-
-      const kb = new InlineKeyboard()
-        .text("📊 Slayd (.pptx) qilish", "ai_gen_gamma")
-        .text("📝 Dars konspekti (.docx)", "ai_gen_lesson")
-        .row()
-        .text("📊 Excel jadval (.xlsx)", "excel_master")
-        .webApp("📱 WebApp-da Ochish", WEBAPP_URL);
-
-      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      consumeUserUse(userId, 'test', finalTopic);
-
-      const previewLines = testResult.split('\n').slice(0, 25).join('\n');
-      return ctx.reply(`📋 **Testdan namunaviy savollar:**\n\n${previewLines.slice(0, 3000)}\n\n📎 *To'liq ${count} ta savol va tahliliy javoblar kaliti yuqoridagi .docx faylda yuklandi.*`, { reply_markup: kb });
-    } catch(err) {
-      try { await ctx.api.deleteMessage(ctx.chat.id, waitMsg.message_id); } catch(e){}
-      return ctx.reply(`❌ Test tuzishda xatolik: ${err.message}`);
-    }
+    return handleDynamicTestCreation(ctx, cleanTopic, count);
   }
 
   // 3. KONSPEKT / DARS ISHLANMASI (MASALAN: 9-sinf kimyo konspekt, 45 daqiqalik dars ishlanma)
@@ -4070,25 +4140,84 @@ bot.on('message:text', async (ctx) => {
   }
 
   // =========================================================================
-  // BUYRUQ VA MENYU TUGMALARI BOSILGANDA SLIDE WIZARDNI BEKOR QILISH
+  // BUYRUQ VA MENYU TUGMALARI BOSILGANDA BARCHA WIZARD VA MULOQOTLARNI BEKOR QILISH
   // =========================================================================
   const knownMenuButtons = [
-    '🔑 Saytga Kirish Kodi', '🤖 EduAI Yordamchi', '📊 Gamma AI Taqdimot', '🎨 Gamma AI Taqdimot',
-    '💻 Slayd Yasash', '📊 Excel Jadvallar', '📜 Faxriy Yorliq', '💳 Litsenziya Sotib Olish',
+    '🔑 Saytga Kirish Kodi', '🤖 EduAI Yordamchi', 
+    '📑 Hujjat Fabrikasi', '🎲 Test Generatori',
+    '📊 Gamma AI Taqdimot', '🎨 Gamma AI Taqdimot', '💻 Slayd Yasash', '🖼 Slayd Yasash',
+    '📊 Excel Jadvallar', '📜 Faxriy Yorliq', '📄 Demo Ma\'lumot',
+    '💳 Litsenziya Sotib Olish', '💳 Muddatni Uzaytirish',
+    '💰 Narxlar', '💰 Narxlar va Tariflar', '🛡 Adminlar',
     '👥 Foydalanuvchilar', '⚡ Tezkor Yoqish', '🔍 Nazorat / Tekshirish', '📊 Tizim Statistikasi',
     '📈 Faollik Tahlili', '📈 Faollik', '📊 Statistika',
-    '👑 Boshqaruv Paneli', '🔙 Orqaga'
+    '👑 Boshqaruv Paneli', '🔙 Orqaga', '🌐 WebApp Ochish', '🌐 Mini App-ni Ochish',
+    '🎭 Rejimni Almashtirish', '🎭 Rejimni Qaytarish (Owner)', '🔄 Yangilash /start',
+    '📥 Bazani Yuklash (Excel)', '📢 Ommaviy Xabar', 'ℹ️ Mening Hisobim', 'ℹ️ Bot Qoidalari',
+    '🔍 Foydalanuvchi Tarixi (100 ta)'
   ];
   const isCommandOrMenu = text.startsWith('/') || knownMenuButtons.includes(text);
 
-  if (slideWizardState.has(userId) && isCommandOrMenu) {
-    slideWizardState.delete(userId);
+  if (isCommandOrMenu) {
+    if (slideWizardState.has(userId)) slideWizardState.delete(userId);
+    if (userDialogState.has(userId)) userDialogState.delete(userId);
+  }
+
+  // =========================================================================
+  // MATNLI MULOQOT HOLATLARI (Test, Excel, Sertifikat mavzusini kutish)
+  // =========================================================================
+  if (userDialogState.has(userId) && !isCommandOrMenu) {
+    if (!isUserActive(userId, username)) {
+      userDialogState.delete(userId);
+      return ctx.reply(
+        `🔒 **Xizmatdan foydalanish uchun hisobingizni faollashtiring.**\n\nSizning Telegram ID: \`${userId}\``,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
+
+    const dlg = userDialogState.get(userId);
+    userDialogState.delete(userId);
+
+    if (dlg.step === 'awaiting_test_topic') {
+      if (isGenericTopic(text)) {
+        userDialogState.set(userId, { step: 'awaiting_test_topic' });
+        return ctx.reply(
+          `⚠️ Iltimos, aniq fan yoki mavzuni yozing:\n` +
+          `Masalan: \`9-sinf Huquq asoslari 15 talik\` yoki \`Biologiya Fotosintez 20 ta\`\n\n` +
+          `*(Faqat "test" so'zining o'zini emas, mavzuni yozing)*:`,
+          { parse_mode: 'Markdown' }
+        );
+      }
+      return handleDynamicTestCreation(ctx, text.trim());
+    }
+
+    if (dlg.step === 'awaiting_excel_topic') {
+      if (isGenericTopic(text)) {
+        userDialogState.set(userId, { step: 'awaiting_excel_topic' });
+        return ctx.reply(
+          `⚠️ Iltimos, qanday jadval kerakligini aniq yozing:\n` +
+          `Masalan: \`10-maktab sport musobaqasi g'oliblari jadvali\`\n\n` +
+          `*(Faqat "jadval" so'zining o'zini emas, mavzuni yozing)*:`,
+          { parse_mode: 'Markdown' }
+        );
+      }
+      return handleDynamicExcelCreation(ctx, text.trim());
+    }
+
+    if (dlg.step === 'awaiting_certificate_name') {
+      const recipient = text.trim();
+      const buf = await generateOfficialOrderWordBuffer(`Faxriy Yorliq: ${recipient}`);
+      consumeUserUse(userId, 'official_order', recipient);
+      return ctx.replyWithDocument(new InputFile(buf, `Faxriy_Yorliq_${recipient.slice(0, 15).replace(/\s+/g, '_')}.docx`), {
+        caption: `🏆 **"${recipient}" nomiga rasmiy Faxriy Yorliq hujjati tayyor!** (.docx)`
+      });
+    }
   }
 
   // =========================================================================
   // SLIDE WIZARD TEXT INPUT (Faqat oddiy matn bo'lganda)
   // =========================================================================
-  if (slideWizardState.has(userId)) {
+  if (slideWizardState.has(userId) && !isCommandOrMenu) {
     if (!isUserActive(userId, username)) {
       slideWizardState.delete(userId);
       return ctx.reply(
@@ -4100,15 +4229,26 @@ bot.on('message:text', async (ctx) => {
     }
     const sw = slideWizardState.get(userId);
     if (sw.step === 'awaiting_topic') {
-      sw.topic = text.trim();
+      const topicText = text.trim();
+      if (isGenericTopic(topicText)) {
+        return ctx.reply(
+          `⚠️ Iltimos, aniq taqdimot mavzusini yozing:\n` +
+          `Masalan: \`Huquq nima va uning sohalari\` yoki \`8-sinf biologiya Qon tarkibi\`\n\n` +
+          `*(Faqat "slayd" so'zining o'zini emas, mavzuni yozing)*:`,
+          { parse_mode: 'Markdown' }
+        );
+      }
+      sw.topic = topicText;
       sw.step = 'awaiting_author';
       slideWizardState.set(userId, sw);
       return sendWizardAuthorStep(ctx, sw.topic);
     }
     if (sw.step === 'awaiting_author') {
-      sw.authorName = text.trim();
+      const authorText = text.trim();
+      sw.authorName = authorText;
       sw.step = 'awaiting_slide_count';
       slideWizardState.set(userId, sw);
+      await ctx.reply(`✅ Muallif belgilandi: **${authorText}**`, { parse_mode: 'Markdown' });
       return sendWizardSlideCountStep(ctx, sw.topic, sw.authorName, false);
     }
     if (sw.step === 'awaiting_slide_count' || sw.step === 'awaiting_custom_count') {
@@ -4119,15 +4259,69 @@ bot.on('message:text', async (ctx) => {
       sw.slideCount = parsedNum;
       sw.step = 'awaiting_detail';
       slideWizardState.set(userId, sw);
+      await ctx.reply(`✅ Slaydlar soni: **${parsedNum} ta**`, { parse_mode: 'Markdown' });
       return sendWizardDetailStep(ctx, sw.topic, sw.authorName, sw.slideCount, false);
     }
+  }
+
+  // =========================================================================
+  // 🔄 YANGILASH /start TUGMASI
+  // =========================================================================
+  if (text === '🔄 Yangilash /start') {
+    return handleStartCommand(ctx);
+  }
+
+  // =========================================================================
+  // 📑 HUJJAT FABRIKASI MENYU TUGMASI
+  // =========================================================================
+  if (text === '📑 Hujjat Fabrikasi' || text === '/hujjat' || text === '/hujjatlar' || text === '/fabrikasi') {
+    if (!isUserActive(userId, username)) {
+      return ctx.reply(
+        `🔒 **Hujjat Fabrikasidan foydalanish uchun hisobingizni faollashtiring.**\n\nSizning Telegram ID: \`${userId}\``,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
+    const kb = getDocumentFactoryKeyboard();
+    return ctx.reply(
+      `📑 **EDUHUJJAT HUJJAT FABRIKASI:**\n\n` +
+      `Tayyor rasmiy maktab va pedagogik hujjatlardan birini tanlang yoki o'zingizga kerakli hujjat mavzusini yozib yuboring:\n\n` +
+      `• 📋 **Maktab direktori buyruqlari** (.docx)\n` +
+      `• 📝 **45 daqiqalik dars konspektlari** (.docx)\n` +
+      `• 🎓 **Titul & Referat shablonlari** (.docx)\n` +
+      `• 📄 **Rasmiy arizalar va tavsifnomalar** (.docx)\n` +
+      `• 📊 **Davomat, baholar jurnali va dars jadvallari** (.xlsx)\n\n` +
+      `👇 **Kerakli hujjat turini tanlang:**`,
+      { parse_mode: 'Markdown', reply_markup: kb }
+    );
+  }
+
+  // =========================================================================
+  // 🎲 TEST GENERATORI MENYU TUGMASI
+  // =========================================================================
+  if (text === '🎲 Test Generatori' || text === '/test' || text === '/testlar') {
+    if (!isUserActive(userId, username)) {
+      return ctx.reply(
+        `🔒 **Test Generatordan foydalanish uchun hisobingizni faollashtiring.**\n\nSizning Telegram ID: \`${userId}\``,
+        { reply_markup: getTariffInlineKeyboard(userId) }
+      );
+    }
+    userDialogState.set(userId, { step: 'awaiting_test_topic' });
+    return ctx.reply(
+      `🎲 **EDUHUJJAT TEST GENERATORI (DTS Standartida):**\n\n` +
+      `📌 **Qaysi mavzu yoki fandan test tuzaylik?**\n\n` +
+      `Iltimos, mavzuni va kerakli savollar sonini xabar sifatida yozib yuboring:\n` +
+      `*(Masalan: \`9-sinf Huquq asoslari 15 talik\` yoki \`Biologiya Fotosintez 20 ta\` yoki \`Huquq nima?\`)*\n\n` +
+      `💡 *Standart holda 15 talik, 4 variantli (A, B, C, D) va javoblar kaliti bilan to'liq .docx fayl tayyorlab beriladi.*`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
   // =========================================================================
   // /slayd BUYRUG'I VA MENYU TUGMALARI
   // =========================================================================
   if (text.startsWith('/slayd') || text.startsWith('/slide') || text.startsWith('/taqdimot') || 
-      text === '📊 Gamma AI Taqdimot' || text === '🎨 Gamma AI Taqdimot' || text === '💻 Slayd Yasash') {
+      text === '📊 Gamma AI Taqdimot' || text === '🎨 Gamma AI Taqdimot' || 
+      text === '💻 Slayd Yasash' || text === '🖼 Slayd Yasash') {
     if (!isUserActive(userId, username)) {
       return ctx.reply(
         `🔒 **Gamma AI Taqdimot yaratish uchun hisobingizni faollashtiring.**\n\n` +
@@ -4136,10 +4330,28 @@ bot.on('message:text', async (ctx) => {
         { reply_markup: getTariffInlineKeyboard(userId) }
       );
     }
-    const isButton = (text === '📊 Gamma AI Taqdimot' || text === '🎨 Gamma AI Taqdimot' || text === '💻 Slayd Yasash');
+    const isButton = (
+      text === '📊 Gamma AI Taqdimot' || text === '🎨 Gamma AI Taqdimot' || 
+      text === '💻 Slayd Yasash' || text === '🖼 Slayd Yasash'
+    );
     const rawTopic = text.replace(/^\/(?:slayd|slide|taqdimot)\s*/i, '').trim();
-    const topic = (!isButton && rawTopic) ? rawTopic : '';
+    const topic = (!isButton && rawTopic && !isGenericTopic(rawTopic)) ? rawTopic : '';
     return startSlideWizard(ctx, topic);
+  }
+
+  // =========================================================================
+  // ℹ️ BOT QOIDALARI TUGMASI
+  // =========================================================================
+  if (text === 'ℹ️ Bot Qoidalari' || text === '/qoidalar') {
+    return ctx.reply(
+      `ℹ️ **EduHujjat AI Tizimidan Foydalanish Qoidalari:**\n\n` +
+      `1. **EduHujjat AI** — Maktablar, o'qituvchilar va pedagoglar uchun rasmiy hujjatlar, testlar va taqdimotlarni avtomatlashtirish tizimi.\n` +
+      `2. Barcha testlar va dars ishlanmalari O'zbekiston Respublikasi DTS mezonlari asosida tuziladi.\n` +
+      `3. Taqdimotlar 1 dan 30 betgacha bo'lishi mumkin. 5 tagacha standart to'plam, 5 tadan ko'p slaydlar admin tasdig'i bilan beriladi.\n` +
+      `4. Bitta hisobdan xavfsizlik maqsadida bir vaqtning o'zida bitta qurilmadan kirish tavsiya etiladi.\n\n` +
+      `📞 Texnik yordam va aloqa: @${OWNER_USERNAME}`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
   // =========================================================================
