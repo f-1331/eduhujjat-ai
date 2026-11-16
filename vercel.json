@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://activated-melissa-tuner-dinner.trycloudflare.com/health"
+      "destination": "https://selected-skiing-transmitted-fruit.trycloudflare.com/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://activated-melissa-tuner-dinner.trycloudflare.com/api/$1"
+      "destination": "https://selected-skiing-transmitted-fruit.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",
