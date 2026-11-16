@@ -202,6 +202,8 @@ async def run_ha_watchdog():
                         state["last_switch_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
                         save_state(state)
                         msg = (
+                            "🔒 <b>[MAXFIY TEXNIK XABAR — FAQAT ADMIN UCHUN]</b>\n"
+                            "<i>(Ushbu xabar faqat sizga yuborildi, oddiy foydalanuvchilarga yuborilmaydi)</i>\n\n"
                             "🎉 <b>EduHujjat: Render limiti yangilandi va server to'liq tiklandi!</b>\n\n"
                             f"Vercel sayti avtomatik ravishda asosiy <b>Render bulut serveriga</b> (<code>{RENDER_URL}</code>) qaytarildi.\n"
                             "Barcha xizmatlar (AI Slayd, Hujjatlar, WebApp, Bot) yana to'liq bulutda uzluksiz ishlamoqda!"
@@ -226,6 +228,8 @@ async def run_ha_watchdog():
                             state["last_switch_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
                             save_state(state)
                             msg = (
+                                "🔒 <b>[MAXFIY TEXNIK XABAR — FAQAT ADMIN UCHUN]</b>\n"
+                                "<i>(Ushbu xabar faqat sizga yuborildi, oddiy foydalanuvchilarga yuborilmaydi)</i>\n\n"
                                 "⚠️ <b>EduHujjat: Render limiti tugadi yoki server to'xtab qoldi (HTTP 503)!</b>\n\n"
                                 "Tizim uzilishsiz ishlashi uchun Vercel avtomatik ravishda <b>Zaxira (Cloudflare Tunnel)</b> serveriga ulandi.\n"
                                 f"🌐 Jonli zaxira manzili: <code>{tunnel_url}</code>\n"

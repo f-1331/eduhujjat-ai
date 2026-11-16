@@ -113,11 +113,13 @@ def update_vercel_json_if_needed(tunnel_url: str):
                 subprocess.run(["git", "push", "origin", "main"], cwd=str(BASE_DIR), check=True)
                 logger.info("✅ Vercel yo'nalishi GitHub'ga push qilindi!")
 
-                # Telegram alert
+                # Telegram alert (QAT'IY QOIDA: Faqat Super Ownerga yuboriladi, oddiy foydalanuvchilarga emas!)
                 token = get_bot_token()
-                if token:
+                if token and OWNER_TELEGRAM_ID:
                     try:
                         msg = (
+                            "🔒 <b>[MAXFIY TEXNIK XABAR — FAQAT ADMIN UCHUN]</b>\n"
+                            "<i>(Ushbu xabar faqat sizga yuborildi, oddiy foydalanuvchilarga yuborilmaydi)</i>\n\n"
                             "⚠️ <b>EduHujjat Zaxira Tizimi Ishga Tushirildi!</b>\n\n"
                             "Render oylik limiti tugagani (HTTP 503) sababli, loyiha kompyuterdagi zaxira serveriga o'tkazildi.\n"
                             f"🌐 Zaxira Tunnel URL: <code>{tunnel_url}</code>\n"
