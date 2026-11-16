@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://eduhujjat-bot.onrender.com/health"
+      "destination": "https://activated-melissa-tuner-dinner.trycloudflare.com/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://eduhujjat-bot.onrender.com/api/$1"
+      "destination": "https://activated-melissa-tuner-dinner.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",
