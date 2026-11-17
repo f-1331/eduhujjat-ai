@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://inflation-passive-secretary-final.trycloudflare.com/health"
+      "destination": "https://hey-nor-ringtone-singing.trycloudflare.com/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://inflation-passive-secretary-final.trycloudflare.com/api/$1"
+      "destination": "https://hey-nor-ringtone-singing.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",
