@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://tar-literary-advantages-tend.trycloudflare.com/health"
+      "destination": "https://greensboro-lottery-sean-trail.trycloudflare.com/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://tar-literary-advantages-tend.trycloudflare.com/api/$1"
+      "destination": "https://greensboro-lottery-sean-trail.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",
