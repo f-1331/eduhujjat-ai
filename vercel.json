@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://fighters-soldier-cups-touched.trycloudflare.com/health"
+      "destination": "https://metal-colts-wash.loca.lt/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://fighters-soldier-cups-touched.trycloudflare.com/api/$1"
+      "destination": "https://metal-colts-wash.loca.lt/api/$1"
     },
     {
       "source": "/(.*)",
