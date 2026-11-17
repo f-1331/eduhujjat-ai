@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://tourist-acknowledged-times-push.trycloudflare.com/health"
+      "destination": "https://disposal-skill-zone-function.trycloudflare.com/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://tourist-acknowledged-times-push.trycloudflare.com/api/$1"
+      "destination": "https://disposal-skill-zone-function.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",
