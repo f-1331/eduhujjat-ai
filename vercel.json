@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://greensboro-lottery-sean-trail.trycloudflare.com/health"
+      "destination": "https://fighters-soldier-cups-touched.trycloudflare.com/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://greensboro-lottery-sean-trail.trycloudflare.com/api/$1"
+      "destination": "https://fighters-soldier-cups-touched.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",
