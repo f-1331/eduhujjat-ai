@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://disposal-skill-zone-function.trycloudflare.com/health"
+      "destination": "https://emission-ordinance-trade-secrets.trycloudflare.com/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://disposal-skill-zone-function.trycloudflare.com/api/$1"
+      "destination": "https://emission-ordinance-trade-secrets.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",
