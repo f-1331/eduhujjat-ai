@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://metal-colts-wash.loca.lt/health"
+      "destination": "https://inflation-passive-secretary-final.trycloudflare.com/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://metal-colts-wash.loca.lt/api/$1"
+      "destination": "https://inflation-passive-secretary-final.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",
