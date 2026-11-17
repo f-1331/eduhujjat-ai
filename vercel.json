@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://hey-nor-ringtone-singing.trycloudflare.com/health"
+      "destination": "https://aware-compound-dui-cloth.trycloudflare.com/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://hey-nor-ringtone-singing.trycloudflare.com/api/$1"
+      "destination": "https://aware-compound-dui-cloth.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",
