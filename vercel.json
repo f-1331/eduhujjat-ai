@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://aware-compound-dui-cloth.trycloudflare.com/health"
+      "destination": "https://subtle-heads-heads-pensions.trycloudflare.com/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://aware-compound-dui-cloth.trycloudflare.com/api/$1"
+      "destination": "https://subtle-heads-heads-pensions.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",
