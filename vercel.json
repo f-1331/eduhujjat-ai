@@ -5,14 +5,10 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "https://subtle-heads-heads-pensions.trycloudflare.com/health"
+      "destination": "/api/health"
     },
     {
-      "source": "/api/(.*)",
-      "destination": "https://subtle-heads-heads-pensions.trycloudflare.com/api/$1"
-    },
-    {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]
